@@ -8,7 +8,7 @@ runtime.
 
 In your `requirements.txt` file, add the following:
 
-`https://github.com/GoogleCloudPlatform/appengine-python-standard/archive/main.tar.gz`
+`appengine-python-standard`
 
 In your app's `app.yaml`, add the following:
 
@@ -23,3 +23,11 @@ are available:
 - `google.appengine.api.users`
 - `google.appengine.ext.db`
 - `google.appengine.ext.ndb`
+
+## Using the development version of the SDK
+
+To install the code from the `main` branch on GitHub rather than the latest
+version published to PyPI, put this in your `requirements.txt` file instead of
+`appengine-python-standard`:
+
+`https://github.com/GoogleCloudPlatform/appengine-python-standard/archive/main.tar.gz`
