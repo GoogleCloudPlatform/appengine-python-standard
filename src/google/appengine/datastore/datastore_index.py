@@ -68,6 +68,7 @@ import itertools
 import google
 
 from ruamel import yaml
+import six
 from six.moves import zip
 
 from google.appengine.api import appinfo
@@ -193,9 +194,17 @@ class IndexDefinitions(validation.Validated):
       'indexes': validation.Optional(validation.Repeated(Index)),
   }
 
-
 index_yaml = yaml.YAML(typ='unsafe')
 index_yaml.representer.add_representer(Property, PropertyPresenter)
+
+if six.PY2:
+
+
+
+
+  def _Py2UnicodeRepresenter(self, s):
+    return self.represent_str(s.encode('utf-8'))
+  index_yaml.representer.add_representer(unicode, _Py2UnicodeRepresenter)
 
 
 def ParseIndexDefinitions(document, open_fn=None):
@@ -213,6 +222,7 @@ def ParseIndexDefinitions(document, open_fn=None):
   Returns:
     Single parsed yaml file if one is defined, else None.
   """
+  del open_fn
   try:
     return yaml_object.BuildSingleObject(IndexDefinitions, document)
   except yaml_errors.EmptyConfigurationFile:

@@ -358,7 +358,6 @@ __all__ = ['Key', 'BlobKey', 'GeoPt', 'Rollback',
            'delete_multi', 'delete_multi_async',
            'get_indexes', 'get_indexes_async',
            'make_connection',
-           'use_legacy_bytes_mode',
           ]
 
 
@@ -2051,11 +2050,8 @@ class KeyProperty(Property):
       if isinstance(kind, type) and issubclass(kind, Model):
         kind = kind._get_kind()
       if isinstance(kind, (six.text_type, bytes)):
-        if utils.use_bytes():
-          kind = six.ensure_binary(kind)
-        else:
-          kind = six.ensure_str(kind)
-      if not isinstance(kind, bytes if utils.use_bytes() else str):
+        kind = six.ensure_str(kind)
+      if not isinstance(kind, str):
         raise TypeError('kind must be a Model class or a string')
 
     super(KeyProperty, self).__init__(name, **kwds)
@@ -2741,10 +2737,7 @@ class GenericProperty(Property):
         pb.MergeFromString(sval)
         modelclass = Expando
         if len(pb.key.path.element):
-          if utils.use_bytes():
-            kind = six.ensure_binary(pb.key.path.element[-1].type)
-          else:
-            kind = six.ensure_str(pb.key.path.element[-1].type)
+          kind = six.ensure_str(pb.key.path.element[-1].type)
           modelclass = Model._kind_map.get(kind, modelclass)
         sval = modelclass._from_pb(pb)
       elif meaning != entity_pb2.Property.BYTESTRING:
@@ -3162,14 +3155,7 @@ class Model(six.with_metaclass(MetaModel, _NotEqualMixin)):
 
     keep = {}
     for name, value in six.iteritems(cls._kind_map):
-      if utils.use_bytes():
-        name = six.ensure_binary(name)
-        dunderscore = b'__'
-      else:
-
-        name = six.ensure_str(name)
-        dunderscore = '__'
-      if name.startswith(dunderscore) and name.endswith(dunderscore):
+      if name.startswith('__') and name.endswith('__'):
         keep[name] = value
     cls._kind_map.clear()
     cls._kind_map.update(keep)
@@ -3187,10 +3173,6 @@ class Model(six.with_metaclass(MetaModel, _NotEqualMixin)):
     Raises:
       KindError: The kind was not found and no default_model was provided.
     """
-    if utils.use_bytes():
-      if kind is not None:
-        kind = six.ensure_binary(kind)
-
     modelclass = cls._kind_map.get(kind, default_model)
     if modelclass is None:
       raise KindError(
@@ -3442,8 +3424,6 @@ class Model(six.with_metaclass(MetaModel, _NotEqualMixin)):
   def _update_kind_map(cls):
     """Update the kind map to include this class."""
     k = cls._get_kind()
-    if utils.use_bytes():
-      k = six.ensure_binary(k)
     cls._kind_map[k] = cls
 
   def _prepare_for_put(self):
@@ -4122,17 +4102,6 @@ def get_indexes(**ctx_options):
     A list of Index objects.
   """
   return get_indexes_async(**ctx_options).get_result()
-
-
-def use_legacy_bytes_mode(use_bytes):
-  if not use_bytes:
-    raise ValueError('You do not need to opt-out of bytes mode explicitly.'
-                     'It has been disabled by default.')
-  if utils.use_bytes() == use_bytes:
-    return
-  utils.legacy_bytes_mode = use_bytes
-  fix_key = six.ensure_binary if use_bytes else six.ensure_str
-  Model._kind_map = {fix_key(k): v for k, v in six.iteritems(Model._kind_map)}
 
 
 

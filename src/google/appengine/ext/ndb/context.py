@@ -1218,7 +1218,7 @@ class Context(object):
     if not isinstance(for_cas, bool):
       raise TypeError('for_cas must be a bool; received %r' % for_cas)
     if namespace is None:
-      namespace = _DefaultNamespace()
+      namespace = namespace_manager.get_namespace()
     options = (for_cas, namespace, deadline)
     batcher = self._memcache_get_batcher
     if use_cache:
@@ -1239,7 +1239,7 @@ class Context(object):
     if not isinstance(time, six.integer_types):
       raise TypeError('time must be a number; received %r' % time)
     if namespace is None:
-      namespace = _DefaultNamespace()
+      namespace = namespace_manager.get_namespace()
     options = ('set', time, namespace, deadline)
     batcher = self._memcache_set_batcher
     if use_cache:
@@ -1253,7 +1253,7 @@ class Context(object):
     if not isinstance(time, six.integer_types):
       raise TypeError('time must be a number; received %r' % time)
     if namespace is None:
-      namespace = _DefaultNamespace()
+      namespace = namespace_manager.get_namespace()
     return self._memcache_set_batcher.add((key, value),
                                           ('add', time, namespace, deadline))
 
@@ -1263,7 +1263,7 @@ class Context(object):
     if not isinstance(time, six.integer_types):
       raise TypeError('time must be a number; received %r' % time)
     if namespace is None:
-      namespace = _DefaultNamespace()
+      namespace = namespace_manager.get_namespace()
     options = ('replace', time, namespace, deadline)
     return self._memcache_set_batcher.add((key, value), options)
 
@@ -1273,7 +1273,7 @@ class Context(object):
     if not isinstance(time, six.integer_types):
       raise TypeError('time must be a number; received %r' % time)
     if namespace is None:
-      namespace = _DefaultNamespace()
+      namespace = namespace_manager.get_namespace()
     return self._memcache_set_batcher.add((key, value),
                                           ('cas', time, namespace, deadline))
 
@@ -1283,7 +1283,7 @@ class Context(object):
     if not isinstance(seconds, six.integer_types):
       raise TypeError('seconds must be a number; received %r' % seconds)
     if namespace is None:
-      namespace = _DefaultNamespace()
+      namespace = namespace_manager.get_namespace()
     return self._memcache_del_batcher.add(key, (seconds, namespace, deadline))
 
   def memcache_incr(self, key, delta=1, initial_value=None, namespace=None,
@@ -1297,7 +1297,7 @@ class Context(object):
       raise TypeError('initial_value must be a number or None; received %r' %
                       initial_value)
     if namespace is None:
-      namespace = _DefaultNamespace()
+      namespace = namespace_manager.get_namespace()
     return self._memcache_off_batcher.add((key, delta),
                                           (initial_value, namespace, deadline))
 
@@ -1312,7 +1312,7 @@ class Context(object):
       raise TypeError('initial_value must be a number or None; received %r' %
                       initial_value)
     if namespace is None:
-      namespace = _DefaultNamespace()
+      namespace = namespace_manager.get_namespace()
     return self._memcache_off_batcher.add((key, -delta),
                                           (initial_value, namespace, deadline))
 
@@ -1330,9 +1330,3 @@ class Context(object):
                              validate_certificate=validate_certificate)
     result = yield rpc
     raise tasklets.Return(result)
-
-
-def _DefaultNamespace():
-  if utils.use_bytes():
-    return six.ensure_binary(namespace_manager.get_namespace())
-  return namespace_manager.get_namespace()

@@ -873,8 +873,6 @@ class Query(object):
         if namespace is None:
           namespace = ancestor.namespace()
         else:
-          if utils.use_bytes():
-            namespace = six.ensure_binary(namespace)
           if namespace != ancestor.namespace():
             raise TypeError(
                 'namespace/ancestor mismatch: %r != %r' % (
@@ -907,11 +905,6 @@ class Query(object):
     self.__namespace = namespace
     self.__default_options = default_options
 
-    if utils.use_bytes():
-      if self.__kind is not None:
-        self.__kind = six.ensure_binary(self.__kind)
-      if self.__namespace is not None:
-        self.__namespace = six.ensure_binary(self.__namespace)
 
     self.__projection = None
     if projection is not None:
@@ -949,7 +942,7 @@ class Query(object):
     if self.app is not None:
       args.append('app=%r' % self.app)
     if (self.namespace is not None and
-        self.namespace != _default_namespace()):
+        self.namespace != namespace_manager.get_namespace()):
 
 
       args.append('namespace=%r' % self.namespace)
@@ -2167,9 +2160,3 @@ def _orderings_to_orders(orderings, modelclass):
   if len(orders) == 1:
     return orders[0]
   return datastore_query.CompositeOrder(orders)
-
-
-def _default_namespace():
-  if utils.use_bytes():
-    return six.ensure_binary(namespace_manager.get_namespace())
-  return namespace_manager.get_namespace()

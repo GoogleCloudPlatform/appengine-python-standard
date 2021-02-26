@@ -314,8 +314,6 @@ class Key(object):
             'Parent cannot have incomplete key')
       pairs[:0] = parent.__pairs
       if app:
-        if utils.use_bytes():
-          app = six.ensure_binary(app)
         if app != parent.app():
           raise ValueError('Cannot specify a different app %r '
                            'than the parent app %r' %
@@ -323,8 +321,6 @@ class Key(object):
       else:
         app = parent.__app
       if namespace is not None:
-        if utils.use_bytes():
-          namespace = six.ensure_binary(namespace)
         if namespace != parent.namespace():
           raise ValueError('Cannot specify a different namespace %r '
                            'than the parent namespace %r' %
@@ -334,7 +330,7 @@ class Key(object):
     if not app:
       app = _DefaultAppId()
     if namespace is None:
-      namespace = _DefaultNamespace()
+      namespace = namespace_manager.get_namespace()
 
 
 
@@ -402,7 +398,7 @@ class Key(object):
     return (reference, tuple(pairs), ref_app, ref_namespace)
 
   def _bytes2str(self, val):
-    if not utils.use_bytes() and isinstance(val, bytes):
+    if isinstance(val, bytes):
       val = six.ensure_str(val)
     return val
 
@@ -423,7 +419,7 @@ class Key(object):
         args.append(str(item))
     if self.app() != _DefaultAppId():
       args.append('app=%r' % self.app())
-    if self.namespace() != _DefaultNamespace():
+    if self.namespace() != namespace_manager.get_namespace():
       args.append('namespace=%r' % self.namespace())
     return 'Key(%s)' % ', '.join(args)
 
@@ -843,7 +839,7 @@ def _ReferenceFromPairs(pairs, reference=None, app=None, namespace=None):
   reference.app = app
 
   if namespace is None:
-    namespace = _DefaultNamespace()
+    namespace = namespace_manager.get_namespace()
 
   if namespace:
     reference.name_space = namespace
@@ -887,19 +883,7 @@ def _DefaultAppId():
 
   This is taken from the APPLICATION_ID environment variable.
   """
-  if utils.use_bytes():
-    return six.ensure_binary(os.getenv('APPLICATION_ID', '_'))
   return os.getenv('APPLICATION_ID', '_')
-
-
-def _DefaultNamespace():
-  """Return the default namespace.
-
-  This is taken from the namespace manager.
-  """
-  if utils.use_bytes():
-    return six.ensure_binary(namespace_manager.get_namespace())
-  return namespace_manager.get_namespace()
 
 
 def _ConvertPairsForComparison(pairs):

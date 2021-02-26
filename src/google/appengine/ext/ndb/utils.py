@@ -257,24 +257,6 @@ def tweak_logging():
     global DEBUG
     DEBUG = False
 
-legacy_bytes_mode = os.environ.get('NDB_KEY_USE_BYTES', '0') == '1'
-
-
-def use_bytes():
-  """Tell if NDB should expose kind/id/namespace/app as bytes or strings.
-
-  Internally, these attributes are represented as bytes no matter how NDB is
-  configured, but this implementation detail should not have leaked into the
-  public API in python3.  During a short transition period, the
-  NDB_KEY_USE_BYTES env var can be used to configure NDB to expose these
-  attributes as bytes (legacy behavior) or strings (new behavior).  Once no apps
-  depend on the old behavior, this setting will be removed.
-
-  Returns:
-    True for bytes (legacy behavior) or False for string (new behavior)
-  """
-  return legacy_bytes_mode
-
 
 if 'test' in os.path.basename(sys.argv[0]):
   tweak_logging()

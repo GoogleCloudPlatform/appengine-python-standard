@@ -49,7 +49,6 @@ of Model.
 
 import six
 from google.appengine.ext.ndb import model
-from google.appengine.ext.ndb import utils
 
 __all__ = ['PolyModel']
 
@@ -193,10 +192,7 @@ class PolyModel(model.Model):
     have the same kind, but different class names.  PolyModel class
     names, like regular Model class names, must be globally unique.
     """
-    if utils.use_bytes():
-      cls._kind_map[six.ensure_binary(cls._class_name())] = cls
-    else:
-      cls._kind_map[cls._class_name()] = cls
+    cls._kind_map[cls._class_name()] = cls
     class_key = cls._class_key()
     if class_key:
       cls._class_map[tuple(class_key)] = cls
