@@ -55,20 +55,18 @@ import re
 import struct
 import time
 from xml.sax import saxutils
-
-import six
-from six.moves import range
-from six.moves import urllib
-from six.moves import zip
-
 from google.appengine.api import cmp_compat
 from google.appengine.api import datastore_errors
 from google.appengine.api import namespace_manager
 from google.appengine.api import users
 from google.appengine.datastore import datastore_pb
 from google.appengine.datastore import datastore_pbs
-from google.appengine.datastore import encode_sortably
 from google.appengine.datastore import entity_v4_pb2
+from google.appengine.datastore import sortable_pb_encoder
+import six
+from six.moves import range
+from six.moves import urllib
+from six.moves import zip
 from google.appengine.datastore import entity_bytes_pb2 as entity_pb2
 
 
@@ -2270,7 +2268,7 @@ def PropertyValueToKeyValue(prop_value):
   if prop_value.HasField('doubleValue'):
 
     return (entity_pb2.PropertyValue.DOUBLEVALUE_FIELD_NUMBER,
-            tuple(encode_sortably.encode_double(prop_value.doubleValue)))
+            tuple(sortable_pb_encoder.EncodeDouble(prop_value.doubleValue)))
   if prop_value.HasField('pointvalue'):
     return (entity_pb2.PropertyValue.POINTVALUE_FIELD_NUMBER,
             prop_value.pointvalue.x, prop_value.pointvalue.y)

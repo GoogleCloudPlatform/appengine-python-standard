@@ -318,7 +318,9 @@ class PropertySpec(object):
 
   def __tuple(self):
     """Produces a tuple for comparison purposes."""
-    return (self._name, self._direction, self._mode)
+    direction = self._direction or entity_pb2.Index.Property.Direction.DIRECTION_UNSPECIFIED
+    mode = self._mode or entity_pb2.Index.Property.Mode.MODE_UNSPECIFIED
+    return (self._name, direction, mode)
 
   def __lt__(self, other):
     if not isinstance(other, PropertySpec):
