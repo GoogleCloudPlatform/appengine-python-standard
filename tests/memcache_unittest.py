@@ -102,6 +102,10 @@ def MakeArbitraryGetRequest():
 
 class MemcacheNamespaceTest(absltest.TestCase):
 
+  def setUp(self):
+    """Setup environment."""
+    namespace_manager.set_namespace(None)
+
   def tearDown(self):
     """Restore environment."""
     os.environ = dict(INITIAL_ENVIRON)
