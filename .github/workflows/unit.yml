@@ -26,6 +26,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install absl-py mock
-    - name: Test with absltest
+    - name: Test with pytest
       run: |
-        for f in `find tests -name '*.py'`; do python "$f"; done
+        pytest
