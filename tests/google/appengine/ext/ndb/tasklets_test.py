@@ -1,0 +1,984 @@
+#!/usr/bin/env python
+#
+# Copyright 2007 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""Tests for tasklets.py."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import os
+import pickle
+import random
+import re
+import sys
+import time
+import unittest as real_unittest
+
+from google.appengine.ext.ndb import context
+from google.appengine.ext.ndb import eventloop
+from google.appengine.ext.ndb import key
+from google.appengine.ext.ndb import model
+from google.appengine.ext.ndb import tasklets
+from google.appengine.ext.ndb import test_utils
+from google.appengine.ext.ndb import utils
+import six
+from six.moves import range
+
+from google.appengine.api import namespace_manager
+from google.appengine.api import taskqueue
+from google.appengine.datastore import datastore_pbs
+from google.appengine.datastore import datastore_rpc
+from absl.testing import absltest as unittest
+
+
+
+@tasklets.toplevel
+def toplevel_put_async(m):
+  m.put_async()
+  raise tasklets.Return(True)
+
+
+class MockClock(eventloop._Clock):
+  """A clock that is set manually."""
+
+  def __init__(self):
+    self._now = 0
+
+  def now(self):
+    return self._now
+
+  def sleep(self, seconds):
+    """Sleeps for the specified number of seconds."""
+    self._now += seconds
+
+
+class TaskletTests(test_utils.NDBTest):
+
+  def setUp(self):
+    super(TaskletTests, self).setUp()
+    if eventloop._EVENT_LOOP_KEY in os.environ:
+      del os.environ[eventloop._EVENT_LOOP_KEY]
+    if tasklets._CONTEXT_KEY in os.environ:
+      del os.environ[tasklets._CONTEXT_KEY]
+    self.ev = eventloop.get_event_loop()
+    self.log = []
+
+  the_module = tasklets
+
+  def universal_callback(self, *args):
+    self.log.append(args)
+
+  def testAddFlowException(self):
+    try:
+      self.assertRaises(TypeError, tasklets.add_flow_exception, 'abc')
+      self.assertRaises(TypeError, tasklets.add_flow_exception, str)
+      tasklets.add_flow_exception(ZeroDivisionError)
+      self.assertIn(ZeroDivisionError, tasklets._flow_exceptions)
+
+      @tasklets.tasklet
+      def foo():
+        1 / 0
+        yield
+      self.assertRaises(ZeroDivisionError, foo().get_result)
+    finally:
+      tasklets._init_flow_exceptions()
+
+  def testFuture_Constructor(self):
+    f = tasklets.Future()
+    self.assertEqual(f._result, None)
+    self.assertEqual(f._exception, None)
+    self.assertEqual(f._callbacks, [])
+
+  def testFuture_Repr(self):
+    f = tasklets.Future()
+    prefix = (r'<Future [\da-f]+ created by'
+              r'( testFuture_Repr\(tasklets_test.py:\d+\)|\?); ')
+    self.assertTrue(re.match(prefix + r'pending>$', repr(f)), repr(f))
+    f.set_result('abc')
+    self.assertTrue(re.match(prefix + r'result \'abc\'>$', repr(f)), repr(f))
+    f = tasklets.Future()
+    f.set_exception(RuntimeError('abc'))
+    self.assertTrue(re.match(prefix + r'exception RuntimeError: abc>$',
+                             repr(f)),
+                    repr(f))
+
+  def testFuture_Repr_TaskletWrapper(self):
+
+    prefix = r'<Future [\da-f]+ created by '
+    assert_func = self.assertRegexpMatches if six.PY2 else self.assertRegex
+
+    @tasklets.tasklet
+    @utils.positional(1)
+    def foo():
+      f1 = tasklets.Future()
+      expected_regex = prefix + r'foo\(tasklets_test.py:\d+\); pending>$'
+      actual_text = repr(f1)
+      assert_func(actual_text, expected_regex)
+
+      f1.set_result(None)
+      yield f1
+
+    f2 = foo()
+
+    expected_regex = (
+        prefix + r'testFuture_Repr_TaskletWrapper\(tasklets_test.py:\d+\) '
+        r'for tasklet foo\(tasklets_test.py:\d+\).*; pending>$')
+    actual_text = repr(f2)
+    assert_func(actual_text, expected_regex)
+
+    f2.check_success()
+
+  def testFuture_Done_State(self):
+    f = tasklets.Future()
+    self.assertFalse(f.done())
+    self.assertEqual(f.state, f.RUNNING)
+    f.set_result(42)
+    self.assertTrue(f.done())
+    self.assertEqual(f.state, f.FINISHING)
+
+  def testFuture_SetResult(self):
+    f = tasklets.Future()
+    f.set_result(42)
+    self.assertEqual(f._result, 42)
+    self.assertEqual(f._exception, None)
+    self.assertEqual(f.get_result(), 42)
+
+  def testFuture_SetException(self):
+    f = tasklets.Future()
+    err = RuntimeError(42)
+    f.set_exception(err)
+    self.assertEqual(f.done(), True)
+    self.assertEqual(f._exception, err)
+    self.assertEqual(f._result, None)
+    self.assertEqual(f.get_exception(), err)
+    self.assertRaises(RuntimeError, f.get_result)
+
+  def testFuture_AddDoneCallback_SetResult(self):
+    f = tasklets.Future()
+    f.add_callback(self.universal_callback, f)
+    self.assertEqual(self.log, [])
+    f.set_result(42)
+    eventloop.run()
+    self.assertEqual(self.log, [(f,)])
+
+  def testFuture_SetResult_AddDoneCallback(self):
+    f = tasklets.Future()
+    f.set_result(42)
+    self.assertEqual(f.get_result(), 42)
+    f.add_callback(self.universal_callback, f)
+    eventloop.run()
+    self.assertEqual(self.log, [(f,)])
+
+  def testFuture_AddDoneCallback_SetException(self):
+    f = tasklets.Future()
+    f.add_callback(self.universal_callback, f)
+    f.set_exception(RuntimeError(42))
+    eventloop.run()
+    self.assertEqual(self.log, [(f,)])
+    self.assertEqual(f.done(), True)
+
+  def create_futures(self):
+    self.futs = []
+    for i in range(5):
+      f = tasklets.Future()
+      f.add_callback(self.universal_callback, f)
+
+      def wake(fut, result):
+        fut.set_result(result)
+      self.ev.queue_call(i * 0.01, wake, f, i)
+      self.futs.append(f)
+    return set(self.futs)
+
+  def testFuture_WaitAny(self):
+    self.assertEqual(tasklets.Future.wait_any([]), None)
+    todo = self.create_futures()
+    while todo:
+      f = tasklets.Future.wait_any(todo)
+      todo.remove(f)
+    eventloop.run()
+    self.assertEqual(self.log, [(f,) for f in self.futs])
+
+  def testFuture_WaitAll(self):
+    todo = self.create_futures()
+    tasklets.Future.wait_all(todo)
+    self.assertEqual(self.log, [(f,) for f in self.futs])
+
+  def testSleep(self):
+
+    clock = MockClock()
+    log = []
+
+    eventloop.get_event_loop()
+    eventloop._state.event_loop = eventloop.EventLoop(clock)
+
+    @tasklets.tasklet
+    def foo():
+      yield tasklets.sleep(0.1)
+      log.append('COMPLETE')
+
+    foo()
+    self.assertEqual(len(log), 0, 'Task should not have run yet.')
+    eventloop.run()
+    self.assertEqual(len(log), 1, 'Expected task to have run.')
+    self.assertEqual(clock.now(), 0.1,
+                     'Expected the clock to have advanced exactly 0.1 seconds.')
+
+  def testMultiFuture(self):
+    @tasklets.tasklet
+    def foo(dt):
+      yield tasklets.sleep(dt)
+      raise tasklets.Return('foo-%s' % dt)
+
+    @tasklets.tasklet
+    def bar(n):
+      for _ in range(n):
+        yield tasklets.sleep(0.01)
+      raise tasklets.Return('bar-%d' % n)
+    bar5 = bar(5)
+    futs = [foo(0.05), foo(0.01), foo(0.03), bar(3), bar5, bar5]
+    mfut = tasklets.MultiFuture()
+    for fut in futs:
+      mfut.add_dependent(fut)
+    mfut.complete()
+    results = mfut.get_result()
+    self.assertEqual(set(results),
+                     set(['foo-0.01', 'foo-0.03', 'foo-0.05',
+                          'bar-3', 'bar-5']))
+
+  def testMultiFuture_PreCompleted(self):
+    @tasklets.tasklet
+    def foo():
+      yield tasklets.sleep(0.01)
+      raise tasklets.Return(42)
+    mfut = tasklets.MultiFuture()
+    dep = foo()
+    dep.wait()
+    mfut.add_dependent(dep)
+    mfut.complete()
+    eventloop.run()
+    self.assertTrue(mfut.done())
+    self.assertEqual(mfut.get_result(), [42])
+
+  def testMultiFuture_SetException(self):
+    mf = tasklets.MultiFuture()
+    f1 = tasklets.Future()
+    f2 = tasklets.Future()
+    f3 = tasklets.Future()
+    f2.set_result(2)
+    mf.putq(f1)
+    f1.set_result(1)
+    mf.putq(f2)
+    mf.putq(f3)
+    mf.putq(4)
+    self.ev.run()
+    mf.set_exception(ZeroDivisionError())
+    f3.set_result(3)
+    self.ev.run()
+    self.assertRaises(ZeroDivisionError, mf.get_result)
+
+  def testMultiFuture_ItemException(self):
+    mf = tasklets.MultiFuture()
+    f1 = tasklets.Future()
+    f2 = tasklets.Future()
+    f3 = tasklets.Future()
+    f2.set_result(2)
+    mf.putq(f1)
+    f1.set_exception(ZeroDivisionError())
+    mf.putq(f2)
+    mf.putq(f3)
+    f3.set_result(3)
+    self.ev.run()
+    mf.complete()
+    self.assertRaises(ZeroDivisionError, mf.get_result)
+
+  def testMultiFuture_Repr(self):
+    mf = tasklets.MultiFuture('info')
+    r1 = repr(mf)
+    mf.putq(1)
+    r2 = repr(mf)
+    f2 = tasklets.Future()
+    f2.set_result(2)
+    mf.putq(2)
+    r3 = repr(mf)
+    self.ev.run()
+    r4 = repr(mf)
+    f3 = tasklets.Future()
+    mf.putq(f3)
+    r5 = repr(mf)
+    mf.complete()
+    r6 = repr(mf)
+    f3.set_result(3)
+    self.ev.run()
+    r7 = repr(mf)
+    for r in r1, r2, r3, r4, r5, r6, r7:
+      self.assertTrue(
+          re.match(
+              r'<MultiFuture [\da-f]+ created by '
+              r'(testMultiFuture_Repr\(tasklets_test.py:\d+\)|\?) for info; ',
+              r))
+      if r is r7:
+        self.assertIn('result', r)
+      else:
+        self.assertIn('pending', r)
+
+  def testQueueFuture(self):
+    q = tasklets.QueueFuture()
+
+    @tasklets.tasklet
+    def produce_one(i):
+      yield tasklets.sleep(i * 0.01)
+      raise tasklets.Return(i)
+
+    @tasklets.tasklet
+    def producer():
+      q.putq(0)
+      for i in range(1, 10):
+        q.add_dependent(produce_one(i))
+      q.complete()
+
+    @tasklets.tasklet
+    def consumer():
+      for i in range(10):
+        val = yield q.getq()
+        self.assertEqual(val, i)
+      yield q
+      self.assertRaises(EOFError, q.getq().get_result)
+
+    @tasklets.tasklet
+    def foo():
+      yield producer(), consumer()
+    foo().get_result()
+
+  def testQueueFuture_Complete(self):
+    qf = tasklets.QueueFuture()
+    qf.putq(1)
+    f2 = tasklets.Future()
+    qf.putq(f2)
+    self.ev.run()
+    g1 = qf.getq()
+    g2 = qf.getq()
+    g3 = qf.getq()
+    f2.set_result(2)
+    self.ev.run()
+    qf.complete()
+    self.ev.run()
+    self.assertEqual(g1.get_result(), 1)
+    self.assertEqual(g2.get_result(), 2)
+    self.assertRaises(EOFError, g3.get_result)
+    self.assertRaises(EOFError, qf.getq().get_result)
+
+  def testQueueFuture_SetException(self):
+    qf = tasklets.QueueFuture()
+    f1 = tasklets.Future()
+    f1.set_result(1)
+    qf.putq(f1)
+    qf.putq(f1)
+    self.ev.run()
+    qf.putq(2)
+    self.ev.run()
+    f3 = tasklets.Future()
+    f3.set_exception(ZeroDivisionError())
+    qf.putq(f3)
+    self.ev.run()
+    f4 = tasklets.Future()
+    qf.putq(f4)
+    self.ev.run()
+    qf.set_exception(KeyError())
+    f4.set_result(4)
+    self.ev.run()
+    self.assertRaises(KeyError, qf.get_result)
+
+
+
+
+    self.assertEqual(qf.getq().get_result(), 1)
+    self.assertEqual(qf.getq().get_result(), 2)
+    self.assertRaises(ZeroDivisionError, qf.getq().get_result)
+    self.assertEqual(qf.getq().get_result(), 4)
+    self.assertRaises(KeyError, qf.getq().get_result)
+    self.assertRaises(KeyError, qf.getq().get_result)
+
+  def testQueueFuture_SetExceptionAlternative(self):
+    qf = tasklets.QueueFuture()
+    g1 = qf.getq()
+    qf.set_exception(KeyError())
+    self.ev.run()
+    self.assertRaises(KeyError, g1.get_result)
+
+  def testQueueFuture_ItemException(self):
+    qf = tasklets.QueueFuture()
+    qf.putq(1)
+    f2 = tasklets.Future()
+    qf.putq(f2)
+    f3 = tasklets.Future()
+    f3.set_result(3)
+    self.ev.run()
+    qf.putq(f3)
+    self.ev.run()
+    f4 = tasklets.Future()
+    f4.set_exception(ZeroDivisionError())
+    self.ev.run()
+    qf.putq(f4)
+    f5 = tasklets.Future()
+    qf.putq(f5)
+    self.ev.run()
+    qf.complete()
+    self.ev.run()
+    f2.set_result(2)
+    self.ev.run()
+    f5.set_exception(KeyError())
+    self.ev.run()
+
+
+
+    self.assertEqual(qf.getq().get_result(), 1)
+    self.assertEqual(qf.getq().get_result(), 3)
+    self.assertRaises(ZeroDivisionError, qf.getq().get_result)
+    self.assertEqual(qf.getq().get_result(), 2)
+    self.assertRaises(KeyError, qf.getq().get_result)
+    self.assertRaises(EOFError, qf.getq().get_result)
+    self.assertRaises(EOFError, qf.getq().get_result)
+
+  def testSerialQueueFuture(self):
+    q = tasklets.SerialQueueFuture()
+
+    @tasklets.tasklet
+    def produce_one(i):
+      yield tasklets.sleep(random.randrange(10) * 0.01)
+      raise tasklets.Return(i)
+
+    @tasklets.tasklet
+    def producer():
+      for i in range(10):
+        q.add_dependent(produce_one(i))
+      q.complete()
+
+    @tasklets.tasklet
+    def consumer():
+      for i in range(10):
+        val = yield q.getq()
+        self.assertEqual(val, i)
+      yield q
+      self.assertRaises(EOFError, q.getq().get_result)
+      yield q
+
+    @tasklets.synctasklet
+    def foo():
+      yield producer(), consumer()
+    foo()
+
+  def testSerialQueueFuture_Complete(self):
+    sqf = tasklets.SerialQueueFuture()
+    g1 = sqf.getq()
+    sqf.complete()
+    self.assertRaises(EOFError, g1.get_result)
+
+  def testSerialQueueFuture_SetException(self):
+    sqf = tasklets.SerialQueueFuture()
+    g1 = sqf.getq()
+    sqf.set_exception(KeyError())
+    self.assertRaises(KeyError, g1.get_result)
+
+  def testSerialQueueFuture_ItemException(self):
+    sqf = tasklets.SerialQueueFuture()
+    g1 = sqf.getq()
+    f1 = tasklets.Future()
+    sqf.putq(f1)
+    sqf.complete()
+    f1.set_exception(ZeroDivisionError())
+    self.assertRaises(ZeroDivisionError, g1.get_result)
+
+  def testSerialQueueFuture_PutQ_1(self):
+    sqf = tasklets.SerialQueueFuture()
+    f1 = tasklets.Future()
+    sqf.putq(f1)
+    sqf.complete()
+    f1.set_result(1)
+    self.assertEqual(sqf.getq().get_result(), 1)
+
+  def testSerialQueueFuture_PutQ_2(self):
+    sqf = tasklets.SerialQueueFuture()
+    sqf.putq(1)
+    sqf.complete()
+    self.assertEqual(sqf.getq().get_result(), 1)
+
+  def testSerialQueueFuture_PutQ_3(self):
+    sqf = tasklets.SerialQueueFuture()
+    g1 = sqf.getq()
+    sqf.putq(1)
+    sqf.complete()
+    self.assertEqual(g1.get_result(), 1)
+
+  def testSerialQueueFuture_PutQ_4(self):
+    sqf = tasklets.SerialQueueFuture()
+    g1 = sqf.getq()
+    f1 = tasklets.Future()
+    sqf.putq(f1)
+    sqf.complete()
+    f1.set_result(1)
+    self.assertEqual(g1.get_result(), 1)
+
+  def testSerialQueueFuture_GetQ(self):
+    sqf = tasklets.SerialQueueFuture()
+    sqf.set_exception(KeyError())
+    self.assertRaises(KeyError, sqf.getq().get_result)
+
+  def testReducingFuture(self):
+    def reducer(arg):
+      return sum(arg)
+    rf = tasklets.ReducingFuture(reducer, batch_size=10)
+    for i in range(10):
+      rf.putq(i)
+    for i in range(10, 20):
+      f = tasklets.Future()
+      rf.putq(f)
+      f.set_result(i)
+    rf.complete()
+    self.assertEqual(rf.get_result(), sum(range(20)))
+
+  def testReducingFuture_Empty(self):
+    def reducer(_):
+      self.fail()
+    rf = tasklets.ReducingFuture(reducer)
+    rf.complete()
+    self.assertEqual(rf.get_result(), None)
+
+  def testReducingFuture_OneItem(self):
+    def reducer(_):
+      self.fail()
+    rf = tasklets.ReducingFuture(reducer)
+    rf.putq(1)
+    rf.complete()
+    self.assertEqual(rf.get_result(), 1)
+
+  def testReducingFuture_ItemException(self):
+    def reducer(arg):
+      return sum(arg)
+    rf = tasklets.ReducingFuture(reducer)
+    f1 = tasklets.Future()
+    f1.set_exception(ZeroDivisionError())
+    rf.putq(f1)
+    rf.complete()
+    self.assertRaises(ZeroDivisionError, rf.get_result)
+
+  def testReducingFuture_ReducerException_1(self):
+    def reducer(arg):
+      raise ZeroDivisionError
+    rf = tasklets.ReducingFuture(reducer)
+    rf.putq(1)
+    rf.putq(1)
+    rf.complete()
+    self.assertRaises(ZeroDivisionError, rf.get_result)
+
+  def testReducingFuture_ReducerException_2(self):
+    def reducer(arg):
+      raise ZeroDivisionError
+    rf = tasklets.ReducingFuture(reducer, batch_size=2)
+    rf.putq(1)
+    rf.putq(1)
+    rf.putq(1)
+    rf.complete()
+    self.assertRaises(ZeroDivisionError, rf.get_result)
+
+  def testReducingFuture_ReducerFuture_1(self):
+    def reducer(arg):
+      f = tasklets.Future()
+      f.set_result(sum(arg))
+      return f
+    rf = tasklets.ReducingFuture(reducer, batch_size=2)
+    rf.putq(1)
+    rf.putq(1)
+    rf.complete()
+    self.assertEqual(rf.get_result(), 2)
+
+  def testReducingFuture_ReducerFuture_2(self):
+
+    def reducer(arg):
+      res = sum(arg)
+      if len(arg) < 3:
+        f = tasklets.Future()
+        f.set_result(res)
+        res = f
+      return res
+    rf = tasklets.ReducingFuture(reducer, batch_size=3)
+    rf.putq(1)
+    rf.putq(1)
+    rf.putq(1)
+    rf.putq(1)
+    rf.complete()
+    self.assertEqual(rf.get_result(), 4)
+
+  def testGetReturnValue(self):
+    r0 = tasklets.Return()
+    r1 = tasklets.Return(42)
+    r2 = tasklets.Return(42, 'hello')
+    r3 = tasklets.Return((1, 2, 3))
+    self.assertEqual(tasklets.get_return_value(r0), None)
+    self.assertEqual(tasklets.get_return_value(r1), 42)
+    self.assertEqual(tasklets.get_return_value(r2), (42, 'hello'))
+    self.assertEqual(tasklets.get_return_value(r3), (1, 2, 3))
+
+  def testTasklets_Basic(self):
+    @tasklets.tasklet
+    def t1():
+      a = yield t2(3)
+      b = yield t3(2)
+      raise tasklets.Return(a + b)
+
+    @tasklets.tasklet
+    def t2(n):
+      raise tasklets.Return(n)
+
+    @tasklets.tasklet
+    def t3(n):
+      return n
+    x = t1()
+    self.assertIsInstance(x, tasklets.Future)
+    y = x.get_result()
+    self.assertEqual(y, 5)
+
+  def testTasklets_Raising(self):
+    self.ExpectWarnings()
+
+    @tasklets.tasklet
+    def t1():
+      f = t2(True)
+      try:
+        yield f
+      except RuntimeError as err:
+        self.assertEqual(f.get_exception(), err)
+        raise tasklets.Return(str(err))
+
+    @tasklets.tasklet
+    def t2(error):
+      if error:
+        raise RuntimeError('hello')
+      else:
+        yield tasklets.Future()
+    x = t1()
+    y = x.get_result()
+    self.assertEqual(y, 'hello')
+
+  def testTasklets_YieldRpcs(self):
+    @tasklets.tasklet
+    def main_tasklet():
+      rpc1 = self.conn.async_get(None, [])
+      rpc2 = self.conn.async_put(None, [])
+      res1 = yield rpc1
+      res2 = yield rpc2
+      raise tasklets.Return(res1, res2)
+    f = main_tasklet()
+    result = f.get_result()
+    self.assertEqual(result, ([], []))
+
+  def testTasklet_YieldTuple(self):
+    @tasklets.tasklet
+    def fib(n):
+      if n <= 1:
+        raise tasklets.Return(n)
+      a, b = yield fib(n - 1), fib(n - 2)
+
+      self.assertTrue(a >= b, (a, b))
+      raise tasklets.Return(a + b)
+    fut = fib(10)
+    val = fut.get_result()
+    self.assertEqual(val, 55)
+
+  def testTasklet_YieldTupleError(self):
+    @tasklets.tasklet
+    def good():
+      yield tasklets.sleep(0)
+
+    @tasklets.tasklet
+    def bad():
+      raise ZeroDivisionError
+
+    @tasklets.tasklet
+    def foo():
+      try:
+        yield good(), bad(), good()
+        self.assertFalse('Should have raised ZeroDivisionError')
+      except ZeroDivisionError:
+        pass
+    foo().check_success()
+
+  def testTasklet_YieldTupleTypeError(self):
+    self.ExpectWarnings()
+
+    @tasklets.tasklet
+    def good():
+      yield tasklets.sleep(0)
+
+    @tasklets.tasklet
+    def bad():
+      raise ZeroDivisionError
+      yield tasklets.sleep(0)
+
+    @tasklets.tasklet
+    def foo():
+      try:
+        yield good(), bad(), 42
+      except TypeError:
+        pass
+      else:
+        self.assertFalse('Should have raised TypeError')
+    foo().check_success()
+
+  def testMultiSingleCombinationYield(self):
+    @tasklets.tasklet
+    def foo():
+      class Test(model.Model):
+        k = model.KeyProperty()
+        ks = model.KeyProperty(repeated=True)
+
+      t = Test()
+      t.put()
+
+      t1 = Test(k=t.key, ks=[t.key, t.key])
+      t1.put()
+
+      t1 = t1.key.get()
+      obj, objs = yield t1.k.get_async(), model.get_multi_async(t1.ks)
+      self.assertEqual(obj.key, t1.k)
+      self.assertEqual([obj.key for obj in objs], t1.ks)
+
+    foo().get_result()
+
+  def testAddContextDecorator(self):
+    class Demo(object):
+
+      @tasklets.toplevel
+      def method(self, arg):
+        return tasklets.get_context(), arg
+
+      @tasklets.toplevel
+      def method2(self, **kwds):
+        return tasklets.get_context(), kwds
+    a = Demo()
+    old_ctx = tasklets.get_context()
+    ctx, arg = a.method(42)
+    self.assertIsInstance(ctx, context.Context)
+    self.assertEqual(arg, 42)
+    self.assertIsNot(ctx, old_ctx)
+
+    old_ctx = tasklets.get_context()
+    ctx, kwds = a.method2(foo='bar', baz='ding')
+    self.assertIsInstance(ctx, context.Context)
+    self.assertEqual(kwds, dict(foo='bar', baz='ding'))
+    self.assertIsNot(ctx, old_ctx)
+
+  def testStickyDefaultNamespace(self):
+    class Employee(model.Model):
+      name = model.StringProperty()
+
+    @tasklets.tasklet
+    def create_async(name):
+      emp = Employee(name=name)
+      self.assertEqual(namespace_manager.get_namespace(), 'before')
+      fut = emp.put_async()
+      namespace_manager.set_namespace('inner1')
+      key = yield fut
+      self.assertEqual(key.namespace(), 'before')
+      self.assertEqual(namespace_manager.get_namespace(), 'inner1')
+      namespace_manager.set_namespace('inner2')
+      raise tasklets.Return(key)
+    namespace_manager.set_namespace('before')
+    fut = create_async('name')
+    namespace_manager.set_namespace('after')
+    key = fut.get_result()
+    self.assertEqual(key.namespace(), 'before')
+    self.assertEqual(namespace_manager.get_namespace(), 'after')
+
+  def testCanPickleTopLevel(self):
+    class Employee(model.Model):
+      name = model.StringProperty()
+    m = Employee(name='Patrick', id='mykey')
+    file_cls = six.StringIO if six.PY2 else six.BytesIO
+    file_obj = file_cls()
+    pickle.dump(toplevel_put_async, file_obj)
+    fn = pickle.load(file_cls(file_obj.getvalue()))
+    self.assertEqual(fn(m), True)
+    self.assertEqual(key.Key(Employee, 'mykey').get().name, 'Patrick')
+
+
+class TracebackTests(test_utils.NDBTest):
+  """Checks that errors result in reasonable tracebacks."""
+
+  def testBasicError(self):
+    self.ExpectWarnings()
+    frames = [sys._getframe()]
+
+    @tasklets.tasklet
+    def level3():
+      frames.append(sys._getframe())
+      raise RuntimeError('hello')
+      yield
+
+    @tasklets.tasklet
+    def level2():
+      frames.append(sys._getframe())
+      yield level3()
+
+    @tasklets.tasklet
+    def level1():
+      frames.append(sys._getframe())
+      yield level2()
+
+    @tasklets.tasklet
+    def level0():
+      frames.append(sys._getframe())
+      yield level1()
+    fut = level0()
+    try:
+      fut.check_success()
+    except RuntimeError as err:
+      _, _, tb = sys.exc_info()
+      self.assertEqual(str(err), 'hello')
+      tbframes = []
+
+
+
+      ignored_co_names = set([
+          '_help_tasklet_along', 'check_success', 'reraise'])
+
+      while tb is not None:
+        co_name = tb.tb_frame.f_code.co_name
+        if co_name not in ignored_co_names:
+          tbframes.append(tb.tb_frame)
+        tb = tb.tb_next
+      self.assertEqual(frames, tbframes)
+    else:
+      self.fail('Expected RuntimeError not raised')
+
+  @tasklets.synctasklet
+  def provoke_yield_error(self):
+    @tasklets.tasklet
+    def bad_user_code():
+      yield 'abc'
+    yield bad_user_code()
+
+  def testYieldError(self):
+    try:
+      self.provoke_yield_error()
+    except RuntimeError as err:
+      self.assertTrue(re.match(
+          "A tasklet should not yield a plain value: "
+          ".*bad_user_code.*yielded 'abc'$",
+          str(err)))
+
+
+@real_unittest.skipUnless(datastore_pbs._CLOUD_DATASTORE_ENABLED,
+                          "V1 must be supported to run V1 tests.")
+class CloudDatastoreContextCreationTests(test_utils.NDBCloudDatastoreV1Test):
+  """Context tests that use a Cloud Datastore V1 connection."""
+
+  def setUp(self):
+    super(CloudDatastoreContextCreationTests, self).setUp()
+    self.HRTest()
+    self.old_env = dict(os.environ)
+    del os.environ['APPLICATION_ID']
+
+  def tearDown(self):
+    super(CloudDatastoreContextCreationTests, self).setUp()
+    os.environ.clear()
+    os.environ.update(self.old_env)
+
+  def testCloudDatastoreContext_ProjectIdNotSufficient(self):
+    os.environ['DATASTORE_PROJECT_ID'] = 'project'
+
+    self.assertRaisesRegex(ValueError,
+                            'Could not determine app id\..*',
+                            tasklets.make_default_context)
+
+  def testCloudDatastoreContext_UseProjectIdAsAppId(self):
+    os.environ['DATASTORE_PROJECT_ID'] = 'project'
+    os.environ['DATASTORE_USE_PROJECT_ID_AS_APP_ID'] = 'true'
+    ctx = tasklets.make_default_context()
+    self.assertEqual(datastore_rpc._CLOUD_DATASTORE_V1, ctx._conn._api_version)
+
+  def testCloudDatastoreContext_AppIdAndUseProjectIdAsAppId(self):
+    os.environ['DATASTORE_PROJECT_ID'] = 'project'
+    os.environ['DATASTORE_USE_PROJECT_ID_AS_APP_ID'] = 'true'
+    os.environ['DATASTORE_APP_ID'] = 's~project'
+
+    self.assertRaisesRegex(ValueError,
+                            'App id was provided .* but .* was set to true\.',
+                            tasklets.make_default_context)
+
+  def testCloudDatastoreContext_AppId(self):
+    os.environ['DATASTORE_PROJECT_ID'] = 'project'
+    os.environ['DATASTORE_APP_ID'] = 's~project'
+    ctx = tasklets.make_default_context()
+    self.assertEqual(datastore_rpc._CLOUD_DATASTORE_V1, ctx._conn._api_version)
+
+  def testCloudDatastoreContext_DifferentAppId(self):
+    os.environ['DATASTORE_PROJECT_ID'] = 'project'
+    os.environ['DATASTORE_APP_ID'] = 's~anotherproject'
+
+    self.assertRaises(ValueError, tasklets.make_default_context)
+
+  def testCloudDatastoreContext_ManyAppIds(self):
+    os.environ['DATASTORE_PROJECT_ID'] = 'project'
+    os.environ['DATASTORE_APP_ID'] = 's~project'
+    os.environ['DATASTORE_ADDITIONAL_APP_IDS'] = 's~anotherapp,s~andanother'
+    ctx = tasklets.make_default_context()
+    converter = ctx._conn.adapter.get_entity_converter()
+    self.assertEqual('s~anotherapp', converter.project_to_app_id('anotherapp'))
+    self.assertEqual('s~andanother', converter.project_to_app_id('andanother'))
+
+  def testCloudDatastoreContextWithExistingApplicationId(self):
+    os.environ['DATASTORE_APP_ID'] = 's~project'
+    os.environ['DATASTORE_PROJECT_ID'] = 'project'
+    os.environ['APPLICATION_ID'] = 's~a-different-project'
+
+    self.assertRaises(ValueError, tasklets.make_default_context)
+
+  def testContext_MemcacheUnavailable(self):
+    os.environ['DATASTORE_PROJECT_ID'] = self.APP_ID
+    os.environ['DATASTORE_USE_PROJECT_ID_AS_APP_ID'] = 'true'
+    tasklets.set_context(tasklets.make_default_context())
+    key = model.Key('Foo', 1)
+    ent = model.Expando(key=key, bar=1)
+    ctx = tasklets.get_context()
+    ctx.set_memcache_policy(True)
+    self.assertRaises(NotImplementedError, ctx.put(ent).get_result)
+
+  def testContext_TaskQueueUnavailable(self):
+    os.environ['DATASTORE_PROJECT_ID'] = self.APP_ID
+    os.environ['DATASTORE_USE_PROJECT_ID_AS_APP_ID'] = 'true'
+    tasklets.set_context(tasklets.make_default_context())
+    self.assertRaises(NotImplementedError, taskqueue.add, url='/')
+
+
+if __name__ == '__main__':
+  unittest.main()
