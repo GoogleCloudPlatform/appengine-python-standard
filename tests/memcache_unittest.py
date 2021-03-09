@@ -102,16 +102,13 @@ def MakeArbitraryGetRequest():
 
 class MemcacheNamespaceTest(absltest.TestCase):
 
-  def setUp(self):
-    """Setup environment."""
-    namespace_manager.set_namespace(None)
-
   def tearDown(self):
     """Restore environment."""
     os.environ = dict(INITIAL_ENVIRON)
 
   def testAddNamespacePart(self):
     """Test _add_namespace_part and related methods."""
+    namespace_manager.set_namespace(None)
     request = MakeArbitraryGetRequest()
     expected = MemcacheGetRequest()
     expected.CopyFrom(request)
