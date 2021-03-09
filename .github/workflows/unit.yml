@@ -28,4 +28,4 @@ jobs:
         python -m pip install absl-py mock
     - name: Test with absltest
       run: |
-        for f in `find tests -name '*.py'` do python "$f"; done
+        for f in `find tests -name '*.py'`; do python "$f"; done
