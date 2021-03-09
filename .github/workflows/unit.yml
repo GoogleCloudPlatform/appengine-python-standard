@@ -25,7 +25,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        python -m pip install protobuf ruamel.yaml==0.15 six urllib3
+        python -m pip install protobuf ruamel.yaml six urllib3
         python -m pip install absl-py mock pytest
     - name: Test with pytest
       run: |
