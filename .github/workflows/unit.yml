@@ -9,24 +9,19 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9]
-
+        python: [3.7, 3.8, 3.9]
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Use Python ${{ matrix.python }}
       uses: actions/setup-python@v2
       with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install absl-py mock
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Test with absltest
-      run: |
-        for f in tests/*.py; do python "$f"; done
+        python-version: ${{ matrix.python }}
+    - name: Install tox
+      run: python -m pip install tox
+    - name: Test
+      run: python -m tox -e py
