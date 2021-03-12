@@ -22,9 +22,9 @@
 
 from __future__ import absolute_import
 
+from absl import app
 from google.appengine.api import backendinfo
 from google.appengine.api import validation
-from absl import app
 from absl.testing import absltest
 
 
@@ -322,4 +322,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  absltest.main()
+  absltest.main(main)
