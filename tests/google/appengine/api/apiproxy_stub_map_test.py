@@ -30,11 +30,11 @@ import traceback
 
 import google
 
+from absl import app
 from six.moves import range
 
 from google.appengine.api import apiproxy_rpc
 from google.appengine.api import apiproxy_stub_map
-from absl import app
 from absl.testing import absltest
 
 
@@ -557,4 +557,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  absltest.main()
+  absltest.main(main)

@@ -27,9 +27,9 @@ from __future__ import print_function
 
 import enum
 
+from absl import app
 from google.appengine.api import cmp_compat
 
-from absl import app
 from absl.testing import absltest
 
 
@@ -152,4 +152,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  absltest.main()
+  absltest.main(main)
