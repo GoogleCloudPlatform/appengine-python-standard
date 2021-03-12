@@ -14,6 +14,27 @@ In your app's `app.yaml`, add the following:
 
 `app_engine_apis: true`
 
+In your `main.py`, import google.appengine.api.wrap_wsgi_app and call it on your
+WSGI app object.
+
+Example for a standard WSGI app:
+
+~~~
+  import google.appengine.api
+
+  app = google.appengine.api.wrap_wsgi_app(app)
+~~~
+
+Example for a Flask app:
+
+~~~
+  import google.appengine.api
+  from flask import Flask, request
+
+  app = Flask(__name__)
+  app.wsgi_app = google.appengine.api.wrap_wsgi_app(app.wsgi_app)
+~~~
+
 Then deploy your app as usual, with `gcloud app deploy`.  The following modules
 are available:
 
