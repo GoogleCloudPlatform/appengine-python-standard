@@ -207,6 +207,8 @@ class VMEngineRPC(apiproxy_rpc.RPC):
     api_host = os.environ.get('API_HOST', SERVICE_BRIDGE_HOST)
     api_port = os.environ.get('API_PORT', API_PORT)
 
+    if ':' in api_host:
+      api_host = '[{}]'.format(api_host)
     endpoint_url = six.moves.urllib.parse.urlunparse(
         ('http', '%s:%s' % (api_host, api_port), PROXY_PATH, '', '', ''))
 

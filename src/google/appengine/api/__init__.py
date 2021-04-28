@@ -34,9 +34,12 @@ Example for a Flask app:
   app.wsgi_app = google.appengine.api.wrap_wsgi_app(app.wsgi_app)
 
 """
+import os
 
 
-def wrap_wsgi_app(app):
+
+
+def wrap_wsgi_app(app, use_legacy_context_mode=True):
   """Wrap a WSGI app with middlewares required to access App Engine APIs."""
 
   from google.appengine.ext.vmruntime import middlewares
@@ -44,22 +47,29 @@ def wrap_wsgi_app(app):
 
   vmstub.Register(vmstub.VMStub())
 
-  app = middlewares.ErrorLoggingMiddleware(app)
-  app = middlewares.OsEnvSetupMiddleware(app)
-
-  class FakeAppinfoExternal:
-    """As we don't have an app.yaml to parse, just assume threadsafe."""
-    threadsafe = True
-
-  app = middlewares.WsgiEnvSettingMiddleware(app, FakeAppinfoExternal)
-  app = middlewares.WaitForResponseMiddleware(app)
-  app = middlewares.UseRequestSecurityTicketForApiMiddleware(app)
-  app = middlewares.CallbackMiddleware(app)
 
 
+  os.environ['APPLICATION_ID'] = os.environ['GAE_APPLICATION']
 
+  def if_legacy(array):
+    return array if use_legacy_context_mode else []
 
+  return middlewares.Wrap(
+      app,
+      if_legacy([
+          middlewares.MakeInitLegacyRequestOsEnvironMiddleware(),
+      ]) + [
+          middlewares.RunInNewContextMiddleware,
+          middlewares.SetContextFromHeadersMiddleware,
+          middlewares.CallbackMiddleware,
+          middlewares.UseRequestSecurityTicketForApiMiddleware,
+          middlewares.WaitForResponseMiddleware,
+          middlewares.WsgiEnvSettingMiddleware,
 
-  app = middlewares.InitRequestEnvironMiddleware(app, copy_gae_application=True)
-
-  return app
+          middlewares.MakeLegacyWsgiEnvSettingMiddleware(),
+      ] + if_legacy([
+          middlewares.LegacyWsgiRemoveXAppenginePrefixMiddleware,
+          middlewares.LegacyCopyWsgiEnvToOsEnvMiddleware,
+      ]) + [
+          middlewares.ErrorLoggingMiddleware,
+      ])

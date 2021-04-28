@@ -21,18 +21,20 @@ from __future__ import division
 from __future__ import print_function
 
 import binascii
+import functools
 import logging
 import logging.handlers
 import os
 import sys
 import traceback
 
-import six
-from six.moves import urllib
-
+import contextvars
 from google.appengine.ext.vmruntime import callback
 from google.appengine.ext.vmruntime import vmstub
+from google.appengine.runtime import context
 from google.appengine.runtime import request_environment
+import six
+from six.moves import urllib
 
 
 
@@ -74,36 +76,43 @@ LOCAL_OVERRIDABLE_VARS = [
 ]
 
 
-X_APPENGINE_USER_IP_ENV_KEY = 'HTTP_X_APPENGINE_USER_IP'
+def middleware(f):
+  """Function decorator for making WSGI middlewares."""
+  return functools.update_wrapper(
+      lambda app: lambda wsgi_env, start_resp: f(app, wsgi_env, start_resp),
+      f)
 
-WSGI_REMOTE_ADDR_ENV_KEY = 'REMOTE_ADDR'
+
+def Wrap(app, middlewares):
+  """Wrap(app, [a,b,c]) is equivalent to a(b(c(app)))."""
+  return functools.reduce(lambda app, mw: mw(app), reversed(middlewares), app)
 
 
-def UseRequestSecurityTicketForApiMiddleware(app):
+@middleware
+def UseRequestSecurityTicketForApiMiddleware(app, wsgi_env, start_response):
   """WSGI middleware wrapper that sets the thread to use the security ticket.
 
   This sets up the appengine api so that if a security ticket is passed in with
   the request, it will be used.
 
   Args:
-    app: (callable) a WSGI app per PEP 333.
+    app: (callable) a WSGI app per PEP 3333.
+    wsgi_env: see PEP 3333
+    start_response: see PEP 3333
 
   Returns:
     A wrapped <app>, which is also a valid WSGI app.
   """
+  try:
+    vmstub.VMStub.SetUseRequestSecurityTicketForThread(True)
+    return app(wsgi_env, start_response)
+  finally:
 
-  def TicketWrapper(wsgi_env, start_response):
-    try:
-      vmstub.VMStub.SetUseRequestSecurityTicketForThread(True)
-      return app(wsgi_env, start_response)
-    finally:
-
-      vmstub.VMStub.SetUseRequestSecurityTicketForThread(False)
-
-  return TicketWrapper
+    vmstub.VMStub.SetUseRequestSecurityTicketForThread(False)
 
 
-def WaitForResponseMiddleware(app):
+@middleware
+def WaitForResponseMiddleware(app, wsgi_env, start_response):
   """WSGI middleware wrapper that waits until response is ready.
 
   Some middlewares here and some external middlewares rely on behavior that app
@@ -114,24 +123,22 @@ def WaitForResponseMiddleware(app):
   instead of `return app()` and this one should be removed.
 
   Args:
-    app: (callable) a WSGI app per PEP 333.
+    app: (callable) a WSGI app per PEP 3333.
+    wsgi_env: see PEP 3333
+    start_response: see PEP 3333
 
   Returns:
     A wrapped <app>, which is also a valid WSGI app.
   """
-  def Wrapper(wsgi_env, start_response):
-    return list(app(wsgi_env, start_response))
-  return Wrapper
+  return list(app(wsgi_env, start_response))
 
 
-def ErrorLoggingMiddleware(app):
+@middleware
+def ErrorLoggingMiddleware(app, wsgi_env, start_response):
   """Catch and log unhandled errors for the given app."""
-
-  def ErrorLoggingWrapper(wsgi_env, start_response):
-    """Wrap the application into an error handler."""
-    try:
-      return app(wsgi_env, start_response)
-    except:
+  try:
+    return app(wsgi_env, start_response)
+  except:
 
 
 
@@ -140,15 +147,13 @@ def ErrorLoggingMiddleware(app):
 
 
 
-      log_message = traceback.format_exception(
-          sys.exc_info()[0],
-          sys.exc_info()[1],
-          sys.exc_info()[2])
+    log_message = traceback.format_exception(
+        sys.exc_info()[0],
+        sys.exc_info()[1],
+        sys.exc_info()[2])
 
-      logging.error(''.join(log_message))
-      raise
-
-  return ErrorLoggingWrapper
+    logging.error(''.join(log_message))
+    raise
 
 
 def _MakeRequestIdHash(log_id):
@@ -168,82 +173,100 @@ def _MakeRequestIdHash(log_id):
   return request_id_hash_hex
 
 
-def WsgiEnvSettingMiddleware(app, appinfo_external):
-  """Modify the wsgi env variable according to this application."""
+@middleware
+def WsgiEnvSettingMiddleware(app, wsgi_env, start_response):
+  """Initialize wsgi_env with reasonable values derived from HTTP headers."""
+
+  https = wsgi_env.get('HTTP_X_APPENGINE_HTTPS')
+  if https is not None:
+    wsgi_env['HTTPS'] = https
 
 
 
 
-  def SetWsgiEnv(wsgi_env, start_response):
-    """The middleware WSGI app."""
 
 
 
-    for key in LOCAL_OVERRIDABLE_VARS:
-      val = os.environ.get(key)
-      if val:
-        wsgi_env['HTTP_X_APPENGINE_' + key] = val
 
 
-    wsgi_env.setdefault('HTTP_X_APPENGINE_AUTH_DOMAIN', 'gmail.com')
-    wsgi_env.setdefault('HTTP_X_APPENGINE_USER_IS_ADMIN', '0')
 
-    log_id = wsgi_env.get('HTTP_X_APPENGINE_REQUEST_LOG_ID')
-    if log_id:
-      wsgi_env['HTTP_X_APPENGINE_REQUEST_ID_HASH'] = _MakeRequestIdHash(log_id)
+  protocol = wsgi_env.get('HTTP_X_FORWARDED_PROTO')
+  if protocol is not None:
+    wsgi_env['wsgi.url_scheme'] = protocol
+    if protocol == 'http':
+      wsgi_env['SERVER_PORT'] = '80'
+    elif protocol == 'https':
+      wsgi_env['SERVER_PORT'] = '443'
+    else:
+      logging.warning('Unrecognized value for HTTP_X_FORWARDED_PROTO (%s)'
+                      ", won't modify SERVER_PORT", protocol)
+
+  http_host = wsgi_env.get('HTTP_HOST')
+  if http_host is not None:
+    server_name = urllib.parse.urlparse('//' + http_host).hostname
+    wsgi_env['SERVER_NAME'] = server_name
 
 
-    for key in ENV_VARS_FROM_HTTP_X_APPENGINE_HEADERS:
-      value = wsgi_env.get('HTTP_X_APPENGINE_' + key)
-      if value:
-        wsgi_env[key] = value
 
+  user_ip = wsgi_env.get('HTTP_X_APPENGINE_USER_IP')
+  if user_ip is not None:
+    wsgi_env['REMOTE_ADDR'] = user_ip
+
+  return app(wsgi_env, start_response)
+
+
+@middleware
+def SetContextFromHeadersMiddleware(app, wsgi_env, start_response):
+  """Set the contextvars from the X_APPENGINE headers."""
+  context.init_from_wsgi_environ(wsgi_env)
+  return app(wsgi_env, start_response)
+
+
+@middleware
+def OverrideHttpHeadersFromOsEnvironMiddleware(app, wsgi_env, start_response):
+  """Override certain HTTP headers with env vars for testing."""
+  for key in LOCAL_OVERRIDABLE_VARS:
+    val = os.environ.get(key)
+    if val is not None:
+      wsgi_env['HTTP_X_APPENGINE_'+key] = val
+  return app(wsgi_env, start_response)
+
+
+@middleware
+def LegacyWsgiRemoveXAppenginePrefixMiddleware(app, wsgi_env, start_response):
+  """Reset HTTP_X_APPENGINE_<foo> as just <foo>."""
+
+  wsgi_env.setdefault('HTTP_X_APPENGINE_AUTH_DOMAIN', 'gmail.com')
+  wsgi_env.setdefault('HTTP_X_APPENGINE_USER_IS_ADMIN', '0')
+  for key in ENV_VARS_FROM_HTTP_X_APPENGINE_HEADERS:
+    value = wsgi_env.get('HTTP_X_APPENGINE_' + key)
+    if value is not None:
+      wsgi_env[key] = value
+  return app(wsgi_env, start_response)
+
+
+def MakeLegacyWsgiEnvSettingMiddleware(threadsafe=None):
+  """Set wsgi_env like it was set in python27."""
+
+  @middleware
+  def LegacyWsgiEnvSettingMiddleware(app, wsgi_env, start_response):
 
 
 
     wsgi_env['CLOUD_TRACE_ENABLE_STACK_TRACE'] = ''
     if 'GAE_RUNTIME' in os.environ:
       wsgi_env['GAE_RUNTIME'] = os.environ['GAE_RUNTIME']
-    wsgi_env['wsgi.multithread'] = appinfo_external.threadsafe
-
-
-
-
-
-
-
-
-
-
-    protocol = wsgi_env.get('HTTP_X_FORWARDED_PROTO')
-    if protocol:
-      wsgi_env['wsgi.url_scheme'] = protocol
-
-      if protocol == 'http':
-        wsgi_env['SERVER_PORT'] = '80'
-      elif protocol == 'https':
-        wsgi_env['SERVER_PORT'] = '443'
-      else:
-        logging.warning('Unrecognized value for HTTP_X_FORWARDED_PROTO (%s)'
-                        ", won't modify SERVER_PORT", protocol)
-
-    http_host = wsgi_env.get('HTTP_HOST')
-    if http_host:
-      server_name = urllib.parse.urlparse('//' + http_host).hostname
-      wsgi_env['SERVER_NAME'] = server_name
-
-
-
-    user_ip = wsgi_env.get(X_APPENGINE_USER_IP_ENV_KEY)
-    if user_ip:
-      wsgi_env[WSGI_REMOTE_ADDR_ENV_KEY] = user_ip
-
+    if threadsafe is not None:
+      wsgi_env['wsgi.multithread'] = threadsafe
+    log_id = wsgi_env.get('HTTP_X_APPENGINE_REQUEST_LOG_ID')
+    if log_id is not None:
+      wsgi_env['HTTP_X_APPENGINE_REQUEST_ID_HASH'] = _MakeRequestIdHash(log_id)
     return app(wsgi_env, start_response)
 
-  return SetWsgiEnv
+  return LegacyWsgiEnvSettingMiddleware
 
 
-def InitRequestEnvironMiddleware(app, copy_gae_application=False):
+def MakeInitLegacyRequestOsEnvironMiddleware():
   """Patch os.environ to be thread local, and stamp it with default values.
 
   When this function is called, we remember the values of os.environ. When the
@@ -251,17 +274,9 @@ def InitRequestEnvironMiddleware(app, copy_gae_application=False):
   os.environ to be thread local, and we fill in the remembered values, and merge
   in WSGI env vars.
 
-  Args:
-    app: The WSGI app to wrap.
-    copy_gae_application: GAE_APPLICATION is copied to APPLICATION_ID if set.
-
   Returns:
-    The wrapped app, also a WSGI app.
+    The InitLegacyRequestOsEnviron Middleware.
   """
-
-
-  if copy_gae_application:
-    os.environ['APPLICATION_ID'] = os.environ['GAE_APPLICATION']
 
 
 
@@ -274,7 +289,8 @@ def InitRequestEnvironMiddleware(app, copy_gae_application=False):
 
   os.environ.update(original_environ)
 
-  def PatchEnv(wsgi_env, start_response):
+  @middleware
+  def InitLegacyRequestOsEnvironMiddleware(app, wsgi_env, start_response):
     """The middleware WSGI app."""
 
 
@@ -289,10 +305,11 @@ def InitRequestEnvironMiddleware(app, copy_gae_application=False):
 
     return app(wsgi_env, start_response)
 
-  return PatchEnv
+  return InitLegacyRequestOsEnvironMiddleware
 
 
-def OsEnvSetupMiddleware(app):
+@middleware
+def LegacyCopyWsgiEnvToOsEnvMiddleware(app, wsgi_env, start_response):
   """Copy WSGI variables to os.environ.
 
   When the wrapped inner function (i.e. the WSGI middleware) is called, we copy
@@ -301,30 +318,45 @@ def OsEnvSetupMiddleware(app):
 
   Args:
     app: The WSGI app to wrap.
+    wsgi_env: see PEP 3333
+    start_response: see PEP 3333
 
   Returns:
     The wrapped app, also a WSGI app.
   """
 
-  def CopyWsgiToEnv(wsgi_env, start_response):
-    """The middleware WSGI app."""
-    for key, val in six.iteritems(wsgi_env):
-      if isinstance(val, six.string_types):
-        os.environ[key] = val
-
-    return app(wsgi_env, start_response)
-
-  return CopyWsgiToEnv
+  assert isinstance(os.environ, request_environment.RequestLocalEnviron)
+  for key, val in six.iteritems(wsgi_env):
+    if isinstance(val, six.string_types):
+      os.environ[key] = val
+  return app(wsgi_env, start_response)
 
 
-def CallbackMiddleware(app):
+@middleware
+def CallbackMiddleware(app, wsgi_env, start_response):
   """Calls the request-end callback that the app may have set."""
+  try:
+    return app(wsgi_env, start_response)
+  finally:
+    callback.InvokeCallbacks()
 
-  def CallbackWrapper(wsgi_env, start_response):
-    """Calls the WSGI app and the invokes the request-end callback."""
-    try:
-      return app(wsgi_env, start_response)
-    finally:
-      callback.InvokeCallbacks()
 
-  return CallbackWrapper
+@middleware
+def RunInNewContextMiddleware(app, wsgi_env, start_response):
+  """Runs the app in a copy of the current context.
+
+  Start every request by calling contextvars.copy_context() and running the
+  rest of the request in the newly copied context. This ensures that
+  each request has its own context that is isolated from all other requests.
+
+  In other words, this "scopes" all ContextVars to the current request.
+
+  Args:
+    app: the WSGI app to wrap
+    wsgi_env: see PEP 3333
+    start_response: see PEP 3333
+  Returns:
+    The wrapped WSGI app
+  """
+  ctx = contextvars.copy_context()
+  return ctx.run(app, wsgi_env, start_response)

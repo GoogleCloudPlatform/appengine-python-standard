@@ -25,6 +25,7 @@ import hashlib
 import pickle
 import time
 
+from absl import logging
 import six
 import six.moves.cPickle
 
@@ -34,7 +35,6 @@ from google.appengine.api import namespace_manager
 from google.appengine.api.memcache import memcache_service_pb2
 from google.appengine.api.memcache import memcache_stub
 from google.appengine.api.memcache import memcache_stub_service_pb2
-from absl import logging
 from absl.testing import absltest
 
 

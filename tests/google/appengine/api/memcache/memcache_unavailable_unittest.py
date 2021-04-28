@@ -22,13 +22,13 @@
 
 import time
 
+from absl import logging
 import six
 
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import memcache
 from google.appengine.api.memcache import memcache_stub
 from google.appengine.runtime import apiproxy_errors
-from absl import logging
 from absl.testing import absltest
 
 
