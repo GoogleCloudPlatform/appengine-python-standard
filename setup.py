@@ -15,7 +15,9 @@ setuptools.setup(
     namespace_packages=["google"],
     package_dir={"": "src"},
     install_requires=[
+        "frozendict>=1.2",
         "protobuf>=3.14.0",
+        "requests>=2.25.1",
         "ruamel.yaml>=0.15,<0.16",
         "six>=1.15.0",
         "urllib3>=1.26.2,<2",
