@@ -51,9 +51,10 @@ class APIProxyStub(object):
   """Base class for implementing API proxy stub classes.
 
   To implement an API proxy stub:
+
     - Extend this class.
     - Override __init__ to pass in appropriate default service name.
-    - Implement service methods as _Dynamic_<method>(request, response).
+    - Implement service methods as `_Dynamic_<method>(request, response)`.
   """
 
 
@@ -71,10 +72,10 @@ class APIProxyStub(object):
 
     Args:
       service_name: Service name expected for all calls.
-      max_request_size: int, maximum allowable size of the incoming request. An
-        apiproxy_errors.RequestTooLargeError will be raised if the inbound
+      max_request_size: `int`. Maximum allowable size of the incoming request.
+        An `apiproxy_errors.RequestTooLargeError` will be raised if the inbound
         request exceeds this size.  Default is 1 MB. Subclasses can override it.
-      request_data: A request_info.RequestInfo instance used to look up state
+      request_data: A `request_info.RequestInfo` instance used to look up state
         associated with the request that generated an API call.
     """
     self.__service_name = service_name
@@ -91,7 +92,7 @@ class APIProxyStub(object):
     """Creates RPC object instance.
 
     Returns:
-      a instance of RPC.
+      An instance of RPC.
     """
     return apiproxy_rpc.RPC(stub=self)
 
@@ -153,7 +154,7 @@ class APIProxyStub(object):
     method is not set.
 
     Args:
-      error: An instance of apiproxy_errors.Error or None for no error.
+      error: An instance of `apiproxy_errors.Error` or `None` for no error.
       method: A string representing the method that the error will affect.
       error_rate: a number from [0, 1] that sets the chance of the error,
         defaults to 1.
@@ -173,7 +174,7 @@ def Synchronized(method):
     method: An unbound method of APIProxyStub or a subclass.
 
   Returns:
-    The method, altered such it acquires self._mutex throughout its execution.
+    The method, altered such it acquires `self._mutex` throughout its execution.
   """
 
   def WrappedMethod(self, *args, **kwargs):

@@ -21,18 +21,21 @@ https://github.com/GoogleCloudPlatform/appengine-python-standard
 
 Example for a standard WSGI app:
 
+  ```python
   import google.appengine.api
 
   app = google.appengine.api.wrap_wsgi_app(app)
+  ```
 
 Example for a Flask app:
 
+  ```python
   import google.appengine.api
   from flask import Flask, request
 
   app = Flask(__name__)
   app.wsgi_app = google.appengine.api.wrap_wsgi_app(app.wsgi_app)
-
+  ```
 """
 import os
 

@@ -48,7 +48,13 @@ _THREAD_POOL = futures.ThreadPoolExecutor(_MAX_CONCURRENT_API_CALLS)
 
 
 class RPC(object):
-  """Base class for implementing RPC of API proxy stubs."""
+  """Base class for implementing RPC of API proxy stubs.
+
+  Constructor for the RPC object.
+
+  All arguments are optional, and simply set members on the class.
+  These data members will be overriden by values passed to MakeCall.
+  """
 
   IDLE = 0
   RUNNING = 1
@@ -56,20 +62,18 @@ class RPC(object):
 
   def __init__(self, package=None, call=None, request=None, response=None,
                callback=None, deadline=None, stub=None):
-    """Constructor for the RPC object.
-
-    All arguments are optional, and simply set members on the class.
-    These data members will be overriden by values passed to MakeCall.
+    """Constructor.
 
     Args:
-      package: string, the package for the call
-      call: string, the call within the package
-      request: ProtocolMessage instance, appropriate for the arguments
-      response: ProtocolMessage instance, appropriate for the response
-      callback: callable, called when call is complete
-      deadline: A double specifying the deadline for this call as the number of
-                seconds from the current time. Ignored if non-positive.
-      stub: APIProxyStub instance, used in default _WaitImpl to do real call
+      package: `string`. The package for the call.
+      call: `string`. The call within the package.
+      request: `ProtocolMessage` instance. Appropriate for the arguments.
+      response: `ProtocolMessage` instance. Appropriate for the response.
+      callback: `callable`. Called when call is complete.
+      deadline: `double`. Specifies the deadline for this call as the number of
+        seconds from the current time. Ignored if non-positive.
+      stub: `APIProxyStub` instance. Used in default `_WaitImpl` to do real
+        call.
     """
     self._exception = None
     self._state = RPC.IDLE
@@ -102,17 +106,15 @@ class RPC(object):
 
   def MakeCall(self, package=None, call=None, request=None, response=None,
                callback=None, deadline=None):
-    """Makes an asynchronous (i.e. non-blocking) API call within the
-    specified package for the specified call method.
+    """Makes an asynchronous (i.e., non-blocking) API call within the specified package for the specified call method.
 
-    It will call the _MakeRealCall to do the real job.
+    It will call the `_MakeRealCall` to do the real job.
 
-    Args:
-      Same as constructor; see __init__.
+    Args: Same as constructor; see __init__.
 
     Raises:
-      TypeError or AssertionError if an argument is of an invalid type.
-      AssertionError or RuntimeError is an RPC is already in use.
+      `TypeError` or `AssertionError` if an argument is of an invalid type.
+      `AssertionError` or `RuntimeError` is an RPC is already in use.
     """
     self.callback = callback or self.callback
     self.package = package or self.package
