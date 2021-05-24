@@ -18,8 +18,8 @@
 
 """Builder for mapping YAML documents to object instances.
 
-ObjectBuilder is responsible for mapping a YAML document to classes defined
-using the validation mechanism (see google.appengine.api.validation.py).
+`ObjectBuilder` is responsible for mapping a YAML document to classes defined
+using the validation mechanism (see `google.appengine.api.validation.py`).
 """
 
 
@@ -95,24 +95,25 @@ class _ObjectSequencer(object):
 class ObjectBuilder(yaml_builder.Builder):
   """Builder used for constructing validated objects.
 
-  Given a class that implements validation.ValidatedBase, it will parse a YAML
+  Given a class that implements `validation.ValidatedBase`, it will parse a YAML
   document and attempt to build an instance of the class.
-  ObjectBuilder will only map YAML fields that are accepted by the
-  ValidatedBase's GetValidator function.
-  Lists are mapped to validated.  Repeated attributes and maps are mapped to
-  validated.Type properties.
+  `ObjectBuilder` will only map YAML fields that are accepted by the
+  `ValidatedBase`'s `GetValidator` function. Lists are mapped to validated.
+  Repeated attributes and maps are mapped to `validated.Type` properties.
 
   For a YAML map to be compatible with a class, the class must have a
-  constructor that can be called with no parameters.  If the provided type
+  constructor that can be called with no parameters. If the provided type
   does not have such a constructor a parse time error will occur.
+
+  The constructor initializes the validated object builder.
   """
 
   def __init__(self, default_class):
-    """Initialize validated object builder.
+    """Constructor.
 
     Args:
       default_class: Class that is instantiated upon the detection of a new
-        document.  An instance of this class will act as the document itself.
+        document. An instance of this class will act as the document itself.
     """
     self.default_class = default_class
 
@@ -158,13 +159,13 @@ class ObjectBuilder(yaml_builder.Builder):
     return result
 
   def EndMapping(self, top_value, mapping):
-    """When leaving scope, makes sure new object is initialized.
+    """When leaving scope, ensures the new object is initialized.
 
     This method is mainly for picking up on any missing required attributes.
 
     Args:
       top_value: Parent of closing mapping object.
-      mapping: _ObjectMapper instance that is leaving scope.
+      mapping: `_ObjectMapper` instance that is leaving scope.
     """
 
 
@@ -196,20 +197,20 @@ class ObjectBuilder(yaml_builder.Builder):
       top_value: Object that contains the new sequence.
 
     Returns:
-      A new _ObjectSequencer instance.
+      A new `_ObjectSequencer` instance.
     """
     return _ObjectSequencer()
 
   def MapTo(self, subject, key, value):
-    """Map key-value pair to an objects attribute.
+    """Maps key-value pair to an objects attribute.
 
     Args:
-      subject: _ObjectMapper of object that will receive new attribute.
+      subject: `_ObjectMapper` of object that will receive new attribute.
       key: Key of attribute.
       value: Value of new attribute.
 
     Raises:
-      UnexpectedAttribute when the key is not a validated attribute of
+      `UnexpectedAttribute` when the key is not a validated attribute of
       the subject value class.
     """
     assert isinstance(subject.value, validation.ValidatedBase)
@@ -271,7 +272,7 @@ class ObjectBuilder(yaml_builder.Builder):
     """Append a value to a sequence.
 
     Args:
-      subject: _ObjectSequence that is receiving new value.
+      subject: `_ObjectSequence` that is receiving new value.
       value: Value that is being appended to sequence.
     """
     if isinstance(value, _ObjectMapper):
@@ -292,12 +293,12 @@ def BuildObjects(default_class, stream, loader=yaml.loader.SafeLoader):
     default_class: Class that is instantiated upon the detection of a new
       document.  An instance of this class will act as the document itself.
     stream: String document or open file object to process as per the
-      yaml.parse method.  Any object that implements a 'read()' method which
+      `yaml.parse` method.  Any object that implements a `read()` method which
       returns a string document will work with the YAML parser.
     loader_class: Used for dependency injection.
 
   Returns:
-    List of default_class instances parsed from the stream.
+    List of `default_class` instances parsed from the stream.
   """
   builder = ObjectBuilder(default_class)
   handler = yaml_builder.BuilderHandler(builder)

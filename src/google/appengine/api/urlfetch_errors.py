@@ -28,7 +28,6 @@
 
 
 
-
 class Error(Exception):
   """Base URL fetcher error type."""
 
@@ -37,7 +36,7 @@ class DownloadError(Error):
   """The URL could not be retrieved.
 
   This exception is only raised when we cannot contact the server. HTTP errors
-  (such as 404) are returned in the `status_code` field in the return value of
+  (such as `404`) are returned in the `status_code` field in the return value of
   `fetch`, and no exception is raised.
   """
 
@@ -51,7 +50,7 @@ class MalformedReplyError(DownloadError):
 
 
 class TooManyRedirectsError(DownloadError):
-  """`follow_redirects` was set to True, and the redirect limit was hit."""
+  """`follow_redirects` was set to `True`, and the redirect limit was hit."""
 
 
 class InternalTransientError(Error):
@@ -67,7 +66,7 @@ class InvalidURLError(Error):
 
   Only HTTP and HTTPS URLs are allowed. The maximum URL length is 2048
   characters. The login and password portion is not allowed. In deployed
-  applications, only ports 80 and 443 for HTTP and HTTPS respectively are
+  applications, only ports `80` and `443` for HTTP and HTTPS respectively are
   allowed.
   """
 
@@ -90,7 +89,9 @@ class DeadlineExceededError(DownloadError):
 
 class ResponseTooLargeError(Error):
   """The response was too large and was truncated."""
+
   def __init__(self, response):
+    """Constructor."""
     self.response = response
 
 

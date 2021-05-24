@@ -21,16 +21,17 @@
 
 Whenever App Engine library code needs a user-configurable value, it should use
 the following protocol:
-    1. Pick a prefix unique to the library module, for example: `mylib`.
-    2. Call `lib_config.register(prefix, mapping)` with that prefix as the first
-       argument and a dict mapping suffixes to default functions as the second.
-    3. The `register()` function returns a configuration handle that is unique
-       to this prefix. The configuration handle object has attributes that
-       correspond to each of the suffixes given in the mapping. Call these
-       functions to access the user's configuration value.  If the user didn't
-       configure a function, the default function from the mapping is called
-       instead.
-    4. Document the function name and its signature and semantics.
+
+1.  Pick a prefix unique to the library module, for example: `mylib`.
+2.  Call `lib_config.register(prefix, mapping)` with that prefix as the first
+    argument and a dict mapping suffixes to default functions as the second.
+3.  The `register()` function returns a configuration handle that is unique
+    to this prefix. The configuration handle object has attributes that
+    correspond to each of the suffixes given in the mapping. Call these
+    functions to access the user's configuration value. If the user didn't
+    configure a function, the default function from the mapping is called
+    instead.
+4.  Document the function name and its signature and semantics.
 
 Users that want to provide configuration values should create a module named
 `appengine_config.py` in the top-level directory of their application and define
@@ -45,25 +46,27 @@ libraries, however, you should instantiate a new `LibConfigRegistry` instance
 that uses a different module name.
 
 
-Example `appengine_config.py` file::
+Example `appengine_config.py` file:
 
+    ```python
     from somewhere import MyMiddleWareClass
 
     def mylib_add_middleware(app):
       app = MyMiddleWareClass(app)
       return app
+    ```
 
+Example library use:
 
-Example library use::
-
+    ```python
     from google.appengine.api import lib_config
 
     config_handle = lib_config.register(
         'mylib',
         {'add_middleware': lambda app: app})
 
-    def add_middleware(app):
-      return config_handle.add_middleware(app)
+    def add_middleware(app): return config_handle.add_middleware(app)
+    ```
 """
 
 from __future__ import absolute_import
@@ -95,17 +98,18 @@ DEFAULT_MODNAME = 'appengine_config'
 
 
 class LibConfigRegistry(object):
-  """A registry containing library configuration values."""
+  """A registry containing library configuration values.
+
+  Note: The actual import of this module is deferred until the first
+  time a configuration value is requested through attribute access
+  on a `ConfigHandle` instance.
+  """
 
   def __init__(self, modname):
     """Constructor.
 
     Args:
-      modname: The module name to be imported.
-
-    Note: the actual import of this module is deferred until the first
-    time a configuration value is requested through attribute access
-    on a ConfigHandle instance.
+      modname: The module name that needs to be imported.
     """
     self._modname = modname
     self._registrations = {}
@@ -118,14 +122,15 @@ class LibConfigRegistry(object):
     Args:
       prefix: A shared prefix for the configuration names being registered.
           If the prefix doesn't end in `_`, that character is appended.
-      mapping: A dict that maps suffix strings to default values.
+      mapping: A `dict` that maps suffix strings to default values.
 
     Returns:
       A `ConfigHandle` instance.
 
-    You can re-register the same prefix: the mappings are merged, and for
-    duplicate suffixes, the most recent registration is used.
+    You can re-register the same prefix. When you do so, the mappings are
+    merged, and for duplicate suffixes, the most recent registration is used.
     """
+
     if not prefix.endswith('_'):
       prefix += '_'
     self._lock.acquire()
@@ -143,15 +148,15 @@ class LibConfigRegistry(object):
     """Tries to import the configuration module if it is not already imported.
 
     This function always sets `self._module` to a value that is not `None`;
-    either the imported module (if it was imported successfully) or a dummy
-    `object()` instance (if an `ImportError` was raised) is used. Other
-    exceptions are not caught.
+    either the imported module (if it was imported successfully) or a
+    placeholder `object()` instance (if an `ImportError` was raised) is used.
+    Other exceptions are not caught.
 
-    When a dummy instance is used, the instance is also put in `sys.modules`.
-    This usage allows us to detect when `sys.modules` was changed (as
-    `dev_appserver.py` does when it notices source code changes) and retries the
-    `import_module` in that case, while skipping it (for speed) if nothing has
-    changed.
+    When a placeholder instance is used, the instance is also put in
+    `sys.modules`. This usage allows us to detect when `sys.modules` was
+    changed (as `dev_appserver.py` does when it notices source code changes)
+    and retries the `import_module` in that case, while skipping it (for speed)
+    if nothing has changed.
 
     Args:
       import_func: Used for dependency injection.
@@ -250,7 +255,7 @@ class ConfigHandle(object):
   """A set of configuration for a single library module or package.
 
   Public attributes of instances of this class are configuration values.
-  Attributes are dynamically computed (in `__getattr__()`) and cached as regular
+  Attributes are dynamically computed in `__getattr__()`, and cached as regular
   instance attributes.
   """
 
@@ -382,12 +387,12 @@ _default_registry = LibConfigRegistry(DEFAULT_MODNAME)
 
 
 def register(prefix, mapping):
-  """Register a set of configurations with the default config module.
+  """Registers a set of configurations with the default config module.
 
   Args:
     prefix: A shared prefix for the configuration names being registered.
         If the prefix doesn't end in `_`, that character is appended.
-    mapping: A dict mapping suffix strings to default values.
+    mapping: A `dict` mapping suffix strings to default values.
 
   Returns:
     A `ConfigHandle` instance.
@@ -398,11 +403,12 @@ def register(prefix, mapping):
 def main():
   """Dumps the configuration, using a CGI-style request handler.
 
-  Put this in your `app.yaml` file to enable (you can pick any URL)::
+  Put this in your `app.yaml` file to enable (you can pick any URL):
 
+      ```python
       - url: /lib_config
         script: $PYTHON_LIB/google/appengine/api/lib_config.py
-
+      ```
 
   Note:
       Unless you are using the SDK, you must be an administrator to use this

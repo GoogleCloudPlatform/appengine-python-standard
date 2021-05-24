@@ -278,6 +278,7 @@ ADMIN_CONSOLE = 'admin_console'
 ERROR_HANDLERS = 'error_handlers'
 BACKENDS = 'backends'
 THREADSAFE = 'threadsafe'
+SERVICEACCOUNT = 'service_account'
 DATASTORE_AUTO_ID_POLICY = 'auto_id_policy'
 API_CONFIG = 'api_config'
 CODE_LOCK = 'code_lock'
@@ -2313,6 +2314,7 @@ class AppInfoExternal(validation.Validated):
         expression will not be built into the app. This directive is valid for
         Go only.
     api_config: URL root and script or servlet path for enhanced API serving.
+    service_account: Service account that the deployed app will run as.
   """
 
   ATTRIBUTES = {
@@ -2375,6 +2377,7 @@ class AppInfoExternal(validation.Validated):
       BACKENDS: validation.Optional(validation.Repeated(
           backendinfo.BackendEntry)),
       THREADSAFE: validation.Optional(bool),
+      SERVICEACCOUNT: validation.Optional(validation.Type(str)),
       DATASTORE_AUTO_ID_POLICY: validation.Optional(
           validation.Options(DATASTORE_ID_POLICY_LEGACY,
                              DATASTORE_ID_POLICY_DEFAULT)),

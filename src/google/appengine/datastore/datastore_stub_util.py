@@ -3213,6 +3213,7 @@ class DatastoreStub(object):
 
 
     self.__query_ci_history = set()
+    self.__query_history_lock = threading.Lock()
 
 
 
@@ -3268,18 +3269,21 @@ class DatastoreStub(object):
   def Clear(self):
     """Clears out all stored values."""
     self._query_cursors = {}
-    self.__query_history = {}
-    self.__query_ci_history = set()
+    with self.__query_history_lock:
+      self.__query_history = {}
+      self.__query_ci_history = set()
 
   def QueryHistory(self):
     """Returns a dict that maps Query PBs to times they've been run."""
 
-    return dict((pb, times) for pb, times in self.__query_history.items()
-                if pb.app == self._app_id)
+    with self.__query_history_lock:
+      return dict((pb, times) for pb, times in self.__query_history.items()
+                  if pb.app == self._app_id)
 
   def _QueryCompositeIndexHistoryLength(self):
     """Returns the length of the CompositeIndex set for query history."""
-    return len(self.__query_ci_history)
+    with self.__query_history_lock:
+      return len(self.__query_ci_history)
 
   def SetTrusted(self, trusted):
     """Set/clear the trusted bit in the stub.
@@ -3382,13 +3386,14 @@ class DatastoreStub(object):
     clone.ClearField('limit')
     clone.ClearField('offset')
     clone.ClearField('count')
-    if clone in self.__query_history:
-      self.__query_history[clone] += 1
-    else:
-      self.__query_history[clone] = 1
-      if clone.app == self._app_id:
-        self.__query_ci_history.add(
-            datastore_index.CompositeIndexForQuery(clone))
+    with self.__query_history_lock:
+      if clone in self.__query_history:
+        self.__query_history[clone] += 1
+      else:
+        self.__query_history[clone] = 1
+        if clone.app == self._app_id:
+          self.__query_ci_history.add(
+              datastore_index.CompositeIndexForQuery(clone))
 
   def _Dynamic_Next(self, next_request, query_result):
     app = next_request.cursor.app

@@ -75,7 +75,7 @@ _thread_local_settings = threading.local()
 
 
 class _CaselessDict(IterableUserDict):
-  """Case insensitive dictionary.
+  """Case insensitive `dict`.
 
   This class was lifted from os.py and slightly modified.
   """
@@ -85,11 +85,11 @@ class _CaselessDict(IterableUserDict):
     IterableUserDict.__init__(self, dict, **kwargs)
 
   def __setitem__(self, key, item):
-    """Sets dictionary item.
+    """Sets `dict` item.
 
     Args:
-      key: Key of new item. Key is case insensitive, so `d['Key'] = value`
-          will replace previous values set by `d['key'] = old_value`.
+      key: Key of new item. Key is case insensitive, so `d['Key'] = value` will
+        replace previous values set by `d['key'] = old_value`.
       item: Item to store.
     """
     caseless_key = key.lower()
@@ -100,40 +100,40 @@ class _CaselessDict(IterableUserDict):
     self.data[key] = item
 
   def __getitem__(self, key):
-    """Gets dictionary item.
+    """Gets `dict` item.
 
     Args:
       key: Key of item to get. Key is case insensitive, so `d['Key']` is the
-          same as `d['key']`.
+        same as `d['key']`.
 
     Returns:
-      Item associated with key.
+      Item associated with `key`.
 
     Raises:
-      KeyError: If the key is not found.
+      KeyError: If the `key` is not found.
     """
     return self.data[self.caseless_keys[key.lower()]]
 
   def __delitem__(self, key):
-    """Removes item from dictionary.
+    """Removes item from `dict`.
 
     Args:
       key: Key of item to remove.  Key is case insensitive, so `del d['Key']` is
-          the same as `del d['key']`
+        the same as `del d['key']`.
     """
     caseless_key = key.lower()
     del self.data[self.caseless_keys[caseless_key]]
     del self.caseless_keys[caseless_key]
 
   def has_key(self, key):
-    """Determines if the dictionary has an item with a specific key.
+    """Determines if the `dict` has an item with a specific `key`.
 
     Args:
       key: Key to check for presence. Key is case insensitive, so
-          `d.has_key('Key')` evaluates to the same value as `d.has_key('key')`.
+        `d.has_key('Key')` evaluates to the same value as `d.has_key('key')`.
 
     Returns:
-      True if dictionary contains the specified key, else False.
+      `True` if `dict` contains the specified `key`, else `False`.
     """
     return key.lower() in self.caseless_keys
 
@@ -142,15 +142,15 @@ class _CaselessDict(IterableUserDict):
     return self.has_key(key)
 
   def get(self, key, failobj=None):
-    """Gets dictionary item, defaulting to another value if it does not exist.
+    """Gets `dict` item, defaulting to another value if it does not exist.
 
     Args:
       key: Key of item to get. Key is case insensitive, so `d['Key']` is the
-          same as `d['key']`.
-      failobj: Value to return if key not in dictionary.
+        same as `d['key']`.
+      failobj: Value to return if key not in `dict`.
 
     Returns:
-      A dictionary item.
+      A `dict` item.
     """
     try:
       cased_key = self.caseless_keys[key.lower()]
@@ -159,7 +159,7 @@ class _CaselessDict(IterableUserDict):
     return self.data[cased_key]
 
   def update(self, dict=None, **kwargs):
-    """Updates the dictionary using values from another dictionary and keywords.
+    """Updates the `dict` using values from another `dict` and keywords.
 
     Args:
       dict: Dictionary to update from.
@@ -185,7 +185,7 @@ class _CaselessDict(IterableUserDict):
     """Makes a shallow, case-sensitive copy of `self`.
 
     Returns:
-      A dictionary copy of `self`.
+      A `dict` copy of `self`.
     """
     return dict(self)
 
@@ -194,7 +194,7 @@ def _is_fetching_self(url, method):
   """Checks if the fetch is for the same URL from which it originated.
 
   Args:
-    url: str; the URL being fetched.
+    url: `string`. The URL being fetched.
     method: Value from `_VALID_METHODS`.
 
   Returns:
@@ -221,11 +221,11 @@ def _is_fetching_self(url, method):
 
 
 def create_rpc(deadline=None, callback=None):
-  """Creates an RPC object for use with the urlfetch API.
+  """Creates an RPC object for use with the URL Fetch API.
 
   Args:
-    deadline: Optional deadline in seconds for the operation; the default
-        is a system-specific deadline (typically 5 seconds).
+    deadline: Optional deadline in seconds for the operation; the default is a
+      system-specific deadline (typically 5 seconds).
     callback: Optional callable to invoke on completion.
 
   Returns:
@@ -262,35 +262,34 @@ def fetch(url, payload=None, method=GET, headers={},
         them without raising an error. Otherwise, a `ResponseTooLargeError` is
         raised when a response is truncated.
     follow_redirects: If set to `True` (the default), redirects are
-        transparently followed, and the response (if less than 5 redirects)
-        contains the final destination's payload; the response status is 200.
-        You lose, however, the redirect chain information. If set to `False`,
-        you see the HTTP response yourself, including the 'Location' header, and
-        redirects are not followed.
+        transparently followed. If there are less than five redirects, the
+        response contains the final destination's payload, and the response
+        status is `200`. You lose, however, the redirect chain information.
+        If set to `False`, you see the HTTP response yourself, including the
+        `Location` header, and redirects are not followed.
     deadline: Deadline in seconds for the operation.
     validate_certificate: If set to `True`, requests are not sent to the server
         unless the certificate is valid, signed by a trusted CA, and the host
-        name matches the certificate. A value of `None` indicates that the
-        behavior will be chosen by the underlying `urlfetch` implementation.
+        name matches the certificate. A value of `None` (default) indicates
+        that the behavior will be chosen by the underlying `urlfetch`
+        implementation.
 
   Returns:
     object: An object containing following fields:
 
-        - content: A string that contains the response from the server.
-        - status_code: The HTTP status code that was returned by the server.
-        - headers: The dictionary of headers that was returned by the server.
+        - `content`: A `string` that contains the response from the server.
+        - `status_code`: The HTTP status code that was returned by the server.
+        - `headers`: The `dict` of headers that was returned by the server.
 
   Raises:
-    urlfetch_errors.Error: If an error occurs. See the `urlfetch_errors`_ module
+    urlfetch_errors.Error: If an error occurs. See the `urlfetch_errors` module
         for more information.
 
 
   Note:
       HTTP errors are returned as a part of the return structure. HTTP errors
-      like 404 do not result in an exception.
-
-  .. _urlfetch_errors:
-     http://cloud.google.com/appengine/docs/python/refdocs/google.appengine.api.urlfetch_errors
+      like `404` do not result in an exception. See `urlfetch_errors` for
+      details.
 
   """
 
@@ -306,14 +305,14 @@ def make_fetch_call(rpc, url, payload=None, method=GET, headers={},
                     validate_certificate=None):
   """Executes the RPC call to fetch a given HTTP URL.
 
-  The first argument is a UserRPC instance.  See `urlfetch.fetch` for a
+  The first argument is a `UserRPC` instance.  See `urlfetch.fetch` for a
   thorough description of the remaining arguments.
 
   Raises:
     InvalidMethodError: If the requested method is not in `_VALID_METHODS`.
     ResponseTooLargeError: If the response payload is too large.
     InvalidURLError: If there are issues with the content or size of the
-        requested URL
+        requested `url`.
 
   Returns:
     The RPC object that was passed into the function.
@@ -328,8 +327,8 @@ def make_fetch_call(rpc, url, payload=None, method=GET, headers={},
     raise InvalidMethodError('Invalid method %s.' % str(method))
 
   if _is_fetching_self(url, method):
-    raise InvalidURLError("App cannot fetch the same URL as the one used for "
-                          "the request.")
+    raise InvalidURLError('App cannot fetch '
+                          'the same `url` as the one used for the request.')
 
   request = urlfetch_service_pb2.URLFetchRequest()
   response = urlfetch_service_pb2.URLFetchResponse()
@@ -378,11 +377,11 @@ def make_fetch_call(rpc, url, payload=None, method=GET, headers={},
 def _get_fetch_result(rpc):
   """Checks for success, handles exceptions, and returns a converted RPC result.
 
-  This method waits for the RPC if it has not yet finished and calls the
+  This method waits for the `rpc` if it has not yet finished and calls the
   post-call hooks on the first invocation.
 
   Args:
-    rpc: A UserRPC object.
+    rpc: A `UserRPC` object.
 
   Raises:
     InvalidURLError: If the URL was invalid.
@@ -488,7 +487,7 @@ Fetch = fetch
 
 
 def CreateHTTPHeaders(data):
-  """Creates HTTPHeaders that are compatible with both Py2 or Py3."""
+  """Creates HTTPHeaders that are compatible with both Python 2 or Python 3."""
   if six.PY2:
     return six.moves.http_client.HTTPMessage(six.StringIO(data))
   else:
@@ -538,7 +537,7 @@ class _URLFetchResult(object):
 
 
 def get_default_fetch_deadline():
-  """Gets the default value for `create_rpc()`'s deadline parameter."""
+  """Gets the default value for `create_rpc()`'s `deadline` parameter."""
   return getattr(_thread_local_settings, "default_fetch_deadline", None)
 
 

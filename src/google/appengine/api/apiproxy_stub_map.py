@@ -86,10 +86,10 @@ def MakeSyncCall(service, call, request, response, stubmap=None):
     stubmap: Optional `APIProxyStubMap` instance, for dependency injection.
 
   Returns:
-    Response protocol buffer or None. Some implementations may return
+    Response protocol buffer or `None`. Some implementations may return
     a response protocol buffer instead of modifying `response`.
     Caller must use returned value in such cases. If `response` is modified
-    then returns None.
+    then returns `None`.
 
   Raises:
     `apiproxy_errors.Error` or a subclass.
@@ -174,7 +174,7 @@ class ListOfHooks(object):
       service: Optional argument that restricts the hook to a particular API.
 
     Returns:
-      True if the collection was modified.
+      `True` if the collection was modified.
     """
     return self.__Insert(0, key, function, service)
 
@@ -186,9 +186,9 @@ class ListOfHooks(object):
   def Call(self, service, call, request, response, rpc=None, error=None):
     """Invokes all hooks in this collection.
 
-    NOTE: For backwards compatibility, if error is not None, hooks
-    with 4 or 5 arguments are *not* called.  This situation
-    (error=None) only occurs when the RPC request raised an exception;
+    NOTE: For backwards compatibility, if error is not `None`, hooks
+    with 4 or 5 arguments are *not* called. This situation
+    (`error=None`) only occurs when the RPC request raised an exception;
     in the past no hooks would be called at all in that case.
 
     Args:
@@ -337,10 +337,10 @@ class APIProxyStubMap(object):
       response: protocol buffer for the response
 
     Returns:
-      Response protocol buffer or None. Some implementations may return
+      Response protocol buffer or `None`. Some implementations may return
       a response protocol buffer instead of modifying `response`.
       Caller must use returned value in such cases. If `response` is modified
-      then returns None.
+      then returns `None`.
 
     Raises:
       `apiproxy_errors.Error` or a subclass.
@@ -495,7 +495,7 @@ class UserRPC(object):
 
   @property
   def deadline(self):
-    """Return the deadline, if set explicitly (otherwise None)."""
+    """Return the deadline, if set explicitly (otherwise `None`)."""
     return self.__rpc.deadline
 
   @property
@@ -540,7 +540,7 @@ class UserRPC(object):
       method: The method name.
       request: The request protocol buffer.
       response: The response protocol buffer.
-      get_result_hook: Optional get-result hook function.  If not None,
+      get_result_hook: Optional get-result hook function.  If not `None`,
         this must be a function with exactly one argument, the RPC
         object (`self`).  Its return value is returned from `get_result()`.
       user_data: Optional additional arbitrary data for the get-result
@@ -657,11 +657,11 @@ class UserRPC(object):
     """Check if the given RPC is finished or is running.
 
     Args:
-      rpc: UserRPC instance.
+      rpc: `UserRPC` instance.
 
     Returns:
-      True if the RPC is finished.
-      False if the RPC is running.
+      `True` if the RPC is finished.
+      `False` if the RPC is running.
     """
     assert isinstance(rpc, cls), repr(rpc)
     state = rpc.__rpc.state
@@ -676,16 +676,16 @@ class UserRPC(object):
 
   @classmethod
   def __get_first_finished_or_last_running(cls, rpcs):
-    """Check the list of RPCs for first one finished, the last one running, or None.
+    """Check the list of RPCs for first one finished, the last one running, or `None`.
 
     Args:
-      rpcs: Iterable collection of UserRPC instances.
+      rpcs: Iterable collection of `UserRPC` instances.
 
     Returns:
-      A pair (finished, running), as follows:
-      (UserRPC, None) indicating the first RPC found that is finished;
-      (None, UserRPC) indicating the last RPC found that is running;
-      (None, None) indicating no RPCs are finished or running.
+      A pair `(finished, running)`, as follows:
+      `(UserRPC, None)` indicating the first RPC found that is finished;
+      `(None, UserRPC)` indicating the last RPC found that is running;
+      `(None, None)` indicating no RPCs are finished or running.
     """
     rpc = None
     for rpc in rpcs:
@@ -701,19 +701,19 @@ class UserRPC(object):
     cancel the wait.
 
     Args:
-      rpcs: Iterable collection of UserRPC or WaitCanceller instances.
+      rpcs: Iterable collection of `UserRPC` or `WaitCanceller` instances.
 
     Returns:
       A `UserRPC` instance, indicating the first RPC among the given
-      RPCs that finished; or None, indicating that either an RPC not
+      RPCs that finished; or `None`, indicating that either an RPC not
       among the given RPCs finished in the mean time, or the iterable
       is empty.
 
     NOTES:
 
       - Repeatedly calling `wait_any()` with the same arguments will not wait;
-      it
-        will immediately return, eg returning the same RPC until one earlier the
+        it will immediately return, meaning it will return the same RPC until
+        one earlier in the
         collection finishes.  The callback, however, will only be called the
         first time the RPC finishes (which may be here or in the `wait()`
         method).
@@ -759,7 +759,7 @@ class UserRPC(object):
     given RPCs have finished.
 
     Args:
-      rpcs: Iterable collection of UserRPC instances.
+      rpcs: Iterable collection of `UserRPC` instances.
 
     Returns:
       None.

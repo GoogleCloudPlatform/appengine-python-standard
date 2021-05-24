@@ -16,9 +16,9 @@
 #
 
 
-"""PyYAML event builder handler
+"""PyYAML event builder handler.
 
-Receives events from YAML listener and forwards them to a builder
+Receives events from the YAML listener and forwards them to a builder
 object so that it can construct a properly structured object.
 """
 
@@ -55,72 +55,73 @@ class Builder(object):
   """Interface for building documents and type from YAML events.
 
   Implement this interface to create a new builder.  Builders are
-  passed to the BuilderHandler and used as a factory and assembler
+  passed to the `BuilderHandler` and used as a factory and assembler
   for creating concrete representations of YAML files.
   """
 
   def BuildDocument(self):
-    """Build new document.
+    """Builds a new document.
 
     The object built by this method becomes the top level entity
-    that the builder handler constructs.  The actual type is
-    determined by the sub-class of the Builder class and can essentially
-    be any type at all.  This method is always called when the parser
+    that the builder handler constructs. The actual type is
+    determined by the sub-class of the `Builder` class and can essentially
+    be any type at all. This method is always called when the parser
     encounters the start of a new document.
 
     Returns:
       New object instance representing concrete document which is
-      returned to user via BuilderHandler.GetResults().
+      returned to user via `BuilderHandler.GetResults()`.
     """
 
   def InitializeDocument(self, document, value):
-    """Initialize document with value from top level of document.
+    """Initializes document with a value from the top level of a YAML document.
 
     This method is called when the root document element is encountered at
-    the top level of a YAML document.  It should get called immediately
-    after BuildDocument.
+    the top level of a YAML document. It should get called immediately
+    after `BuildDocument`.
 
-    Receiving the None value indicates the empty document.
+    Receiving the `None` value indicates the empty document.
 
     Args:
-      document: Document as constructed in BuildDocument.
+      document: Document as constructed in `BuildDocument`.
       value: Scalar value to initialize the document with.
     """
 
   def BuildMapping(self, top_value):
-    """Build a new mapping representation.
+    """Builds a new mapping representation.
 
-    Called when StartMapping event received.  Type of object is determined
-    by Builder sub-class.
+    Called when the `StartMapping` event is received. The type of object is
+    determined by the `Builder` sub-class.
 
     Args:
-      top_value: Object which will be new mappings parant.  Will be object
-        returned from previous call to BuildMapping or BuildSequence.
+      top_value: Object that will be the new mapping parent. This object is
+        returned from previous call to `BuildMapping` or `BuildSequence`.
 
     Returns:
-      Instance of new object that represents a mapping type in target model.
+      Instance of the new object that represents a mapping type in target model.
     """
 
   def EndMapping(self, top_value, mapping):
     """Previously constructed mapping scope is at an end.
 
-    Called when the end of a mapping block is encountered.  Useful for
-    additional clean up or end of scope validation.
+    Called when the end of a mapping block is encountered. This is useful for
+    additional clean up or end-of-scope validation.
 
     Args:
-      top_value: Value which is parent of the mapping.
+      top_value: Value which is the parent of the mapping.
       mapping: Mapping which is at the end of its scope.
     """
 
   def BuildSequence(self, top_value):
-    """Build a new sequence representation.
+    """Builds a new sequence representation.
 
-    Called when StartSequence event received.  Type of object is determined
-    by Builder sub-class.
+    Called when the `StartSequence` event is received. The type of object is
+    determined by the `Builder` sub-class.
 
     Args:
-      top_value: Object which will be new sequences parant.  Will be object
-        returned from previous call to BuildMapping or BuildSequence.
+      top_value: The object that will be the new sequences parent. The object
+        will be returned from previous call to `BuildMapping` or
+        `BuildSequence`.
 
     Returns:
       Instance of new object that represents a sequence type in target model.
@@ -129,35 +130,35 @@ class Builder(object):
   def EndSequence(self, top_value, sequence):
     """Previously constructed sequence scope is at an end.
 
-    Called when the end of a sequence block is encountered.  Useful for
+    Called when the end of a sequence block is encountered. Useful for
     additional clean up or end of scope validation.
 
     Args:
-      top_value: Value which is parent of the sequence.
+      top_value: Value which is the parent of the sequence.
       sequence: Sequence which is at the end of its scope.
     """
 
   def MapTo(self, subject, key, value):
-    """Map value to a mapping representation.
+    """Maps value to a mapping representation.
 
-    Implementation is defined by sub-class of Builder.
+    Implementation is defined by the sub-class of `Builder`.
 
     Args:
-      subject: Object that represents mapping.  Value returned from
-        BuildMapping.
-      key: Key used to map value to subject.  Can be any scalar value.
+      subject: Object that represents mapping. Value returned from
+        `BuildMapping`.
+      key: Key used to map value to subject. Can be any scalar value.
       value: Value which is mapped to subject. Can be any kind of value.
     """
 
   def AppendTo(self, subject, value):
     """Append value to a sequence representation.
 
-    Implementation is defined by sub-class of Builder.
+    Implementation is defined by sub-class of `Builder`.
 
     Args:
-      subject: Object that represents sequence.  Value returned from
+      subject: Object that represents sequence. Value returned from
         BuildSequence
-      value: Value to be appended to subject.  Can be any kind of value.
+      value: Value to be appended to a subject. Can be any kind of value.
     """
 
 
@@ -165,29 +166,29 @@ class BuilderHandler(yaml_listener.EventHandler):
   """PyYAML event handler used to build objects.
 
   Maintains state information as it receives parse events so that object
-  nesting is maintained.  Uses provided builder object to construct and
+  nesting is maintained. Uses the provided `builder` object to construct and
   assemble objects as it goes.
 
   As it receives events from the YAML parser, it builds a stack of data
-  representing structural tokens.  As the scope of documents, mappings
-  and sequences end, those token, value pairs are popped from the top of
+  representing structural tokens. As the scope of documents, mappings,
+  and sequences end, those token and value pairs are popped from the top of
   the stack so that the original scope can resume processing.
 
-  A special case is made for the _KEY token.  It represents a temporary
-  value which only occurs inside mappings.  It is immediately popped off
+  A special case is made for the `_KEY` token. It represents a temporary
+  value which only occurs inside mappings. It is immediately popped off
   the stack when it's associated value is encountered in the parse stream.
   It is necessary to do this because the YAML parser does not combine
-  key and value information in to a single event.
+  key and value information into a single event.
   """
 
   def __init__(self, builder):
-    """Initialization for builder handler.
+    """Initialization for `builder` handler.
 
     Args:
-      builder: Instance of Builder class.
+      builder: Instance of `Builder` class.
 
     Raises:
-      ListenerConfigurationError when builder is not a Builder class.
+      `ListenerConfigurationError` when `builder` is not a `Builder` class.
     """
     if not isinstance(builder, Builder):
       raise yaml_errors.ListenerConfigurationError(
@@ -249,7 +250,7 @@ class BuilderHandler(yaml_listener.EventHandler):
       raise NotImplementedError('Anchors not supported in this handler')
 
   def _HandleValue(self, value):
-    """Handle given value based on state of parser
+    """Handle given value based on state of parser.
 
     This method handles the various values that are created by the builder
     at the beginning of scope events (such as mappings and sequences) or
@@ -299,7 +300,7 @@ class BuilderHandler(yaml_listener.EventHandler):
       raise yaml_errors.InternalError('Unrecognized builder token:\n%s' % token)
 
   def StreamStart(self, event, loader):
-    """Initializes internal state of handler
+    """Initializes internal state of handler.
 
     Args:
       event: Ignored.
@@ -310,7 +311,7 @@ class BuilderHandler(yaml_listener.EventHandler):
     self._results = []
 
   def StreamEnd(self, event, loader):
-    """Cleans up internal state of handler after parsing
+    """Cleans up internal state of handler after parsing.
 
     Args:
       event: Ignored.
@@ -319,9 +320,9 @@ class BuilderHandler(yaml_listener.EventHandler):
     self._stack = None
 
   def DocumentStart(self, event, loader):
-    """Build new document.
+    """Build a new document.
 
-    Pushes new document on to stack.
+    Pushes a new document onto the stack.
 
     Args:
       event: Ignored.
@@ -347,13 +348,14 @@ class BuilderHandler(yaml_listener.EventHandler):
     raise NotImplementedError('References not supported in this handler')
 
   def Scalar(self, event, loader):
-    """Handle scalar value
+    """Handles the scalar value.
 
-    Since scalars are simple values that are passed directly in by the
-    parser, handle like any value with no additional processing.
+    Since scalars are simple values that are passed in directly by the
+    parser, this handles the scalar value like any other value with no
+    additional processing.
 
-    Of course, key values will be handles specially.  A key value is recognized
-    when the top token is _TOKEN_MAPPING.
+    However, key values will be handled differently. A key value is recognized
+    when the top token is `_TOKEN_MAPPING`.
 
     Args:
       event: Event containing scalar value.
@@ -385,13 +387,13 @@ class BuilderHandler(yaml_listener.EventHandler):
     self._HandleValue(value)
 
   def SequenceStart(self, event, loader):
-    """Start of sequence scope
+    """Start of the sequence scope.
 
-    Create a new sequence from the builder and then handle in the context
+    Create a new sequence from the `builder` and then handle in the context
     of its parent.
 
     Args:
-      event: SequenceStartEvent generated by loader.
+      event: `SequenceStartEvent` generated by `loader`.
       loader: Loader that generated event.
     """
     self._HandleAnchor(event)
@@ -405,26 +407,26 @@ class BuilderHandler(yaml_listener.EventHandler):
     self._Push(_TOKEN_SEQUENCE, sequence)
 
   def SequenceEnd(self, event, loader):
-    """End of sequence.
+    """End of the sequence.
 
     Args:
-      event: Ignored
+      event: Ignored.
       loader: Ignored.
-      """
+    """
     assert self._top[0] == _TOKEN_SEQUENCE
     end_object = self._Pop()
     top_value = self._top[1]
     self._builder.EndSequence(top_value, end_object)
 
   def MappingStart(self, event, loader):
-    """Start of mapping scope.
+    """Start of the mapping scope.
 
-    Create a mapping from builder and then handle in the context of its
+    Create a mapping from `builder` and then handle in the context of its
     parent.
 
     Args:
-      event: MappingStartEvent generated by loader.
-      loader: Loader that generated event.
+      event: `MappingStartEvent` generated by `loader`.
+      loader: Loader that generated the event.
     """
     self._HandleAnchor(event)
     token, parent = self._top
@@ -441,7 +443,7 @@ class BuilderHandler(yaml_listener.EventHandler):
     self._Push(_TOKEN_MAPPING, mapping)
 
   def MappingEnd(self, event, loader):
-    """End of mapping
+    """End of mapping.
 
     Args:
       event: Ignored.
@@ -456,13 +458,13 @@ class BuilderHandler(yaml_listener.EventHandler):
     """Get results of document stream processing.
 
     This method can be invoked after fully parsing the entire YAML file
-    to retrieve constructed contents of YAML file.  Called after EndStream.
+    to retrieve constructed contents of YAML file. Called after `EndStream`.
 
     Returns:
-      A tuple of all document objects that were parsed from YAML stream.
+      A `tuple` of all `document` objects that were parsed from YAML stream.
 
     Raises:
-      InternalError if the builder stack is not empty by the end of parsing.
+      `InternalError` if the builder stack is not empty by the end of parsing.
     """
     if self._stack is not None:
       raise yaml_errors.InternalError('Builder stack is not empty.')
