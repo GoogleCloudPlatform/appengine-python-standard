@@ -91,7 +91,7 @@ def get_current_module_name():
   If this is version "v1" of module "module5" for app "my-app", this function
   will return "module5".
   """
-  return os.environ['CURRENT_MODULE_ID']
+  return os.environ.get('GAE_SERVICE') or os.environ.get('CURRENT_MODULE_ID')
 
 
 def get_current_version_name():
@@ -100,6 +100,9 @@ def get_current_version_name():
   If this is version "v1" of module "module5" for app "my-app", this function
   will return "v1".
   """
+  result = os.environ.get('GAE_VERSION')
+  if result:
+    return result
 
   result = os.environ['CURRENT_VERSION_ID'].split('.')[0]
   return None if result == 'None' else result
@@ -119,7 +122,7 @@ def get_current_instance_id():
     String containing the ID of the instance, or None if this is not an
     automatically-scaled module.
   """
-  return os.environ.get('INSTANCE_ID', None)
+  return os.environ.get('GAE_INSTANCE') or os.environ.get('INSTANCE_ID', None)
 
 
 def _GetRpc():

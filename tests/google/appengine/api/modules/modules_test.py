@@ -40,8 +40,12 @@ class ModulesTest(absltest.TestCase):
     """Tear down testing environment."""
     self.mox.VerifyAll()
     self.mox.UnsetStubs()
+    os.environ.pop('CURRENT_MODULE_ID', None)
     os.environ.pop('CURRENT_VERSION_ID', None)
     os.environ.pop('INSTANCE_ID', None)
+    os.environ.pop('GAE_SERVICE', None)
+    os.environ.pop('GAE_VERSION', None)
+    os.environ.pop('GAE_INSTANCE', None)
 
   def testGetCurrentModuleName_DefaultModule(self):
     """Test get_current_module_name for default engine."""
@@ -53,6 +57,12 @@ class ModulesTest(absltest.TestCase):
     """Test get_current_module_name for a non default engine."""
     os.environ['CURRENT_MODULE_ID'] = 'module1'
     os.environ['CURRENT_VERSION_ID'] = 'v1.123'
+    self.assertEqual('module1', modules.get_current_module_name())
+
+  def testGetCurrentModuleName_GaeService(self):
+    """Test get_current_module_name from GAE_SERVICE."""
+    os.environ['GAE_SERVICE'] = 'module1'
+    os.environ['GAE_VERSION'] = 'v1'
     self.assertEqual('module1', modules.get_current_module_name())
 
   def testGetCurrentVersionName_DefaultModule(self):
@@ -72,6 +82,12 @@ class ModulesTest(absltest.TestCase):
     os.environ['CURRENT_VERSION_ID'] = 'None.123'
     self.assertEqual(None, modules.get_current_version_name())
 
+  def testGetCurrentVersionName_GaeVersion(self):
+    """Test get_current_module_name from GAE_SERVICE."""
+    os.environ['GAE_SERVICE'] = 'module1'
+    os.environ['GAE_VERSION'] = 'v1'
+    self.assertEqual('v1', modules.get_current_version_name())
+
   def testGetCurrentInstanceId_Empty(self):
     """Test get_current_instance_id when none has been set in the environ."""
     self.assertEqual(None, modules.get_current_instance_id())
@@ -79,6 +95,11 @@ class ModulesTest(absltest.TestCase):
   def testGetCurrentInstanceId(self):
     """Test get_current_instance_id."""
     os.environ['INSTANCE_ID'] = '123'
+    self.assertEqual('123', modules.get_current_instance_id())
+
+  def testGetCurrentInstanceId_GaeInstance(self):
+    """Test get_current_instance_id."""
+    os.environ['GAE_INSTANCE'] = '123'
     self.assertEqual('123', modules.get_current_instance_id())
 
   def SetSuccessExpectations(self, method, expected_request, service_response):

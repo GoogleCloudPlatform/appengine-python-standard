@@ -18,8 +18,9 @@
 
 """Allows applications to identify API outages and scheduled downtime.
 
-Example::
+   Example:
 
+   ```python
     def StoreUploadedProfileImage(self):
       uploaded_image = self.request.get('img')
       # If the images API is unavailable, we'll just skip the resize.
@@ -35,7 +36,7 @@ Example::
         # self.response.out('<p>Not accepting submissions right now: %s</p>' %
                             datastore_readonly.admin_message())
         # ...render form with form elements disabled...
-
+     ```
 
 Individual API wrapper modules should expose `CapabilitySet` objects
 for users rather than relying on users to create them.  They can
@@ -111,8 +112,8 @@ class CapabilitySet(object):
   def will_remain_enabled_for(self, time=60):
     """Returns whether a capability will remain enabled.
 
-    DEPRECATED: this method was never fully implemented and is considered
-    deprecated. Use `is_enabled()` instead.
+    DEPRECATED: Use `is_enabled()` instead. This method was never fully
+    implemented.
 
     Args:
       time: Number of seconds in the future to look when checking for scheduled

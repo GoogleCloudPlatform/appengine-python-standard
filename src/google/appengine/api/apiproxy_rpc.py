@@ -53,7 +53,7 @@ class RPC(object):
   Constructor for the RPC object.
 
   All arguments are optional, and simply set members on the class.
-  These data members will be overriden by values passed to MakeCall.
+  These data members will be overriden by values passed to `MakeCall`.
   """
 
   IDLE = 0
@@ -70,8 +70,8 @@ class RPC(object):
       request: `ProtocolMessage` instance. Appropriate for the arguments.
       response: `ProtocolMessage` instance. Appropriate for the response.
       callback: `callable`. Called when call is complete.
-      deadline: `double`. Specifies the deadline for this call as the number of
-        seconds from the current time. Ignored if non-positive.
+      deadline: `double`. Specifies the deadline for this call as the number
+        of seconds from the current time. Ignored if non-positive.
       stub: `APIProxyStub` instance. Used in default `_WaitImpl` to do real
         call.
     """
@@ -110,7 +110,7 @@ class RPC(object):
 
     It will call the `_MakeRealCall` to do the real job.
 
-    Args: Same as constructor; see __init__.
+    Args: Same as constructor; see `__init__`.
 
     Raises:
       `TypeError` or `AssertionError` if an argument is of an invalid type.
@@ -140,7 +140,7 @@ class RPC(object):
     """If there was an exception, raise it now.
 
     Raises:
-      Exception of the API call or the callback, if any.
+      Exception of the API call or the `callback`, if any.
     """
     if self.exception and self._traceback:
       six.reraise(self.exception.__class__, self.exception, self._traceback)
@@ -159,12 +159,12 @@ class RPC(object):
     """Makes an asynchronous API call.
 
     For this to work the following must be set:
-      self.package: the API package name;
-      self.call: the name of the API call/method to invoke;
-      self.request: the API request body as a serialized protocol buffer.
+      `self.package`: the API package name;
+      `self.call`: the name of the API call/method to invoke;
+      `self.request`: the API request body as a serialized protocol buffer.
 
     The actual API call is made via a thread pool. The thread pool restricts the
-    number of concurrent requests to MAX_CONCURRENT_API_CALLS, so this method
+    number of concurrent requests to `MAX_CONCURRENT_API_CALLS`, so this method
     will block if that limit is exceeded, until other asynchronous calls
     resolve.
 
@@ -209,7 +209,7 @@ class RPC(object):
     self.stub.MakeSyncCall(self.package, self.call, self.request, self.response)
 
   def _CaptureTrace(self, f):
-    """Runs f() and captures exception information if raised."""
+    """Runs `f()` and captures exception information if raised."""
     try:
       f()
     except Exception:
@@ -220,7 +220,7 @@ class RPC(object):
       self._traceback = tb
 
   def _CaptureTraceAndReraise(self, f):
-    """A variant of _CaptureTrace() used in the synchronous fallback path."""
+    """A variant of `_CaptureTrace()` used in the synchronous fallback path."""
     try:
       f()
     except:

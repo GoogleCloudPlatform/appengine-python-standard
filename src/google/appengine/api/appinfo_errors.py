@@ -31,22 +31,22 @@
 
 
 class Error(Exception):
-  """Base datastore AppInfo type."""
+  """Base datastore `AppInfo` type."""
 
 
 class EmptyConfigurationFile(Error):
-  """Tried to load empty configuration file"""
+  """Tried to load empty configuration file."""
 
 
 class MultipleConfigurationFile(Error):
-  """Tried to load configuration file with multiple AppInfo objects"""
+  """Tried to load configuration file with multiple `AppInfo` objects."""
 
 
 class MultipleProjectNames(Error):
-  """Configuration file had both "application:" and "project:" fields.
+  """Configuration file had both `application:` and `project:` fields.
 
   A configuration file can specify the project name using either the old-style
-  "application: name" syntax or the newer "project: name" syntax, but not both.
+  `application: name` syntax or the newer `project: name` syntax, but not both.
   """
 
 
@@ -63,15 +63,15 @@ class MissingHandlerAttribute(Error):
 
 
 class MissingURLMapping(Error):
-  """Raised when there are no URL mappings in external appinfo."""
+  """Raised when there are no URL mappings in external `appinfo`."""
 
 
 class TooManyURLMappings(Error):
-  """Raised when there are too many URL mappings in external appinfo."""
+  """Raised when there are too many URL mappings in external `appinfo`."""
 
 
 class PositionUsedInAppYamlHandler(Error):
-  """Raised when position attribute is used in handler in AppInfoExternal."""
+  """Raised when position attribute is used in handler in `AppInfoExternal`."""
 
 
 class InvalidBuiltinFormat(Error):
@@ -87,23 +87,23 @@ class DuplicateBuiltinsSpecified(Error):
 
 
 class BackendNotFound(Error):
-  """Raised when a Backend is required but not specified."""
+  """Raised when a backend is required but not specified."""
 
 
 class DuplicateBackend(Error):
-  """Raised when a backend is found more than once in 'backends'."""
+  """Raised when a backend is found more than once in `backends`."""
 
 
 class MissingApiConfig(Error):
-  """Raised if an api_endpoint handler is configured but no api_config."""
+  """Raised if an `api_endpoint` handler is configured, but the `api_config` isn't configured."""
 
 
 class RuntimeDoesNotSupportLibraries(Error):
-  """Raised when 'libraries' is used in a runtime that does not support it."""
+  """Raised when `libraries` is used in a runtime that does not support it."""
 
 
 class DuplicateLibrary(Error):
-  """Raised when a library is found more than once in 'libraries'."""
+  """Raised when a library is found more than once in `libraries`."""
 
 
 class InvalidLibraryVersion(Error):
@@ -111,56 +111,62 @@ class InvalidLibraryVersion(Error):
 
 
 class InvalidLibraryName(Error):
-  """Raised when a library is specified that isn't supported."""
+  """Raised when a library that is specified isn't supported."""
 
 
 class ThreadsafeWithCgiHandler(Error):
-  """Raised when threadsafe is enabled with a CGI handler specified."""
+  """Raised when `threadsafe` is enabled with a CGI handler specified."""
 
 
 class InvalidHttpHeaderName(Error):
   """Raised when an invalid HTTP header name is used.
 
-  This issue arrises what a static handler uses http_headers. For example, the
-  following would not be allowed:
+  This error comes up when a static handler uses `http_headers` with an invalid
+  HTTP header name. For example, the following would not be allowed:
 
+    ```python
     handlers:
     - url: /static
       static_dir: static
       http_headers:
         D@nger: Will Robinson
+     ```
   """
 
 
 class InvalidHttpHeaderValue(Error):
   """Raised when an invalid HTTP header value is used.
 
-  This issue arrises what a static handler uses http_headers. For example, the
-  following would not be allowed:
+  This error comes up when a static handler uses `http_headers` with an invalid
+  HTTP header value. For example, the following would not be allowed:
 
+    ```python
     handlers:
     - url: /static
       static_dir: static
       http_headers:
         Some-Unicode: "\u2628"
+     ```
   """
 
 
 class ContentTypeSpecifiedMultipleTimes(Error):
-  """Raised when mime_type and http_headers specify a mime type.
+  """Raised when `mime_type` and `http_headers` specify a mime type.
 
-  N.B. This will be raised even when both fields specify the same content type.
-  E.g. the following configuration (snippet) will be rejected:
+  This error will be raised even when both fields specify the same content type.
+  For example, the following configuration will be rejected:
 
+    ```python
     handlers:
     - url: /static
       static_dir: static
       mime_type: text/html
       http_headers:
         content-type: text/html
+    ```
 
-  This only applies to static handlers i.e. a handler that specifies static_dir
-  or static_files.
+  This only applies to static handlers, such as a handler that specifies
+  `static_dir` or `static_files`.
   """
 
 
@@ -184,14 +190,14 @@ class NotEnoughAutoscalingUtilizationTargetsError(Error):
 
 
 class MissingRuntimeError(Error):
-  """Raised when the "runtime" field is omitted for a non-vm."""
+  """Raised when the `runtime` field is omitted for a non-VM."""
 
 
 class MissingEndpointsConfigId(Error):
   """Raised when an Endpoints config id is expected.
 
   An Endpoints config id is expected when the Endpoints rollout strategy is
-  unspecified or set to "fixed".
+  unspecified or set to `fixed`.
   """
 
 
@@ -199,5 +205,5 @@ class UnexpectedEndpointsConfigId(Error):
   """Raised when an Endpoints config id is unexpected.
 
   An Endpoints config id is forbidden when the Endpoints rollout strategy is
-  set to "managed".
+  set to `managed`.
   """

@@ -17,7 +17,7 @@
 
 
 
-"""Errors used in the YAML API, which is used by app developers."""
+"""Errors used in the YAML API."""
 
 
 
@@ -26,11 +26,11 @@ class Error(Exception):
   """Base datastore yaml error type."""
 
 class ProtocolBufferParseError(Error):
-  """Error in protocol buffer parsing"""
+  """Error in protocol buffer parsing."""
 
 
 class EmptyConfigurationFile(Error):
-  """Tried to load empty configuration file."""
+  """Tried to load an empty configuration file."""
 
 
 class MultipleConfigurationFile(Error):
@@ -46,7 +46,7 @@ class UnexpectedAttribute(Error):
 
 
 class DuplicateAttribute(Error):
-  """Generated when an attribute is assigned to twice."""
+  """Generated when an attribute is assigned twice."""
 
 
 class ListenerConfigurationError(Error):
@@ -54,7 +54,7 @@ class ListenerConfigurationError(Error):
 
 
 class IllegalEvent(Error):
-  """Raised when an unexpected event type is received by listener."""
+  """Raised when an unexpected event type is received by the listener."""
 
 
 class InternalError(Error):
@@ -62,15 +62,15 @@ class InternalError(Error):
 
 
 class EventListenerError(Error):
-  """Top level exception raised by YAML listener.
+  """Top level exception raised by the YAML listener.
 
-  Any exception raised within the process of parsing a YAML file via an
-  EventListener is caught and wrapped in an EventListenerError.  The causing
+  Any exception raised within the process of parsing a YAML file from an
+  `EventListener` is caught and wrapped in an `EventListenerError`. The causing
   exception is maintained, but additional useful information is saved which
   can be used for reporting useful information to users.
 
   Attributes:
-    cause: The original exception which caused the EventListenerError.
+    cause: The original exception which caused the `EventListenerError`.
   """
 
   def __init__(self, cause):
@@ -88,14 +88,14 @@ class EventListenerError(Error):
 
 
 class EventListenerYAMLError(EventListenerError):
-  """Generated specifically for yaml.error.YAMLError."""
+  """Generated specifically for `yaml.error.YAMLError`."""
 
 
 class EventError(EventListenerError):
-  """Generated specifically when an error occurs in event handler.
+  """Generated specifically when an error occurs in the event handler.
 
   Attributes:
-    cause: The original exception which caused the EventListenerError.
+    cause: The original exception which caused the `EventListenerError`.
     event: Event being handled when exception occured.
   """
 

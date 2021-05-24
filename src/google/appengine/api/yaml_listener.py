@@ -16,7 +16,7 @@
 #
 
 
-"""PyYAML event listener
+"""PyYAML event listener.
 
 Contains class which interprets YAML events and forwards them to
 a handler object.
@@ -25,9 +25,8 @@ a handler object.
 from __future__ import absolute_import
 
 import copy
-from ruamel import yaml
-
 from google.appengine.api import yaml_errors
+from ruamel import yaml
 
 
 
@@ -50,52 +49,53 @@ class EventHandler(object):
 
   Implement this interface to define specific YAML event handling class.
   Implementing classes instances are passed to the constructor of
-  EventListener to act as a receiver of YAML parse events.
+  `EventListener` to act as a receiver of YAML parse events.
   """
   def StreamStart(self, event, loader):
-    """Handle start of stream event"""
+    """Handles start of stream event."""
 
   def StreamEnd(self, event, loader):
-    """Handle end of stream event"""
+    """Handles end of stream event."""
 
   def DocumentStart(self, event, loader):
-    """Handle start of document event"""
+    """Handles start of document event."""
 
   def DocumentEnd(self, event, loader):
-    """Handle end of document event"""
+    """Handles end of document event."""
 
   def Alias(self, event, loader):
-    """Handle alias event"""
+    """Handles alias event."""
 
   def Scalar(self, event, loader):
-    """Handle scalar event"""
+    """Handles scalar event."""
 
   def SequenceStart(self, event, loader):
-    """Handle start of sequence event"""
+    """Handles start of sequence event."""
 
   def SequenceEnd(self, event, loader):
-    """Handle end of sequence event"""
+    """Handles end of sequence event."""
 
   def MappingStart(self, event, loader):
-    """Handle start of mapping event"""
+    """Handles start of mapping event."""
 
   def MappingEnd(self, event, loader):
-    """Handle end of mapping event"""
+    """Handles end of mapping event."""
 
 
 class EventListener(object):
   """Helper class to re-map PyYAML events to method calls.
 
-  By default, PyYAML generates its events via a Python generator.  This class
+  By default, PyYAML generates its events via a Python generator. This class
   is a helper that iterates over the events from the PyYAML parser and forwards
-  them to a handle class in the form of method calls.  For simplicity, the
+  them to a handle class in the form of method calls. For simplicity, the
   underlying event is forwarded to the handler as a parameter to the call.
 
-  This object does not itself produce iterable objects, but is really a mapping
-  to a given handler instance.
+  This object does not produce iterable objects itself, but is instead a
+  mapping to a given handler instance.
 
     Example use:
 
+      ```python
       class PrintDocumentHandler(object):
         def DocumentStart(event):
           print "A new document has been started"
@@ -108,28 +108,30 @@ class EventListener(object):
 
       >>> A new document has been started
           A new document has been started
+      ```
 
-  In the example above, the implemented handler class (PrintDocumentHandler)
-  has a single method which reports each time a new document is started within
-  a YAML file.  It is not necessary to subclass the EventListener, merely it
-  receives a PrintDocumentHandler instance.  Every time a new document begins,
-  PrintDocumentHandler.DocumentStart is called with the PyYAML event passed
-  in as its parameter..
+  In the example above, the implemented handler class (`PrintDocumentHandler`)
+  has a single method that reports each time a new document is started within a
+  YAML file.  It is not necessary to subclass the `EventListener`, since only it
+  receives a `PrintDocumentHandler` instance. Every time a new document begins,
+  `PrintDocumentHandler.DocumentStart` is called with the PyYAML event passed in
+  as its parameter.
+
+  The constructor initializes the PyYAML event listener and constructs internal
+  mapping directly from event type to method on the actual handler. This
+  prevents reflection being used during the actual parse time.
   """
 
   def __init__(self, event_handler):
-    """Initialize PyYAML event listener.
-
-    Constructs internal mapping directly from event type to method on actual
-    handler.  This prevents reflection being used during actual parse time.
+    """Constructor.
 
     Args:
       event_handler: Event handler that will receive mapped events. Must
         implement at least one appropriate handler method named from
-        the values of the _EVENT_METHOD_MAP.
+        the values of the `_EVENT_METHOD_MAP`.
 
     Raises:
-      ListenerConfigurationError if event_handler is not an EventHandler.
+      `ListenerConfigurationError` if `event_handler` is not an `EventHandler`.
     """
     if not isinstance(event_handler, EventHandler):
       raise yaml_errors.ListenerConfigurationError(
@@ -141,13 +143,13 @@ class EventListener(object):
       self._event_method_map[event] = getattr(event_handler, method)
 
   def HandleEvent(self, event, loader=None):
-    """Handle individual PyYAML event.
+    """Handles individual PyYAML event.
 
     Args:
       event: Event to forward to method call in method call.
 
     Raises:
-      IllegalEvent when receives an unrecognized or unsupported event type.
+      `IllegalEvent` when receives an unrecognized or unsupported event type.
     """
 
     if event.__class__ not in _EVENT_METHOD_MAP:
@@ -217,14 +219,14 @@ class EventListener(object):
       raise yaml_errors.EventListenerYAMLError(e)
 
   def Parse(self, stream, loader_class=yaml.loader.SafeLoader, **loader_args):
-    """Call YAML parser to generate and handle all events.
+    """Calls YAML parser to generate and handle all events.
 
-    Calls PyYAML parser and sends resulting generator to handle_event method
+    Calls PyYAML parser and sends resulting generator to `handle_event` method
     for processing.
 
     Args:
       stream: String document or open file object to process as per the
-        yaml.parse method.  Any object that implements a 'read()' method which
+        `yaml.parse` method. Any object that implements a `read()` method which
         returns a string document will work with the YAML parser.
       loader_class: Used for dependency injection.
       **loader_args: Pass to the loader on construction.
