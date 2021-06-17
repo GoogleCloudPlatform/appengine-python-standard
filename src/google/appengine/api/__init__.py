@@ -38,6 +38,7 @@ Example for a Flask app:
   ```
 """
 import os
+from google.appengine.api import full_app_id
 
 
 
@@ -45,14 +46,16 @@ import os
 def wrap_wsgi_app(app, use_legacy_context_mode=True):
   """Wrap a WSGI app with middlewares required to access App Engine APIs."""
 
-  from google.appengine.ext.vmruntime import middlewares
-  from google.appengine.ext.vmruntime import vmstub
 
-  vmstub.Register(vmstub.VMStub())
-
+  from google.appengine.runtime import middlewares
+  from google.appengine.runtime import default_api_stub
 
 
-  os.environ['APPLICATION_ID'] = os.environ['GAE_APPLICATION']
+  default_api_stub.Register(default_api_stub.DefaultApiStub())
+
+
+
+  full_app_id.normalize()
 
   def if_legacy(array):
     return array if use_legacy_context_mode else []

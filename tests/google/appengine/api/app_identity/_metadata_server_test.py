@@ -14,12 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """Tests for google.third_party.py.google.appengine.api.app_identity._metadata_server."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import time
 

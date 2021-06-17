@@ -18,17 +18,11 @@
 
 
 
-
 """Sends email on behalf of the application.
 
 This module provides functions for application developers to provide email
 services for their applications. The module also provides a few utility methods.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-
-from __future__ import print_function
 
 
 

@@ -30,7 +30,6 @@
 
 
 
-
 """Higher-level Query wrapper.
 
 There are perhaps too many query APIs in the world.
@@ -155,12 +154,6 @@ in a tasklet, properly yielding when appropriate::
     print emp.name, emp.age
 
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import with_statement
-del with_statement
 
 
 

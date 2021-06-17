@@ -22,11 +22,6 @@ be started and stopped in local dev and/or testing environments.
 These patchers are expected to be created by mock.patch().
 """
 
-from __future__ import absolute_import
-from __future__ import division
-
-from __future__ import print_function
-
 import abc
 import logging
 import six
@@ -54,8 +49,8 @@ class Patchers(list):
 
 
 
-      if module_name.startswith('titanoboa_apphosting'):
-        module_name = module_name.replace('titanoboa_apphosting',
+      if module_name.startswith('google.appengine'):
+        module_name = module_name.replace('google.appengine',
                                           'google.appengine', 1)
 
       mocks[module_name + '.' + patcher.attribute] = m

@@ -28,8 +28,6 @@
 
 
 
-
-
 """Polymorphic models and queries.
 
 The standard NDB Model class only supports 'functional polymorphism'.

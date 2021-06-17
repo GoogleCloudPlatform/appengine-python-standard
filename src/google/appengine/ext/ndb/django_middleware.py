@@ -28,8 +28,6 @@
 
 
 
-
-
 """Django middleware for NDB."""
 
 

@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """Stub implementation of the modules service."""
 
 from google.appengine.api import apiproxy_stub

@@ -17,10 +17,8 @@
 
 
 
-
 """Unittests for the User class and the stub UserService API."""
 
-from __future__ import absolute_import
 
 
 

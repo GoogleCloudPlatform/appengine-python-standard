@@ -16,7 +16,6 @@
 #
 
 
-
 """Stub version of the capability service API."""
 
 

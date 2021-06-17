@@ -18,8 +18,6 @@
 
 """A request-local environment and logging stream."""
 
-from __future__ import absolute_import
-
 
 
 

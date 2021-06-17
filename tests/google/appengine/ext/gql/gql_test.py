@@ -17,8 +17,6 @@
 
 
 
-
-
 """GQL interface around the datastore API.
 
 The functionality here is not the same as the normal datastore
@@ -33,28 +31,25 @@ API. This will change as the GQL API adds functionality not available in
 the datastore API.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import datetime
 import logging
 import os
 import sys
 import time
 
-from six.moves import range
-from six.moves import zip
-
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import datastore
 from google.appengine.api import datastore_errors
 from google.appengine.api import datastore_file_stub
 from google.appengine.api import datastore_types
+from google.appengine.api import full_app_id
 from google.appengine.api import namespace_manager
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import gql
+from six.moves import range
+from six.moves import zip
+
 from absl.testing import absltest
 
 
@@ -83,7 +78,7 @@ class GqlTest(absltest.TestCase):
                                                  '/dev/null',
                                                  '/dev/null')
     apiproxy_stub_map.apiproxy.RegisterStub('datastore_v3', stub)
-    os.environ['APPLICATION_ID'] = 'test_app'
+    full_app_id.put('test_app')
 
 
     os.environ['TZ'] = 'UTC'
@@ -1197,7 +1192,7 @@ class BugsTest(absltest.TestCase):
                                                  '/dev/null',
                                                  '/dev/null')
     apiproxy_stub_map.apiproxy.RegisterStub('datastore_v3', stub)
-    os.environ['APPLICATION_ID'] = 'test_app'
+    full_app_id.put('test_app')
 
 
     self.bret = datastore.Entity('Person')
@@ -1380,7 +1375,7 @@ class GqlMultiQueryTest(absltest.TestCase):
                                                  '/dev/null',
                                                  '/dev/null')
     apiproxy_stub_map.apiproxy.RegisterStub('datastore_v3', stub)
-    os.environ['APPLICATION_ID'] = 'test_app'
+    full_app_id.put('test_app')
 
 
     self.bret = datastore.Entity('Person')

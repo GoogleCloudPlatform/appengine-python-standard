@@ -22,7 +22,6 @@ Contains class which interprets YAML events and forwards them to
 a handler object.
 """
 
-from __future__ import absolute_import
 
 import copy
 from google.appengine.api import yaml_errors

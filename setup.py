@@ -16,6 +16,7 @@ setuptools.setup(
     package_dir={"": "src"},
     install_requires=[
         "frozendict>=1.2",
+        "google-auth>=1.31.0",
         "protobuf>=3.14.0",
         "requests>=2.25.1",
         "ruamel.yaml>=0.15,<0.16",

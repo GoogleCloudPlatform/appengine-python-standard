@@ -16,7 +16,6 @@
 #
 
 
-
 """Simple, schema-based database abstraction layer for the datastore.
 
 Modeled after Django's abstraction layer on top of SQL databases,
@@ -74,10 +73,6 @@ preconfigured to return all matching comments:
        print comment.body
 
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import copy
 import datetime

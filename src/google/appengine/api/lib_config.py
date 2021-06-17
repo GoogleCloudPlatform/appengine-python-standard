@@ -16,7 +16,6 @@
 #
 
 
-
 """A mechanism for library configuration.
 
 Whenever App Engine library code needs a user-configurable value, it should use
@@ -68,10 +67,6 @@ Example library use:
     def add_middleware(app): return config_handle.add_middleware(app)
     ```
 """
-
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import importlib
 import logging

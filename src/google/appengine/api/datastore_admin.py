@@ -17,7 +17,6 @@
 
 
 
-
 """The Python datastore admin API for managing indices and schemas.
 """
 

@@ -17,7 +17,6 @@
 
 
 
-
 """Container of APIProxy stubs for more convenient unittesting.
 
 Classes/variables/functions defined here:
@@ -34,8 +33,6 @@ Classes/variables/functions defined here:
 
 
 
-
-from __future__ import absolute_import
 
 from concurrent import futures
 import inspect

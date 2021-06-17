@@ -16,7 +16,6 @@
 #
 
 
-
 """Errors thrown by apiproxy.MakeSyncCall.
 """
 

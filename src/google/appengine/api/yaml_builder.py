@@ -29,8 +29,6 @@ object so that it can construct a properly structured object.
 
 
 
-from __future__ import absolute_import
-
 from ruamel import yaml
 
 from google.appengine.api import yaml_errors

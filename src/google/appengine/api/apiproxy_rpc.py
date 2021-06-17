@@ -16,8 +16,6 @@
 #
 
 
-
-
 """Base class for implementing RPC of API proxy stubs."""
 
 
@@ -26,8 +24,6 @@
 
 
 
-
-from __future__ import absolute_import
 
 from concurrent import futures
 import imp

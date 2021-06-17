@@ -16,7 +16,6 @@
 #
 
 
-
 """Support for polymorphic models and queries.
 
 The Model class on its own is only able to support functional polymorphism.
@@ -31,10 +30,6 @@ only return those instances.
 This module allows applications to specify class hierarchies that support
 polymorphic queries.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import six
 

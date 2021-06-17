@@ -15,16 +15,11 @@
 # limitations under the License.
 #
 
-
 """Unit-test for google.appengine.api.memcache module.
 
 This tests that google.appengine.api.memcache sets up request protos
 correctly, and returns the correct results assuming faked response protos.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import collections
 import hashlib

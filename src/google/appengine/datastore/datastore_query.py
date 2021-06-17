@@ -17,7 +17,6 @@
 
 
 
-
 """A thin wrapper around datastore query RPC calls.
 
 This provides wrappers around the internal only datastore_pb library and is
@@ -32,11 +31,6 @@ only and should not be used by developers!
 
 
 
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import base64
 import collections

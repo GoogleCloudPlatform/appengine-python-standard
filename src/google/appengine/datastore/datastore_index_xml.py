@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-
 """Directly processes text of datastore-indexes.xml.
 
 IndexesXmlParser is called with an XML string to produce an IndexXml object
@@ -30,10 +29,6 @@ Index: describes a single index specified in datastore-indexes.xml
 
 
 
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
 
 from xml.etree import ElementTree
 

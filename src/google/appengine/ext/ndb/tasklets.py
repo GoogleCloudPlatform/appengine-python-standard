@@ -28,8 +28,6 @@
 
 
 
-
-
 """A tasklet decorator.
 
 Tasklets are a way to write concurrently running functions without
@@ -92,10 +90,6 @@ suspend -- there's no need to insert a dummy yield in order to make
 the tasklet into a generator.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import collections
 import functools
 import logging
@@ -105,20 +99,20 @@ import threading
 import types
 import weakref
 
-import six
-from six.moves import map
-
 from google.appengine.api import apiproxy_rpc
 from google.appengine.api import apiproxy_stub
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import datastore
 from google.appengine.api import datastore_errors
+from google.appengine.api import full_app_id
 from google.appengine.api import namespace_manager
 from google.appengine.datastore import datastore_pbs
 from google.appengine.datastore import datastore_rpc
 from google.appengine.ext.ndb import eventloop
 from google.appengine.ext.ndb import utils
 from google.appengine.runtime import apiproxy
+import six
+from six.moves import map
 
 __all__ = ['Return', 'tasklet', 'synctasklet', 'toplevel', 'sleep',
            'add_flow_exception', 'get_return_value',
@@ -1240,14 +1234,14 @@ def _make_cloud_datastore_context(app_id, external_app_ids=()):
   import googledatastore
   from google.appengine.datastore import cloud_datastore_v1_remote_stub
 
-  current_app_id = os.environ.get('APPLICATION_ID', None)
+  current_app_id = full_app_id.get()
   if current_app_id and current_app_id != app_id:
 
 
     raise ValueError('Cannot create a Cloud Datastore context that connects '
                      'to an application (%s) that differs from the application '
                      'already connected to (%s).' % (app_id, current_app_id))
-  os.environ['APPLICATION_ID'] = app_id
+  full_app_id.put(app_id)
 
   id_resolver = datastore_pbs.IdResolver((app_id,) + tuple(external_app_ids))
   project_id = id_resolver.resolve_project_id(app_id)

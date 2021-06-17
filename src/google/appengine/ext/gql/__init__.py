@@ -17,8 +17,6 @@
 
 
 
-
-
 """GQL -- the SQL-like interface to the datastore.
 
 Defines the GQL-based query class, which is a query mechanism
@@ -30,10 +28,6 @@ data stored.
 
 
 
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import calendar
 import datetime

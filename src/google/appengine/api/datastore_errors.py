@@ -17,7 +17,6 @@
 
 
 
-
 """Errors used in the Python datastore API."""
 
 

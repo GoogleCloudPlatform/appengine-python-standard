@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-
 """Unittest for the memcache_stub module when memcache is unavailable."""
 
 

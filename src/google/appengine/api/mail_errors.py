@@ -16,7 +16,6 @@
 #
 
 
-
 """Exceptions raised by the Mail API."""
 
 

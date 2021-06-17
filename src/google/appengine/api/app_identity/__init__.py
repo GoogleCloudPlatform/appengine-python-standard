@@ -16,7 +16,6 @@
 #
 
 
-
 """The App Identity API lets an application discover its application ID.
 
 Using the ID, an App Engine application can assert its identity to other App

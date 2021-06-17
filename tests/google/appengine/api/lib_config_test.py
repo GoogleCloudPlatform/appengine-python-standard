@@ -16,11 +16,7 @@
 #
 
 
-
 """Unit tests for the lib_config module."""
-
-from __future__ import absolute_import
-from __future__ import unicode_literals
 
 import logging
 import sys

@@ -16,11 +16,7 @@
 #
 
 
-
-
 """Tests for google.appengine.api.backendinfo."""
-
-from __future__ import absolute_import
 
 from absl import app
 from google.appengine.api import backendinfo

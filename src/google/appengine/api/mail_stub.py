@@ -15,13 +15,8 @@
 # limitations under the License.
 #
 
-
 """Stub version of the mail API, writes email to logs and can optionally
 send real email via SMTP or sendmail."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 
 

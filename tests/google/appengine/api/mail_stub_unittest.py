@@ -16,12 +16,7 @@
 #
 
 
-
 """Unit-test for google.appengine.api.mail_stub module"""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 
 

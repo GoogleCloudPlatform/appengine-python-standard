@@ -28,8 +28,6 @@
 
 
 
-
-
 """An event loop.
 
 This event loop should handle both asynchronous App Engine RPC objects

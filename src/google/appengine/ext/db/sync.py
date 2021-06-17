@@ -16,7 +16,6 @@
 #
 
 
-
 """Synchronization primitives backed by the datastore.
 
 The Mutex class's interface matches the Python standard library's

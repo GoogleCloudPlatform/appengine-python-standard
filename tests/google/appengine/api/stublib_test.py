@@ -14,13 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-
 """Tests for google.third_party.py.google.appengine.api.stub."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import mock
 
@@ -55,7 +49,7 @@ class PatchersTest(absltest.TestCase):
       p.start.assert_called_once_with()
 
   def testCanonicalName(self):
-    self.stub.patchers.append(PatcherMock('titanoboa_apphosting.foo', 'bar'))
+    self.stub.patchers.append(PatcherMock('google.appengine.foo', 'bar'))
     mocks = self.stub.patchers.StartAll()
     self.assertIn('google.appengine.foo.bar', mocks)
 

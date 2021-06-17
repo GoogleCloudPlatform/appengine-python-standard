@@ -22,11 +22,6 @@ This service behaves the same as the production service, except using
 a private key specified when starting dev_appserver.py.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import with_statement
-
 
 
 

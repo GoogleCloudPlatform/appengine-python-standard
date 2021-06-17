@@ -16,7 +16,6 @@
 #
 
 
-
 """Tests for polymorphic Datstore models."""
 
 
@@ -26,17 +25,14 @@
 
 
 
-
-
-import google
-import mox
-import os
-
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import datastore
 from google.appengine.api import datastore_file_stub
+from google.appengine.api import full_app_id
 from google.appengine.ext import db
 from google.appengine.ext.db import polymodel
+import mox
+
 from absl.testing import absltest
 
 
@@ -56,7 +52,7 @@ class PolyModelTest(absltest.TestCase):
     apiproxy_stub_map.apiproxy.RegisterStub('datastore_v3', stub)
 
     self.mox = mox.Mox()
-    os.environ['APPLICATION_ID'] = 'test_app'
+    full_app_id.put('test_app')
 
   def tearDown(self):
     """Clean up test harness."""

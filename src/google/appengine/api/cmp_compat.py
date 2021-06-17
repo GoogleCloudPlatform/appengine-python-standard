@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-
 """Helpers providing a bridge between the Python 2 __cmp__ and Python 3.
 
 Python 2 uses methods called __cmp__ to override object comparison behavior; in
@@ -27,11 +25,6 @@ instance of "int" are always less than instances of "str").
 
 This file offers some utilities to bridge the gap between Python 2 and 3.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-
-from __future__ import print_function
 
 
 import functools

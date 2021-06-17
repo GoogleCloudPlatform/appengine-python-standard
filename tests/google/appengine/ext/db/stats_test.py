@@ -16,19 +16,18 @@
 #
 
 
-
-
 """Tests for google.appengine.ext.db.stats."""
 
 import datetime
-import os
 
-from absl.testing import absltest
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import datastore
 from google.appengine.api import datastore_file_stub
+from google.appengine.api import full_app_id
 from google.appengine.datastore import datastore_stub_util
 from google.appengine.ext.db import stats
+
+from absl.testing import absltest
 
 
 class StatsTest(absltest.TestCase):
@@ -42,7 +41,7 @@ class StatsTest(absltest.TestCase):
     self.datastore_stub.Clear()
     self.datastore_stub.SetAutoIdPolicy(datastore_stub_util.SEQUENTIAL)
     apiproxy_stub_map.apiproxy.RegisterStub('datastore_v3', self.datastore_stub)
-    os.environ['APPLICATION_ID'] = 'test_app'
+    full_app_id.put('test_app')
 
     self.PopulateStatEntities()
 

@@ -16,7 +16,6 @@
 #
 
 
-
 """Unit tests for the stub OAuth API."""
 
 

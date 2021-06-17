@@ -30,7 +30,6 @@
 
 
 
-
 """Model and Property classes and associated stuff.
 
 A model class represents the structure of entities stored in the
@@ -315,10 +314,6 @@ subclasses may define pre-call and post-call hooks for most operations
 subclassed to suit various needs.  Documentation for writing a
 Property subclass is in the docstring for the Property class.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import collections
 import copy

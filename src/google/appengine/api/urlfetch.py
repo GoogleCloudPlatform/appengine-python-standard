@@ -16,13 +16,7 @@
 #
 
 
-
-
-"""URL downloading API."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+"""`URL` downloading `API`."""
 
 import email
 import os
@@ -191,10 +185,10 @@ class _CaselessDict(IterableUserDict):
 
 
 def _is_fetching_self(url, method):
-  """Checks if the fetch is for the same URL from which it originated.
+  """Checks if the fetch is for the same `URL` from which it originated.
 
   Args:
-    url: `string`. The URL being fetched.
+    url: `string`. The `URL` being fetched.
     method: Value from `_VALID_METHODS`.
 
   Returns:
@@ -221,7 +215,7 @@ def _is_fetching_self(url, method):
 
 
 def create_rpc(deadline=None, callback=None):
-  """Creates an RPC object for use with the URL Fetch API.
+  """Creates an `RPC` object for use with the `URL` Fetch `API`.
 
   Args:
     deadline: Optional deadline in seconds for the operation; the default is a
@@ -239,46 +233,45 @@ def create_rpc(deadline=None, callback=None):
 def fetch(url, payload=None, method=GET, headers={},
           allow_truncated=False, follow_redirects=True,
           deadline=None, validate_certificate=None):
-  """Fetches the given HTTP URL, blocking until the result is returned.
+  """Fetches the given `HTTP` URL, blocking until the result is returned.
 
-  URLs are fetched using one of the following HTTP methods:
-      - GET
-      - POST
-      - HEAD
-      - PUT
-      - DELETE
-      - PATCH
+  `URLs` are fetched using one of the following `HTTP` methods:
+      - `GET`
+      - `POST`
+      - `HEAD`
+      - `PUT`
+      - `DELETE`
+      - `PATCH`
 
   To fetch the result, a HTTP/1.1-compliant proxy is used.
 
   Args:
     method: The constants `GET`, `POST`, `HEAD`, `PUT`, `DELETE`, or `PATCH` or
-        the same HTTP methods as strings.
+      the same `HTTP` methods as strings.
     payload: `POST`, `PUT`, or `PATCH` payload (implies method is not `GET`,
-        `HEAD`, or `DELETE`). This argument is ignored if the method is not
-        `POST`, `PUT`, or `PATCH`.
-    headers: Dictionary of HTTP headers to send with the request.
+      `HEAD`, or `DELETE`). This argument is ignored if the method is not
+      `POST`, `PUT`, or `PATCH`.
+    headers: Dictionary of `HTTP` headers to send with the request.
     allow_truncated: If set to `True`, truncates large responses and returns
-        them without raising an error. Otherwise, a `ResponseTooLargeError` is
-        raised when a response is truncated.
+      them without raising an error. Otherwise, a `ResponseTooLargeError` is
+      raised when a response is truncated.
     follow_redirects: If set to `True` (the default), redirects are
-        transparently followed. If there are less than five redirects, the
-        response contains the final destination's payload, and the response
-        status is `200`. You lose, however, the redirect chain information.
-        If set to `False`, you see the HTTP response yourself, including the
-        `Location` header, and redirects are not followed.
+      transparently followed. If there are less than five redirects, the
+      response contains the final destination's payload, and the response status
+      is `200`. You lose, however, the redirect chain information. If set to
+      `False`, you see the `HTTP` response yourself, including the `Location`
+      header, and redirects are not followed.
     deadline: Deadline in seconds for the operation.
     validate_certificate: If set to `True`, requests are not sent to the server
-        unless the certificate is valid, signed by a trusted CA, and the host
-        name matches the certificate. A value of `None` (default) indicates
-        that the behavior will be chosen by the underlying `urlfetch`
-        implementation.
+      unless the certificate is valid, signed by a trusted `CA`, and the host
+      name matches the certificate. A value of `None` (default) indicates that
+      the behavior will be chosen by the underlying `urlfetch` implementation.
 
   Returns:
     object: An object containing following fields:
 
         - `content`: A `string` that contains the response from the server.
-        - `status_code`: The HTTP status code that was returned by the server.
+        - `status_code`: The `HTTP` status code that was returned by the server.
         - `headers`: The `dict` of headers that was returned by the server.
 
   Raises:
@@ -287,8 +280,8 @@ def fetch(url, payload=None, method=GET, headers={},
 
 
   Note:
-      HTTP errors are returned as a part of the return structure. HTTP errors
-      like `404` do not result in an exception. See `urlfetch_errors` for
+      `HTTP` errors are returned as a part of the return structure. `HTTP`
+      errors like `404` do not result in an exception. See `urlfetch_errors` for
       details.
 
   """
@@ -303,7 +296,7 @@ def fetch(url, payload=None, method=GET, headers={},
 def make_fetch_call(rpc, url, payload=None, method=GET, headers={},
                     allow_truncated=False, follow_redirects=True,
                     validate_certificate=None):
-  """Executes the RPC call to fetch a given HTTP URL.
+  """Executes the `RPC` call to fetch a given `HTTP` URL.
 
   The first argument is a `UserRPC` instance.  See `urlfetch.fetch` for a
   thorough description of the remaining arguments.
@@ -315,7 +308,7 @@ def make_fetch_call(rpc, url, payload=None, method=GET, headers={},
         requested `url`.
 
   Returns:
-    The RPC object that was passed into the function.
+    The `RPC` object that was passed into the function.
 
   """
 
@@ -375,7 +368,7 @@ def make_fetch_call(rpc, url, payload=None, method=GET, headers={},
 
 
 def _get_fetch_result(rpc):
-  """Checks for success, handles exceptions, and returns a converted RPC result.
+  """Checks for success, handles exceptions, and returns a converted `RPC` result.
 
   This method waits for the `rpc` if it has not yet finished and calls the
   post-call hooks on the first invocation.
@@ -384,21 +377,21 @@ def _get_fetch_result(rpc):
     rpc: A `UserRPC` object.
 
   Raises:
-    InvalidURLError: If the URL was invalid.
-    DownloadError: If there was a problem fetching the URL.
+    InvalidURLError: If the `URL` was invalid.
+    DownloadError: If there was a problem fetching the `URL`.
     PayloadTooLargeError: If the request and its payload was larger than the
         allowed limit.
     ResponseTooLargeError: If the response was either truncated (and
         `allow_truncated=False` was passed to `make_fetch_call()`), or if it
         was too big for us to download.
-    MalformedReplyError: If an invalid HTTP response was returned.
+    MalformedReplyError: If an invalid `HTTP` response was returned.
     TooManyRedirectsError: If the redirect limit was hit while `follow_rediects`
         was set to `True`.
     InternalTransientError: An internal error occurred. Wait a few minutes, then
         try again.
     ConnectionClosedError: If the target server prematurely closed the
         connection.
-    DNSLookupFailedError: If the DNS lookup for the URL failed.
+    DNSLookupFailedError: If the `DNS` lookup for the `URL` failed.
     DeadlineExceededError: If the deadline was exceeded; occurs when the
         client-supplied `deadline` is invalid or if the client did not specify a
         `deadline` and the system default value is invalid.
@@ -487,7 +480,7 @@ Fetch = fetch
 
 
 def CreateHTTPHeaders(data):
-  """Creates HTTPHeaders that are compatible with both Python 2 or Python 3."""
+  """Creates `HTTPHeaders` that are compatible with both Python 2 or Python 3."""
   if six.PY2:
     return six.moves.http_client.HTTPMessage(six.StringIO(data))
   else:

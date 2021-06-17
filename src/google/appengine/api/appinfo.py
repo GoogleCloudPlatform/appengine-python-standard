@@ -17,7 +17,6 @@
 
 
 
-
 """AppInfo tools.
 
 This library allows you to work with AppInfo records in memory, as well as store
@@ -36,10 +35,6 @@ and load from configuration files.
 
 
 
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import logging
 import re

@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """Minimal library for communicating with the metadata server.
 
 Branched from
@@ -22,14 +21,11 @@ http://google/third_party/py/google/auth/compute_engine/_metadata.py
 and enhanced to support explicit oauth2 scopes.
 """
 
-from __future__ import absolute_import
-from __future__ import division
 
-from __future__ import print_function
 
 import os
 import time
-from typing import List, Tuple, Text
+from typing import List, Optional, Text, Tuple
 
 import frozendict
 import requests
@@ -56,8 +52,9 @@ def _get(path: Text, root: Text = _METADATA_ROOT, **kwargs):
   return response.json()
 
 
-def get_service_account_token(scopes: List[Text],
-                              service_account: Text = None) -> Tuple[Text, int]:
+def get_service_account_token(
+    scopes: List[Text],
+    service_account: Optional[Text] = None) -> Tuple[Text, int]:
   """Get the OAuth 2.0 access token for a service account.
 
   Args:

@@ -16,15 +16,8 @@
 #
 
 
-
 """Tests for the 'taskqueue' module."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-
-from google.appengine.tools import os_compat
 
 import datetime
 import functools
@@ -35,21 +28,23 @@ import time
 import google
 
 from absl import app
-import mox
-import six
-from six.moves import range
-from six.moves import zip
-
 from google.appengine.api import apiproxy_rpc
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import datastore
 from google.appengine.api import datastore_errors
+from google.appengine.api import full_app_id
 from google.appengine.api import module_testutil
 from google.appengine.api import modules
 from google.appengine.api.modules import modules_service_pb2
 from google.appengine.api.taskqueue import taskqueue
 from google.appengine.api.taskqueue import taskqueue_service_bytes_pb2 as taskqueue_service_pb2
 from google.appengine.runtime import apiproxy_errors
+from google.appengine.tools import os_compat
+import mox
+import six
+from six.moves import range
+from six.moves import zip
+
 from absl.testing import absltest
 
 
@@ -3321,7 +3316,7 @@ class QueueTransactionalAddTest(HttpEnvironTest):
     self.tx_handle = 42
     self.payload = 'some-data'
 
-    os.environ['APPLICATION_ID'] = self.APP_ID
+    full_app_id.put(self.APP_ID)
     self.mox = mox.Mox()
     self.mox.StubOutWithMock(apiproxy_stub_map, 'CreateRPC')
 
