@@ -1,4 +1,4 @@
-# Google App Engine Python 3 Standard Environment API library (alpha)
+# Google App Engine Python 3 Standard Environment API library (beta)
 
 This is an alpha release of the App Engine SDK for Python 3.  It provides access
 to various API endpoints that were previously only available on the Python 2.7
@@ -8,7 +8,7 @@ runtime.
 
 In your `requirements.txt` file, add the following:
 
-`appengine-python-standard>=0.0.2a`
+`appengine-python-standard>=0.1.0`
 
 In your app's `app.yaml`, add the following:
 
@@ -38,12 +38,20 @@ Example for a Flask app:
 Then deploy your app as usual, with `gcloud app deploy`.  The following modules
 are available:
 
+- `google.appengine.api.app_identity`
 - `google.appengine.api.capabilities`
+- `google.appengine.api.mail`
 - `google.appengine.api.memcache`
+- `google.appengine.api.modules`
+- `google.appengine.api.oauth`
+- `google.appengine.api.taskqueue`
 - `google.appengine.api.urlfetch`
 - `google.appengine.api.users`
 - `google.appengine.ext.db`
+- `google.appengine.ext.gql`
+- `google.appengine.ext.key_range`
 - `google.appengine.ext.ndb`
+- `google.appengine.ext.testbed`
 
 ## Using the development version of the SDK
 
