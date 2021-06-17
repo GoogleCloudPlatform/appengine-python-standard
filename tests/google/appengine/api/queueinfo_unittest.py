@@ -16,11 +16,7 @@
 #
 
 
-
-
 """Tests for google.appengine.api.queueinfo."""
-
-from __future__ import absolute_import
 
 import re
 

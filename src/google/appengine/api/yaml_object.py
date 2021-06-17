@@ -28,8 +28,6 @@ using the validation mechanism (see `google.appengine.api.validation.py`).
 
 
 
-from __future__ import absolute_import
-
 import google
 
 from ruamel import yaml

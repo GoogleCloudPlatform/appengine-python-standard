@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """Exposes methods to control services (modules) and versions of an app.
 
 Services were formerly known as modules and the API methods still
@@ -22,10 +21,6 @@ reflect that naming. For more information and code samples, see
 `Using the Modules API
 <https://cloud.google.com/appengine/docs/standard/python/using-the-modules-api>`_.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 __all__ = [
     'Error',

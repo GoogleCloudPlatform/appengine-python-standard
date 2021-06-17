@@ -15,12 +15,7 @@
 # limitations under the License.
 #
 
-
 """Stub version of the memcache API, keeping all data in process memory."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 
 

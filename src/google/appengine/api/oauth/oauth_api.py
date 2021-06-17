@@ -16,7 +16,6 @@
 #
 
 
-
 """OAuth API.
 
 A service that enables App Engine apps to validate OAuth requests.
@@ -29,10 +28,6 @@ Classes defined here:
   InvalidOAuthTokenError: OAuthService exception
   OAuthServiceFailureError: OAuthService exception
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import json
 import os

@@ -17,7 +17,6 @@
 
 
 
-
 """
 In-memory persistent stub for the Python datastore API. Gets, queries,
 and searches are implemented as in-memory scans over all entities.
@@ -27,10 +26,6 @@ startup, all entities are read from the file and loaded into memory. On
 every Put(), the file is wiped and all entities are written from scratch.
 Clients can also manually Read() and Write() the file themselves.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import collections
 import logging

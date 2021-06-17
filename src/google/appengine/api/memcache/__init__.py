@@ -15,17 +15,12 @@
 # limitations under the License.
 #
 
-
 """Memcache API.
 
 Provides memcached-alike API to application developers to store
 data in memory when reliable storage via the DataStore API isn't
 required and higher performance is desired.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import hashlib
 import math

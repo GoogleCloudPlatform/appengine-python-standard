@@ -14,15 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """Asynchronous datastore API.
 
 This is designed to be the lowest-level API to be used by all Python
 datastore client libraries.
 """
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
 
 
 
@@ -47,23 +44,21 @@ import copy
 import functools
 import logging
 import os
-import six
-
-
 
 from google.appengine.api import api_base_pb2
 from google.appengine.api import apiproxy_rpc
 from google.appengine.api import apiproxy_stub
 from google.appengine.api import apiproxy_stub_map
-
 from google.appengine.api import datastore_errors
 from google.appengine.api import datastore_types
+from google.appengine.api import full_app_id
 from google.appengine.datastore import datastore_pb
 from google.appengine.datastore import datastore_pbs
 from google.appengine.runtime import apiproxy_errors
-
+import six
 
 from google.appengine.datastore import entity_bytes_pb2 as entity_pb2
+
 
 _CLOUD_DATASTORE_ENABLED = datastore_pbs._CLOUD_DATASTORE_ENABLED
 if _CLOUD_DATASTORE_ENABLED:
@@ -2749,7 +2744,7 @@ def _CreateDefaultConnection(connection_fn, **kwargs):
     ValueError: If DATASTORE_PROJECT_ID is set but DATASTORE_APP_ID or
        DATASTORE_USE_PROJECT_ID_AS_APP_ID is not. If DATASTORE_APP_ID doesn't
        resolve to DATASTORE_PROJECT_ID. If DATASTORE_APP_ID doesn't match
-       an existing APPLICATION_ID.
+       an existing application ID.
 
   Returns:
     the connection object returned from connection_fn.
@@ -2818,7 +2813,7 @@ def _CreateCloudDatastoreConnection(connection_fn,
 
   Raises:
     ValueError: if the app_id provided doesn't match the current environment's
-        APPLICATION_ID.
+        application ID.
 
   Returns:
     An ndb.Context that can connect to a Remote Cloud Datastore. You can use
@@ -2832,14 +2827,14 @@ def _CreateCloudDatastoreConnection(connection_fn,
     raise datastore_errors.BadArgumentError(
         datastore_pbs.MISSING_CLOUD_DATASTORE_MESSAGE)
 
-  current_app_id = os.environ.get('APPLICATION_ID', None)
+  current_app_id = full_app_id.get()
   if current_app_id and current_app_id != app_id:
 
 
     raise ValueError('Cannot create a Cloud Datastore context that connects '
                      'to an application (%s) that differs from the application '
                      'already connected to (%s).' % (app_id, current_app_id))
-  os.environ['APPLICATION_ID'] = app_id
+  full_app_id.put(app_id)
 
   id_resolver = datastore_pbs.IdResolver((app_id,) + tuple(external_app_ids))
   project_id = id_resolver.resolve_project_id(app_id)

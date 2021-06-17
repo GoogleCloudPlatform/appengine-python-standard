@@ -28,8 +28,6 @@
 
 
 
-
-
 """Low-level utilities used internally by NDB.
 
 These are not meant for use by code outside NDB.

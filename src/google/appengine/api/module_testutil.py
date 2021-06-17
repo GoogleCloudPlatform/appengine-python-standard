@@ -16,16 +16,12 @@
 #
 
 
-
-
 """Test utilities for API modules.
 
 Classes:
   ModuleInterfaceTest: Test framework for developing public modules.
 """
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
 import __future__
 import types
 

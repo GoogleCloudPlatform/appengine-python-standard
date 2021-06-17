@@ -16,17 +16,11 @@
 #
 
 
-
 """Utility functions shared between the file and sqlite datastore stubs.
 
 This module is internal and should not be used by client applications.
 """
 
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import with_statement
 
 import atexit
 import collections

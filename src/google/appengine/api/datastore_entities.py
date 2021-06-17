@@ -17,7 +17,6 @@
 
 
 
-
 """Classes for common kinds, including Contact, Message, and Event.
 
 Most of these kinds are based on the gd namespace "kinds" from GData:
@@ -33,8 +32,6 @@ Most of these kinds are based on the gd namespace "kinds" from GData:
 
 
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
 
 
 from xml.sax import saxutils

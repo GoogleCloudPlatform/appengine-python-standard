@@ -16,17 +16,12 @@
 #
 
 
-
 """Control the namespacing system used by various APIs.
 
 A namespace may be specified in various API calls exemplified
 by the datastore and memcache interfaces.  The default can be
 specified using this module.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 
 

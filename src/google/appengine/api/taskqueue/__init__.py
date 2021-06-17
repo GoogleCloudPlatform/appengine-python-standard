@@ -16,10 +16,7 @@
 #
 
 
-
 """Task Queue API module."""
-
-from __future__ import absolute_import
 
 from google.appengine.api.taskqueue.taskqueue import *
 

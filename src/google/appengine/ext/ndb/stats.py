@@ -28,8 +28,6 @@
 
 
 
-
-
 """Models to be used when accessing app specific datastore usage statistics.
 
 These entities cannot be created by users, but are populated in the

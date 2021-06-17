@@ -16,8 +16,6 @@
 #
 
 
-
-
 """Base class for implementing API proxy stubs."""
 
 
@@ -25,8 +23,6 @@
 
 
 
-
-from __future__ import with_statement
 
 
 

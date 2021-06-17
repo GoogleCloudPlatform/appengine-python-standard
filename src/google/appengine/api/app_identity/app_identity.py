@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-
 """Provides access functions for the app identity service.
 
 To learn more about the App Identity API, review the `Overview`_ document.
@@ -23,10 +21,6 @@ To learn more about the App Identity API, review the `Overview`_ document.
 .. _Overview:
    https://cloud.google.com/appengine/docs/python/appidentity/
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 
 
@@ -40,12 +34,12 @@ from __future__ import print_function
 import os
 import time
 
-import six
-
 from google.appengine.api import apiproxy_stub_map
+from google.appengine.api import full_app_id
 from google.appengine.api.app_identity import _metadata_server
 from google.appengine.api.app_identity import app_identity_service_pb2
 from google.appengine.runtime import apiproxy_errors
+import six
 
 __all__ = ['BackendDeadlineExceeded',
            'BlobSizeTooLarge',
@@ -442,11 +436,14 @@ def _ParseFullAppId(app_id):
 def get_application_id():
   """Gets the application ID of an app.
 
+  Not to be confused with google.appengine.api.full_app_id.get() which gets the
+  "raw" app ID.
+
   Returns:
     The application ID of the app.
   """
-  full_app_id = os.getenv('APPLICATION_ID')
-  _, domain_name, display_app_id = _ParseFullAppId(full_app_id)
+  full_app_id_ = full_app_id.get()
+  _, domain_name, display_app_id = _ParseFullAppId(full_app_id_)
   if domain_name:
     return '%s%s%s' % (domain_name, _DOMAIN_SEPARATOR, display_app_id)
   return display_app_id

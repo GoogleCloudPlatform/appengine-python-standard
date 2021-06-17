@@ -30,7 +30,6 @@
 
 
 
-
 """Models and helper functions for access to app's datastore metadata.
 
 These entities cannot be created by users, but are created as results of

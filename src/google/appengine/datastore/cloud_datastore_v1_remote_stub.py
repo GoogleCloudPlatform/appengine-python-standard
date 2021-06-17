@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """A Cloud Datastore stub that connects to a remote Datastore service."""
 
 from google.appengine.api import apiproxy_rpc

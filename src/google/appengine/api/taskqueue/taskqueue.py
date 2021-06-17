@@ -16,7 +16,6 @@
 #
 
 
-
 """Task Queue API.
 
 Enables an application to queue background work for itself. Work is done through
@@ -31,10 +30,6 @@ Webhook URLs can be specified directly for push tasks, or the default URL scheme
 can be used, which will translate task names into URLs relative to a queue's
 base path. A default queue is also provided for simple usage.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import calendar
 import datetime

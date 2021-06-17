@@ -17,10 +17,7 @@
 
 
 
-
 """The Python datastore protocol buffer definition (old name)."""
-
-from __future__ import absolute_import
 
 
 

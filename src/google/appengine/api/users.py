@@ -17,7 +17,6 @@
 
 
 
-
 """The User Python datastore class to be used as a datastore data type."""
 
 
@@ -25,10 +24,6 @@
 
 
 
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import functools
 import os

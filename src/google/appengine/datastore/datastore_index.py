@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """Primitives for dealing with datastore indexes.
 
 Example index.yaml file:
@@ -57,10 +56,6 @@ indexes:
 
 
 
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import copy
 import itertools

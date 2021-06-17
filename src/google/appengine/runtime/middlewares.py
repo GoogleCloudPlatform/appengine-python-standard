@@ -16,10 +16,6 @@
 #
 """Methods for gluing a user's application into the GAE environment."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import binascii
 import functools
 import logging
@@ -29,9 +25,9 @@ import sys
 import traceback
 
 import contextvars
-from google.appengine.ext.vmruntime import callback
-from google.appengine.ext.vmruntime import vmstub
+from google.appengine.runtime import callback
 from google.appengine.runtime import context
+from google.appengine.runtime import default_api_stub
 from google.appengine.runtime import request_environment
 import six
 from six.moves import urllib
@@ -104,11 +100,11 @@ def UseRequestSecurityTicketForApiMiddleware(app, wsgi_env, start_response):
     A wrapped <app>, which is also a valid WSGI app.
   """
   try:
-    vmstub.VMStub.SetUseRequestSecurityTicketForThread(True)
+    default_api_stub.DefaultApiStub.SetUseRequestSecurityTicketForThread(True)
     return app(wsgi_env, start_response)
   finally:
 
-    vmstub.VMStub.SetUseRequestSecurityTicketForThread(False)
+    default_api_stub.DefaultApiStub.SetUseRequestSecurityTicketForThread(False)
 
 
 @middleware

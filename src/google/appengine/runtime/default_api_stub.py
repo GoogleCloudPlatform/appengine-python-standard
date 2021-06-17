@@ -18,10 +18,7 @@
 
 
 
-
 """An APIProxy stub that communicates with VMEngine service bridges."""
-
-from __future__ import with_statement
 
 from concurrent import futures
 import imp
@@ -29,15 +26,12 @@ import logging
 import os
 import sys
 import threading
-
-import six.moves.urllib.parse
-import urllib3
-
 from google.appengine.api import apiproxy_rpc
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.ext.remote_api import remote_api_bytes_pb2 as remote_api_pb2
 from google.appengine.runtime import apiproxy_errors
-
+import six.moves.urllib.parse
+import urllib3
 
 
 
@@ -79,36 +73,36 @@ URLLIB3_POOL_SIZE = 10
 
 
 _EXCEPTIONS_MAP = {
-    remote_api_pb2.RpcError.UNKNOWN: (
-        apiproxy_errors.RPCFailedError,
-        'The remote RPC to the application server failed for call %s.%s().'),
-    remote_api_pb2.RpcError.CALL_NOT_FOUND: (
-        apiproxy_errors.CallNotFoundError,
-        'The API package \'%s\' or call \'%s()\' was not found.'),
-    remote_api_pb2.RpcError.PARSE_ERROR: (
-        apiproxy_errors.ArgumentError,
-        'There was an error parsing arguments for API call %s.%s().'),
-    remote_api_pb2.RpcError.OVER_QUOTA: (
-        apiproxy_errors.OverQuotaError,
-        'The API call %s.%s() required more quota than is available.'),
-    remote_api_pb2.RpcError.REQUEST_TOO_LARGE: (
-        apiproxy_errors.RequestTooLargeError,
-        'The request to API call %s.%s() was too large.'),
-    remote_api_pb2.RpcError.CAPABILITY_DISABLED: (
-        apiproxy_errors.CapabilityDisabledError,
-        'The API call %s.%s() is temporarily disabled.'),
-    remote_api_pb2.RpcError.FEATURE_DISABLED: (
-        apiproxy_errors.FeatureNotEnabledError,
-        'The API call %s.%s() is currently not enabled.'),
-    remote_api_pb2.RpcError.RESPONSE_TOO_LARGE: (
-        apiproxy_errors.ResponseTooLargeError,
-        'The response from API call %s.%s() was too large.'),
-    remote_api_pb2.RpcError.CANCELLED: (
-        apiproxy_errors.CancelledError,
-        'The API call %s.%s() was explicitly cancelled.'),
-    remote_api_pb2.RpcError.DEADLINE_EXCEEDED: (
-        apiproxy_errors.DeadlineExceededError,
-        'The API call %s.%s() took too long to respond and was cancelled.')
+    remote_api_pb2.RpcError.UNKNOWN:
+        (apiproxy_errors.RPCFailedError,
+         'The remote RPC to the application server failed for call %s.%s().'),
+    remote_api_pb2.RpcError.CALL_NOT_FOUND:
+        (apiproxy_errors.CallNotFoundError,
+         'The API package \'%s\' or call \'%s()\' was not found.'),
+    remote_api_pb2.RpcError.PARSE_ERROR:
+        (apiproxy_errors.ArgumentError,
+         'There was an error parsing arguments for API call %s.%s().'),
+    remote_api_pb2.RpcError.OVER_QUOTA:
+        (apiproxy_errors.OverQuotaError,
+         'The API call %s.%s() required more quota than is available.'),
+    remote_api_pb2.RpcError.REQUEST_TOO_LARGE:
+        (apiproxy_errors.RequestTooLargeError,
+         'The request to API call %s.%s() was too large.'),
+    remote_api_pb2.RpcError.CAPABILITY_DISABLED:
+        (apiproxy_errors.CapabilityDisabledError,
+         'The API call %s.%s() is temporarily disabled.'),
+    remote_api_pb2.RpcError.FEATURE_DISABLED:
+        (apiproxy_errors.FeatureNotEnabledError,
+         'The API call %s.%s() is currently not enabled.'),
+    remote_api_pb2.RpcError.RESPONSE_TOO_LARGE:
+        (apiproxy_errors.ResponseTooLargeError,
+         'The response from API call %s.%s() was too large.'),
+    remote_api_pb2.RpcError.CANCELLED:
+        (apiproxy_errors.CancelledError,
+         'The API call %s.%s() was explicitly cancelled.'),
+    remote_api_pb2.RpcError.DEADLINE_EXCEEDED:
+        (apiproxy_errors.DeadlineExceededError,
+         'The API call %s.%s() took too long to respond and was cancelled.')
 }
 
 _DEFAULT_EXCEPTION = _EXCEPTIONS_MAP[remote_api_pb2.RpcError.UNKNOWN]
@@ -121,7 +115,7 @@ _DEADLINE_EXCEEDED_EXCEPTION = _EXCEPTIONS_MAP[
 
 
 
-class VMEngineRPC(apiproxy_rpc.RPC):
+class DefaultApiRPC(apiproxy_rpc.RPC):
   """A class representing an RPC to a remote server."""
 
   def _ErrorException(self, exception_class, error_details):
@@ -170,7 +164,7 @@ class VMEngineRPC(apiproxy_rpc.RPC):
 
 
     ticket = None
-    if VMStub.ShouldUseRequestSecurityTicketForThread():
+    if DefaultApiStub.ShouldUseRequestSecurityTicketForThread():
 
 
       ticket = os.environ.get(TICKET_HEADER, os.environ.get(DEV_TICKET_HEADER))
@@ -295,7 +289,7 @@ class _UseRequestSecurityTicketLocal(threading.local):
     self.use_ticket_header_value = False
 
 
-class VMStub(object):
+class DefaultApiStub(object):
   """A stub for calling services through a VM service bridge.
 
   You can use this to stub out any service that the remote server supports.
@@ -345,7 +339,7 @@ class VMStub(object):
 
   def CreateRPC(self):
     """Create a new RPC object."""
-    return VMEngineRPC(stub=self)
+    return DefaultApiRPC(stub=self)
 
 
 def Register(stub):

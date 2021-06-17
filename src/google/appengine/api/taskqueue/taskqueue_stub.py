@@ -16,7 +16,6 @@
 #
 
 
-
 """Stub version of the Task Queue API.
 
 This stub stores tasks and runs them via dev_appserver's AddEvent capability.
@@ -26,11 +25,6 @@ As well as implementing Task Queue API functions, the stub exposes various other
 functions that are used by the dev_appserver's admin console to display the
 application's queues and tasks.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import with_statement
 
 
 
@@ -2096,8 +2090,8 @@ class _TaskExecutor(object):
     dispatcher = self._request_data.get_dispatcher()
     try:
       response = dispatcher.add_request(
-          method, task.url, headers, task.body if task.HasField('body') else '',
-          '0.1.0.2')
+          method, six.ensure_str(task.url), headers,
+          task.body if task.HasField('body') else '', '0.1.0.2')
     except (
         request_info.ModuleDoesNotExistError,
         titanoboa_request_info.NotSupportedError):
@@ -2247,12 +2241,14 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
   def __init__(self,
                service_name='taskqueue',
                root_path=None,
+               queue_config_path=None,
                auto_task_running=False,
                task_retry_seconds=30,
                _all_queues_valid=False,
                default_http_server='localhost',
                _testing_validate_state=False,
                request_data=None,
+               enforce_host_header=False,
                gettime=lambda: time.time()):
     """Constructor.
 
@@ -2261,6 +2257,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
       root_path: Root path to the directory of the application which may contain
         a queue.yaml file. If None, then it's assumed no queue.yaml file is
         available.
+      queue_config_path: The path to queue.yaml; supersedes root_path.
       auto_task_running: When True, the dev_appserver should automatically
         run tasks after they are enqueued.
       task_retry_seconds: How long to wait between task executions after a
@@ -2277,6 +2274,9 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
           taskqueue_stub.
       request_data: A request_info.RequestInfo instance used to look up state
           associated with the request that generated an API call.
+      enforce_host_header: Always set a host header for tasks before adding
+          to the queue. Helpful in case when two or more services shares single
+          stub instance.
       gettime: A function that returns the current time, real or mocked. Used
           to make testing easier.
     """
@@ -2291,6 +2291,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
     self._all_queues_valid = _all_queues_valid
 
     self._root_path = root_path
+    self._queue_config_path = queue_config_path
     self._testing_validate_state = _testing_validate_state
 
 
@@ -2313,6 +2314,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
         _TaskExecutor(self._default_http_server, self.request_data),
         retry_seconds=self._task_retry_seconds)
     self._yaml_last_modified = None
+    self._enforce_host_header = enforce_host_header
 
   def EnableAutoTaskRunning(self):
     self._auto_task_running = True
@@ -2342,13 +2344,18 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
 
       return self.queue_yaml_parser(self._root_path)
 
-    if self._root_path is None:
-      return None
-    for queueyaml in (
-        'queue.yaml', 'queue.yml',
-        os.path.join('WEB-INF', 'appengine-generated', 'queue.yaml')):
+    def PossibleConfigs():
+      if self._queue_config_path is not None:
+        yield self._queue_config_path
+
+      if self._root_path is not None:
+        for queueyaml in (
+            'queue.yaml', 'queue.yml',
+            os.path.join('WEB-INF', 'appengine-generated', 'queue.yaml')):
+          yield os.path.join(self._root_path, queueyaml)
+
+    for path in PossibleConfigs():
       try:
-        path = os.path.join(self._root_path, queueyaml)
         modified = os.stat(path).st_mtime
         if self._yaml_last_modified and self._yaml_last_modified == modified:
           return self._last_queue_info
@@ -2445,8 +2452,27 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
 
 
     assert len(request.add_request), 'taskqueue should prevent empty requests'
-    self._GetGroup(_GetAppId(request.add_request[0])).BulkAdd_Rpc(
-        request, response)
+    group = self._GetGroup(_GetAppId(request.add_request[0]))
+    if self._enforce_host_header:
+
+
+
+      queue = group.GetQueue(request.add_request[0].queue_name)
+      if not queue.target:
+        host = self.request_data.get_dispatcher().get_hostname(
+            module=self.request_data.get_module(None),
+            version=self.request_data.get_version(None)).encode()
+        for r in request.add_request:
+          has_host = False
+          for h in r.header:
+            if str(h.key).lower() == 'host':
+              has_host = True
+              break
+          if not has_host:
+            h = r.header.add()
+            h.key = b'host'
+            h.value = host
+    group.BulkAdd_Rpc(request, response)
 
   def GetQueues(self):
     """Gets all the application's queues.

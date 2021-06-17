@@ -16,8 +16,6 @@
 #
 
 
-
-
 """Unit-test for google.appengine.api.mail module"""
 
 

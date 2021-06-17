@@ -16,14 +16,10 @@
 #
 
 
-
-
 """
 A library for working with BackendInfoExternal records, describing backends
 configured for an application. Supports loading the records from backend.yaml.
 """
-
-from __future__ import absolute_import
 
 
 from google.appengine.api import validation

@@ -14,18 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-
 """App identity stub service implementation.
 
 This service behaves the same as the production service, except using
 application default credentials.
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import with_statement
 
 import datetime
 import json

@@ -16,8 +16,7 @@
 #
 """A fake version of apiproxy.py for Titanoboa."""
 
-
-from google.appengine.ext.vmruntime import callback as vmcallback
+from google.appengine.runtime import callback as vmcallback
 
 
 def SetRequestEndCallback(callback):

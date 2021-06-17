@@ -17,7 +17,6 @@
 
 
 
-
 """Higher-level, semantic data types for the datastore. These types
 are expected to be set as attributes of Entities.  See "Supported Data Types"
 in the API Guide.
@@ -41,10 +40,6 @@ The namespace schemas are:
 
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import array
 import base64
 import binascii
@@ -55,11 +50,12 @@ import re
 import struct
 import time
 from xml.sax import saxutils
+
 from google.appengine.api import cmp_compat
 from google.appengine.api import datastore_errors
+from google.appengine.api import full_app_id
 from google.appengine.api import namespace_manager
 from google.appengine.api import users
-from google.appengine.datastore import datastore_pb
 from google.appengine.datastore import datastore_pbs
 from google.appengine.datastore import entity_v4_pb2
 from google.appengine.datastore import sortable_pb_encoder
@@ -67,6 +63,7 @@ import six
 from six.moves import range
 from six.moves import urllib
 from six.moves import zip
+
 from google.appengine.datastore import entity_bytes_pb2 as entity_pb2
 
 
@@ -247,8 +244,6 @@ def ValidateInteger(value,
 def ResolveAppId(app):
   """Validate app id, providing a default.
 
-  If the argument is None, $APPLICATION_ID is substituted.
-
   Args:
     app: The app id argument value to be validated.
 
@@ -259,7 +254,7 @@ def ResolveAppId(app):
     BadArgumentError if the value is empty or not a string.
   """
   if app is None:
-    app = os.environ.get('APPLICATION_ID', '')
+    app = full_app_id.get()
   ValidateString(app, 'app', datastore_errors.BadArgumentError)
   return app
 

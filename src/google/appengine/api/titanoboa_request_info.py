@@ -125,8 +125,14 @@ class LocalDispatcher(request_info.Dispatcher):
 class LocalRequestInfo(request_info._LocalRequestInfo):
   """Request info for Titanoboa local launcher."""
 
-  def __init__(self, default_address, app=None):
+  def __init__(self, default_address=None, app=None):
+    if default_address is None:
+      default_address = '127.0.0.1:8080'
+    self._address = 'http://' + default_address
     self._dispatcher = LocalDispatcher(default_address, app)
 
   def get_dispatcher(self):
     return self._dispatcher
+
+  def get_address(self):
+    return self._address

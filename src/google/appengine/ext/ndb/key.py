@@ -30,7 +30,6 @@
 
 
 
-
 """The Key class, and associated utilities.
 
 A Key encapsulates the following pieces of information, which together
@@ -101,23 +100,18 @@ namespace manager.  To explicitly select the empty namespace pass
 namespace=''.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-
-
 import base64
 import os
-
-from google.appengine.ext.ndb import utils
-import six
-from six.moves import range
 
 from google.appengine.api import cmp_compat
 from google.appengine.api import datastore_errors
 from google.appengine.api import datastore_types
+from google.appengine.api import full_app_id
 from google.appengine.api import namespace_manager
+from google.appengine.ext.ndb import utils
+import six
+from six.moves import range
+
 from google.appengine.datastore import entity_bytes_pb2 as entity_pb2
 
 __all__ = ['Key']
@@ -881,9 +875,9 @@ def _DecodeUrlSafe(urlsafe):
 def _DefaultAppId():
   """Return the default application id.
 
-  This is taken from the APPLICATION_ID environment variable.
+  This is taken from environment variables.
   """
-  return os.getenv('APPLICATION_ID', '_')
+  return full_app_id.get()
 
 
 def _ConvertPairsForComparison(pairs):

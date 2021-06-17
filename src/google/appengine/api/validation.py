@@ -16,7 +16,6 @@
 #
 
 
-
 """Validation tools for generic object structures.
 
 This library is used for defining classes with constrained attributes.
@@ -41,7 +40,6 @@ builder.  See yaml_object.py.
 
 
 
-from __future__ import absolute_import
 import re
 import google
 from ruamel import yaml

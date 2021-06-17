@@ -16,7 +16,6 @@
 #
 
 
-
 """Tests for google.appengine.api.namespace_manager."""
 
 
