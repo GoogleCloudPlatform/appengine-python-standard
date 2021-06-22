@@ -115,6 +115,7 @@ from google.appengine.api import datastore_file_stub
 from google.appengine.api import full_app_id
 from google.appengine.api import request_info
 from google.appengine.api import stublib
+from google.appengine.api import urlfetch_stub
 from google.appengine.api import user_service_stub
 from google.appengine.api.app_identity import app_identity_stub
 from google.appengine.api.capabilities import capability_stub
@@ -141,10 +142,6 @@ except AttributeError:
 
 
   mail_stub = None
-try:
-  from google.appengine.api.logservice import logservice_stub
-except ImportError:
-  logservice_stub = None
 
 
 
@@ -171,9 +168,6 @@ if not gae_runtime.startswith('python3'):
   from google.appengine.api.blobstore import blobstore_stub
   from google.appengine.api.blobstore import dict_blob_storage
   from google.appengine.api.images import images_stub
-
-
-  from google.appengine.api import urlfetch_stub
 
   from cloudstorage import common as gcs_common
   from cloudstorage import stub_dispatcher as gcs_dispatcher
@@ -210,7 +204,6 @@ CHANNEL_SERVICE_NAME = 'channel'
 DATASTORE_SERVICE_NAME = 'datastore_v3'
 FILES_SERVICE_NAME = 'file'
 IMAGES_SERVICE_NAME = 'images'
-LOG_SERVICE_NAME = 'logservice'
 MAIL_SERVICE_NAME = 'mail'
 MEMCACHE_SERVICE_NAME = 'memcache'
 TASKQUEUE_SERVICE_NAME = 'taskqueue'
@@ -226,7 +219,6 @@ INIT_STUB_METHOD_NAMES = {
     CAPABILITY_SERVICE_NAME: 'init_capability_stub',
     DATASTORE_SERVICE_NAME: 'init_datastore_v3_stub',
     IMAGES_SERVICE_NAME: 'init_images_stub',
-    LOG_SERVICE_NAME: 'init_logservice_stub',
     MAIL_SERVICE_NAME: 'init_mail_stub',
     MEMCACHE_SERVICE_NAME: 'init_memcache_stub',
     MODULES_SERVICE_NAME: 'init_modules_stub',
@@ -759,25 +751,6 @@ class Testbed(object):
       return
     stub = images_stub.ImagesServiceStub(**stub_kwargs)
     self._register_stub(IMAGES_SERVICE_NAME, stub)
-
-  def init_logservice_stub(self, enable=True):
-    """Enables the log service stub.
-
-    Args:
-      enable: `True` if the fake service should be enabled, or `False` if the
-          real service should be disabled.
-
-    Raises:
-      StubNotSupportedError: The logservice stub is unvailable.
-    """
-    if not enable:
-      self._disable_stub(LOG_SERVICE_NAME)
-      return
-    if logservice_stub is None:
-      raise StubNotSupportedError(
-          'The logservice stub is not supported in production.')
-    stub = logservice_stub.LogServiceStub()
-    self._register_stub(LOG_SERVICE_NAME, stub)
 
   def init_mail_stub(self, enable=True, **stub_kw_args):
     """Enables the mail stub.
