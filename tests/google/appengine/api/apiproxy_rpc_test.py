@@ -15,18 +15,19 @@
 # limitations under the License.
 #
 
-
 """Tests for google.appengine.api.apiproxy_rpc."""
 
-
-
 from absl import app
-from absl.testing import absltest
+import contextvars
 from google.appengine.api import apiproxy_rpc
+
+from absl.testing import absltest
 
 
 class MockStub(object):
   """Mock apiproxy_stub."""
+
+  THREADSAFE = True
 
   def __init__(self, failure=None):
     self.failure = failure
@@ -51,11 +52,11 @@ class ApiproxyRpcTest(absltest.TestCase):
     rpc = apiproxy_rpc.RPC(stub=stub)
 
     rpc.MakeCall('test', 'method', 'request', 'response')
+    self.assertIsNotNone(rpc.future)
     rpc.Wait()
     rpc.CheckSuccess()
 
-    self.assertEquals([('test', 'method', 'request', 'response')],
-                      stub.calls)
+    self.assertEqual([('test', 'method', 'request', 'response')], stub.calls)
 
   def testMakeCallWithCallback(self):
     stub = MockStub()
@@ -63,18 +64,19 @@ class ApiproxyRpcTest(absltest.TestCase):
 
     rpc.MakeCall('test', 'method', 'request', 'response',
                  lambda: FakeCallback(stub))
+    self.assertIsNotNone(rpc.future)
     rpc.Wait()
     rpc.CheckSuccess()
 
-    self.assertEquals([('test', 'method', 'request', 'response'),
-                       ('callback')],
-                      stub.calls)
+    self.assertEqual([('test', 'method', 'request', 'response'), ('callback')],
+                     stub.calls)
 
   def testMakeCallFailure(self):
     stub = MockStub(Exception())
     rpc = apiproxy_rpc.RPC(stub=stub)
 
     rpc.MakeCall('test', 'method', 'request', 'response')
+    self.assertIsNotNone(rpc.future)
     rpc.Wait()
     self.assertRaises(Exception, rpc.CheckSuccess)
 
@@ -89,6 +91,26 @@ class ApiproxyRpcTest(absltest.TestCase):
     self.assertEqual(rpc_clone.deadline, rpc.deadline)
     self.assertNotEqual(rpc_clone.MakeCall, rpc.MakeCall)
 
+  def testConveysContextVars(self):
+    stub = MockStub()
+    rpc = apiproxy_rpc.RPC(stub=stub)
+
+    contextvar = contextvars.ContextVar('my_context_var')
+    contextvar.set([])
+
+    def CheckContextVars(stub):
+      FakeCallback(stub)
+      contextvar.get().append('hello')
+
+    rpc.MakeCall('test', 'method', 'request', 'response',
+                 lambda: CheckContextVars(stub))
+    self.assertIsNotNone(rpc.future)
+    rpc.Wait()
+    rpc.CheckSuccess()
+
+    self.assertEqual([('test', 'method', 'request', 'response'), ('callback')],
+                     stub.calls)
+
   def testCloneAlreadyCalled(self):
     """Make sure we can't clone once we've started a call."""
     stub = MockStub()
@@ -101,8 +123,7 @@ class ApiproxyRpcTest(absltest.TestCase):
     rpc.CheckSuccess()
     self.assertRaises(AssertionError, rpc.Clone)
 
-    self.assertEquals([('test', 'method', 'request', 'response')],
-                      stub.calls)
+    self.assertEqual([('test', 'method', 'request', 'response')], stub.calls)
 
 
 def main(unused_argv):

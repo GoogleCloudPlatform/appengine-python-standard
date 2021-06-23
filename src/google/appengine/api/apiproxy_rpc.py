@@ -26,10 +26,8 @@
 
 
 from concurrent import futures
-import imp
 import sys
-
-import six
+import contextvars
 
 
 
@@ -73,7 +71,6 @@ class RPC(object):
     """
     self._exception = None
     self._state = RPC.IDLE
-    self._traceback = None
 
     self.package = package
     self.call = call
@@ -91,6 +88,9 @@ class RPC(object):
     This is usually used when an RPC has been specified with some configuration
     options and is being used as a template for multiple RPCs outside of a
     developer's easy control.
+
+    Returns:
+      A clone of this RPC.
     """
     if self.state != RPC.IDLE:
       raise AssertionError('Cannot clone a call already in progress')
@@ -106,7 +106,14 @@ class RPC(object):
 
     It will call the `_MakeRealCall` to do the real job.
 
-    Args: Same as constructor; see `__init__`.
+    Args:
+      package: `string`. The package for the call.
+      call: `string`. The call within the package.
+      request: `ProtocolMessage` instance. Appropriate for the arguments.
+      response: `ProtocolMessage` instance. Appropriate for the response.
+      callback: `callable`. Called when call is complete.
+      deadline: `double`. Specifies the deadline for this call as the number
+        of seconds from the current time. Ignored if non-positive.
 
     Raises:
       `TypeError` or `AssertionError` if an argument is of an invalid type.
@@ -138,9 +145,7 @@ class RPC(object):
     Raises:
       Exception of the API call or the `callback`, if any.
     """
-    if self.exception and self._traceback:
-      six.reraise(self.exception.__class__, self.exception, self._traceback)
-    elif self.exception:
+    if self.exception:
       raise self.exception
 
   @property
@@ -177,16 +182,13 @@ class RPC(object):
 
     run_async = getattr(self.stub.__class__, 'THREADSAFE', False)
 
+    ctx = contextvars.copy_context()
 
-
-
-
-
-    if six.PY2 and imp.lock_held():
-      run_async = False
+    def ExecInContext():
+      ctx.run(self._SendRequestAndFinish)
 
     if run_async:
-      self.future = _THREAD_POOL.submit(self._SendRequestAndFinish)
+      self.future = _THREAD_POOL.submit(ExecInContext)
     else:
       self.future = None
 
@@ -208,21 +210,20 @@ class RPC(object):
     """Runs `f()` and captures exception information if raised."""
     try:
       f()
-    except Exception:
+    except Exception as exc:
 
 
-      _, exc, tb = sys.exc_info()
       self._exception = exc
-      self._traceback = tb
 
   def _CaptureTraceAndReraise(self, f):
     """A variant of `_CaptureTrace()` used in the synchronous fallback path."""
     try:
       f()
     except:
-      _, exc, tb = sys.exc_info()
+      _, exc, _ = sys.exc_info()
       self._exception = exc
-      self._traceback = tb
+
+
       self._exception._appengine_apiproxy_rpc = self
       raise
 
