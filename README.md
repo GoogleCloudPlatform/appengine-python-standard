@@ -8,7 +8,7 @@ runtime.
 
 In your `requirements.txt` file, add the following:
 
-`appengine-python-standard>=0.1.0`
+`appengine-python-standard>=0.1.1`
 
 In your app's `app.yaml`, add the following:
 
