@@ -118,7 +118,10 @@ from google.appengine.api import stublib
 from google.appengine.api import urlfetch_stub
 from google.appengine.api import user_service_stub
 from google.appengine.api.app_identity import app_identity_stub
+from google.appengine.api.blobstore import blobstore_stub
+from google.appengine.api.blobstore import dict_blob_storage
 from google.appengine.api.capabilities import capability_stub
+from google.appengine.api.images import images_stub
 from google.appengine.api.memcache import memcache_stub
 from google.appengine.api.modules import modules_stub
 from google.appengine.api.taskqueue import taskqueue_stub
@@ -163,12 +166,9 @@ try:
 except ImportError:
   apiserver_util = None
 
+
 gae_runtime = os.environ.get('GAE_RUNTIME', '')
 if not gae_runtime.startswith('python3'):
-  from google.appengine.api.blobstore import blobstore_stub
-  from google.appengine.api.blobstore import dict_blob_storage
-  from google.appengine.api.images import images_stub
-
   from cloudstorage import common as gcs_common
   from cloudstorage import stub_dispatcher as gcs_dispatcher
 

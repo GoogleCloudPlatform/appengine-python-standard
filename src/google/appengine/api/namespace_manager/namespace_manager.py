@@ -19,7 +19,7 @@
 """Control the namespacing system used by various APIs.
 
 A namespace may be specified in various API calls exemplified
-by the datastore and memcache interfaces.  The default can be
+by the datastore and memcache interfaces. The default can be
 specified using this module.
 """
 
@@ -83,7 +83,7 @@ def set_namespace(namespace):
 
 
 def get_namespace():
-  """Get the current default namespace or ('') namespace if unset."""
+  """Get the current default namespace or (`''`) namespace if unset."""
   name = os.environ.get(_ENV_CURRENT_NAMESPACE, None)
   if name is None:
     name = _config.default_namespace_for_request()
@@ -100,11 +100,11 @@ def google_apps_namespace():
 def enable_request_namespace():
   """Set the default namespace to the Google Apps domain referring this request.
 
-  This method is deprecated, use lib_config instead.
+  This method is deprecated, use `lib_config` instead.
 
   Calling this function will set the default namespace to the
-  Google Apps domain that was used to create the url used for this request
-  and only for the current request and only if the current default namespace
+  Google Apps domain that was used to create the URL for this request. This
+  works only for the current request and only if the current default namespace
   is unset.
 
   """
@@ -118,20 +118,20 @@ def enable_request_namespace():
 
 
 class BadValueError(Exception):
-  """Raised by ValidateNamespaceString."""
+  """Raised by `ValidateNamespaceString`."""
 
 
 def validate_namespace(value, exception=BadValueError):
-  """Raises an exception if value is not a valid Namespace string.
+  """Raises an exception if value is not a valid namespace string.
 
-  A namespace must match the regular expression ([0-9A-Za-z._-]{0,100}).
+  A namespace must match the regular expression `([0-9A-Za-z._-]{0,100})`.
 
   Args:
     value: string, the value to validate.
     exception: exception type to raise.
 
   Raises:
-    BadValueError: if value is not a valid Namespace string.
+    BadValueError: If value is not a valid namespace string.
   """
   if not isinstance(value, (six.text_type, six.binary_type)):
     raise exception(

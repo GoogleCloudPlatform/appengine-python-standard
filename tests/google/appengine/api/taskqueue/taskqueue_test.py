@@ -4082,7 +4082,7 @@ class ModuleInterfaceTest(module_testutil.ModuleInterfaceTest,
   Note: All tests are inherited from module_testutil.ModuleInterfaceTest.
   """
 
-  MODULE = google.appengine.api.taskqueue
+  MODULE = taskqueue
 
 
 
