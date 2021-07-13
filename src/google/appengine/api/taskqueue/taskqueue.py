@@ -41,7 +41,6 @@ import time
 
 import six
 from six.moves import urllib
-from six.moves import zip
 import six.moves.urllib.parse
 
 from google.appengine.api import apiproxy_stub_map
@@ -86,6 +85,7 @@ __all__ = [
     'TooManyTasksError',
     'TransientError',
     'UnknownQueueError',
+    'InvalidTaskRetryOptionsError',
     'InvalidLeaseTimeError',
     'InvalidMaxTasksError',
     'InvalidDeadlineError',
@@ -106,6 +106,10 @@ __all__ = [
     'MAX_TASKS_PER_ADD',
     'MAX_TASKS_PER_LEASE',
     'MAX_URL_LENGTH',
+    'MAX_DISPATCH_DEADLINE',
+    'MAX_TAG_LENGTH',
+    'MAX_TRANSACTIONAL_REQUEST_SIZE_BYTES',
+    'MIN_DISPATCH_DEADLINE',
 
     'DEFAULT_APP_VERSION',
 

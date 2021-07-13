@@ -17,7 +17,7 @@
 
 
 
-"""The User Python datastore class to be used as a datastore data type."""
+"""The User Python `datastore` class to be used as a datastore data type."""
 
 
 
@@ -59,7 +59,7 @@ class NotAllowedError(Error):
 
 @functools.total_ordering
 class User(object):
-  """Provides the email address, nickname, and ID for a user.
+  """Provides the email address, nickname, and `ID` for a user.
 
   A nickname is a human-readable string that uniquely identifies a Google user,
   akin to a username. For some users, this nickname is an email address, but for
@@ -156,7 +156,7 @@ class User(object):
     return self.__email
 
   def user_id(self):
-    """Obtains the user ID of the user.
+    """Obtains the user `ID` of the user.
 
     Returns:
       A permanent unique identifying string or `None`. If the email address was
@@ -247,7 +247,7 @@ def create_login_url(dest_url=None, _auth_domain=None,
         once login is complete. If `dest_url` does not specify a host, the host
         from the current request is used.
     federated_identity: Decommissioned, don't use. Setting this to a non-None
-        value raises a NotAllowedError
+        value raises a `NotAllowedError`
 
   Returns:
        Login URL as a string. The login URL will use Google Accounts.

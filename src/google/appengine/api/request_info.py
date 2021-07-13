@@ -17,13 +17,13 @@
 """Allows API stubs to access request and system state when handling calls.
 
 Certain API stubs require access to information about the request that triggered
-the API call (e.g. user_service_stub needs to know the host name of the request
-to generate continuation URLs) or system state (e.g. modules_stub).
+the API call (e.g., `user_service_stub` needs to know the host name of the
+request to generate continuation URLs) or system state (e.g., `modules_stub`).
 
-Other stubs (e.g. taskqueue_stub, channel_stub) need to be able to dispatch
+Other stubs (e.g., `taskqueue_stub`, `channel_stub`) need to be able to dispatch
 requests within the system.
 
-An instance of a RequestInfo subclass is passed to stubs that require these
+An instance of a `RequestInfo` subclass is passed to stubs that require these
 capabilities.
 """
 
@@ -106,7 +106,7 @@ class Dispatcher(object):
     raise NotImplementedError()
 
   def get_hostname(self, module, version, instance=None):
-    """Returns the hostname for a (module, version, instance) tuple.
+    """Returns the hostname for a `(module, version, instance)` tuple.
 
     If instance is set, this will return a hostname for that particular
     instances. Otherwise, it will return the hostname for load-balancing.
@@ -114,7 +114,7 @@ class Dispatcher(object):
     Args:
       module: A str containing the name of the module.
       version: A str containing the version.
-      instance: An optional str containing the instance ID.
+      instance: An optional str containing the instance `ID`.
 
     Returns:
       A str containing the hostname.
@@ -122,7 +122,7 @@ class Dispatcher(object):
     Raises:
       ModuleDoesNotExistError: The module does not exist.
       VersionDoesNotExistError: The version does not exist.
-      InvalidInstanceIdError: The instance ID is not valid for the
+      InvalidInstanceIdError: The instance `ID` is not valid for the
           module/version or the module/version uses automatic scaling.
     """
     raise NotImplementedError()
@@ -196,7 +196,7 @@ class Dispatcher(object):
       eta: An int containing the time to run the event, in seconds since the
           epoch.
       service: A str containing the name of the service that owns this event.
-          This should be set if event_id is set.
+          This should be set if `event_id` is set.
       event_id: A str containing the id of the event. If set, this can be passed
           to update_event to change the time at which the event should run.
     """
@@ -228,12 +228,13 @@ class Dispatcher(object):
           module.
       version: An optional str containing the version to service this request.
           If unset, the request will be dispatched to the default version.
-      instance_id: An optional str containing the instance_id of the instance to
-          service this request. If unset, the request will be dispatched to
+      instance_id: An optional str containing the `instance_id` of the instance
+          to service this request. If unset, the request will be dispatched to
           according to the load-balancing for the module and version.
 
     Returns:
-      A ResponseTuple containing the response information for the HTTP request.
+      A `ResponseTuple` containing the response information for the HTTP
+      request.
     """
     raise NotImplementedError()
 
@@ -341,7 +342,7 @@ class _LocalFakeDispatcher(Dispatcher):
     return self._module_name_to_default_versions[module]
 
   def get_hostname(self, module, version, instance=None):
-    """Returns the hostname for a (module, version, instance) tuple.
+    """Returns the hostname for a `(module, version, instance)` tuple.
 
     If instance is set, this will return a hostname for that particular
     instances. Otherwise, it will return the hostname for load-balancing.
@@ -349,7 +350,7 @@ class _LocalFakeDispatcher(Dispatcher):
     Args:
       module: A str containing the name of the module.
       version: A str containing the version.
-      instance: An optional str containing the instance ID.
+      instance: An optional str containing the instance `ID`.
 
     Returns:
       A str containing the hostname.
@@ -357,7 +358,7 @@ class _LocalFakeDispatcher(Dispatcher):
     Raises:
       ModuleDoesNotExistError: The module does not exist.
       VersionDoesNotExistError: The version does not exist.
-      InvalidInstanceIdError: The instance ID is not valid for the
+      InvalidInstanceIdError: The instance `ID` is not valid for the
           module/version or the module/version uses automatic scaling.
     """
     if module not in self._module_name_to_version_to_hostname:
@@ -484,7 +485,7 @@ class _LocalFakeDispatcher(Dispatcher):
     Args:
       method: A str containing the HTTP method of the request.
       relative_url: A str containing path and query string of the request.
-      headers: A list of (key, value) tuples where key and value are both str.
+      headers: A list of `(key, value)` tuples where key and value are both str.
       body: A str containing the request body.
       source_ip: The source ip address for the request.
       module_name: An optional str containing the module name to service this
@@ -497,7 +498,8 @@ class _LocalFakeDispatcher(Dispatcher):
           according to the load-balancing for the module and version.
 
     Returns:
-      A ResponseTuple containing the response information for the HTTP request.
+      A `ResponseTuple` containing the response information for the `HTTP`
+      request.
     """
     logging.warning('Request dispatching is not supported with '
                     '_LocalFakeDispatcher')
@@ -508,9 +510,9 @@ class _LocalFakeDispatcher(Dispatcher):
     """Dispatch an HTTP request asynchronously.
 
     Args:
-      method: A str containing the HTTP method of the request.
+      method: A str containing the `HTTP` method of the request.
       relative_url: A str containing path and query string of the request.
-      headers: A list of (key, value) tuples where key and value are both str.
+      headers: A list of `(key, value)` tuples where key and value are both str.
       body: A str containing the request body.
       source_ip: The source ip address for the request.
       module_name: An optional str containing the module name to service this
@@ -554,7 +556,7 @@ class RequestInfo(object):
   """Allows stubs to lookup state linked to the request making the API call."""
 
   def get_request_url(self, request_id):
-    """Returns the URL the request e.g. 'http://localhost:8080/foo?bar=baz'.
+    """Returns the URL the request e.g., `http://localhost:8080/foo?bar=baz`.
 
     Args:
       request_id: The string id of the request making the API call.
@@ -626,7 +628,7 @@ class _LocalRequestInfo(RequestInfo):
   """Lookup information about a request using environment variables."""
 
   def get_request_url(self, request_id):
-    """Returns the URL the request e.g. 'http://localhost:8080/foo?bar=baz'.
+    """Returns the URL the request e.g., `http://localhost:8080/foo?bar=baz`.
 
     Args:
       request_id: The string id of the request making the API call.
