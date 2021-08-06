@@ -769,20 +769,8 @@ class UserRPC(object):
 
 
 
-
 def GetDefaultAPIProxy():
-  try:
-
-
-
-
-
-
-    runtime = __import__('google.appengine.runtime', globals(), locals(),
-                         ['apiproxy'])
-    return APIProxyStubMap(runtime.apiproxy)
-  except (AttributeError, ImportError):
-    return APIProxyStubMap()
+  return APIProxyStubMap()
 
 
 

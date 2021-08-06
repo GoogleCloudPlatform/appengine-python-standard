@@ -17,8 +17,8 @@
 
 
 """
-A library for working with BackendInfoExternal records, describing backends
-configured for an application. Supports loading the records from backend.yaml.
+A library for working with `BackendInfoExternal` records, describing backends
+configured for an application. Supports loading the records from `backend.yaml`.
 """
 
 
@@ -99,11 +99,11 @@ class BackendEntry(validation.Validated):
     return self
 
   def set_class(self, Class):
-    """Setter for 'class', since an attribute reference is an error."""
+    """Setter for `Class`, since an attribute reference is an error."""
     self.Set(CLASS, Class)
 
   def get_class(self):
-    """Accessor for 'class', since an attribute reference is an error."""
+    """Accessor for `Class`, since an attribute reference is an error."""
     return self.Get(CLASS)
 
   def ToDict(self):
@@ -120,7 +120,7 @@ class BackendEntry(validation.Validated):
                                  result)
 
   def ParseOptions(self):
-    """Parses the 'options' field and sets appropriate fields."""
+    """Parses the `options` field and sets appropriate fields."""
     if self.options:
       options = [option.strip() for option in self.options.split(',')]
     else:
@@ -136,7 +136,7 @@ class BackendEntry(validation.Validated):
     return self
 
   def WriteOptions(self):
-    """Writes the 'options' field based on other settings."""
+    """Writes the `options` field based on other settings."""
     options = []
     if self.public:
       options.append('public')
@@ -152,13 +152,13 @@ class BackendEntry(validation.Validated):
 
 
 def LoadBackendEntry(backend_entry):
-  """Parses a BackendEntry object from a string.
+  """Parses a `BackendEntry` object from a string.
 
   Args:
     backend_entry: a backend entry, as a string
 
   Returns:
-    A BackendEntry object.
+    A `BackendEntry` object.
   """
   builder = yaml_object.ObjectBuilder(BackendEntry)
   handler = yaml_builder.BuilderHandler(builder)
@@ -175,21 +175,21 @@ def LoadBackendEntry(backend_entry):
 
 
 class BackendInfoExternal(validation.Validated):
-  """BackendInfoExternal describes all backend entries for an application."""
+  """`BackendInfoExternal` describes all backend entries for an application."""
   ATTRIBUTES = {
       BACKENDS: validation.Optional(validation.Repeated(BackendEntry)),
   }
 
 
 def LoadBackendInfo(backend_info, open_fn=None):
-  """Parses a BackendInfoExternal object from a string.
+  """Parses a `BackendInfoExternal` object from a string.
 
   Args:
     backend_info: a backends stanza (list of backends) as a string
     open_fn: Function for opening files. Unused.
 
   Returns:
-    A BackendInfoExternal object.
+    A `BackendInfoExternal` object.
   """
   builder = yaml_object.ObjectBuilder(BackendInfoExternal)
   handler = yaml_builder.BuilderHandler(builder)

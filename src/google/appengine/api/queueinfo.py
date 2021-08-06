@@ -21,9 +21,7 @@
 QueueInfo is a library for working with QueueInfo records, describing task queue
 entries for an application. QueueInfo loads the records from `queue.yaml`. To
 learn more about the parameters you can specify in `queue.yaml`, review the
-`queue.yaml reference guide`_.
-
-.. _queue.yaml reference guide:
+`queue.yaml` reference guide:
    https://cloud.google.com/appengine/docs/python/config/queueref
 """
 
@@ -198,6 +196,7 @@ def ParseTotalStorageLimit(limit):
   """Parses a string representing the storage bytes limit.
 
   Optional limit suffixes are:
+
       - `B` (bytes)
       - `K` (kilobytes)
       - `M` (megabytes)
@@ -237,8 +236,9 @@ def ParseTotalStorageLimit(limit):
 def ParseTaskAgeLimit(age_limit):
   """Parses a string representing the task's age limit (maximum allowed age).
 
-  The string must be a non-negative integer or floating point number followed by
-  one of `s`, `m`, `h`, or `d` (seconds, minutes, hours, or days, respectively).
+  The string must be a non-negative integer or floating point number followed
+  by one of `s`, `m`, `h`, or `d` (seconds, minutes, hours, or days,
+  respectively).
 
   Args:
     age_limit: The string that contains the task age limit.

@@ -69,8 +69,6 @@ _SIGN_FOR_APP_METHOD_NAME = 'SignForApp'
 _GET_CERTS_METHOD_NAME = 'GetPublicCertificatesForApp'
 _GET_SERVICE_ACCOUNT_NAME_METHOD_NAME = 'GetServiceAccountName'
 _GET_DEFAULT_GCS_BUCKET_NAME_METHOD_NAME = 'GetDefaultGcsBucketName'
-_PARTITION_SEPARATOR = '~'
-_DOMAIN_SEPARATOR = ':'
 
 
 
@@ -410,29 +408,6 @@ def get_default_gcs_bucket_name(deadline=None):
   return rpc.get_result()
 
 
-def _ParseFullAppId(app_id):
-  """Parses a full app ID into `partition`, `domain_name`, and `display_app_id`.
-
-  Args:
-    app_id: The full partitioned app ID.
-
-  Returns:
-    A tuple `(partition, domain_name, display_app_id)`.  The partition and
-    domain name might be empty.
-  """
-  partition = ''
-  psep = app_id.find(_PARTITION_SEPARATOR)
-  if psep > 0:
-    partition = app_id[:psep]
-    app_id = app_id[psep+1:]
-  domain_name = ''
-  dsep = app_id.find(_DOMAIN_SEPARATOR)
-  if dsep > 0:
-    domain_name = app_id[:dsep]
-    app_id = app_id[dsep+1:]
-  return partition, domain_name, app_id
-
-
 def get_application_id():
   """Gets the application ID of an app.
 
@@ -442,11 +417,7 @@ def get_application_id():
   Returns:
     The application ID of the app.
   """
-  full_app_id_ = full_app_id.get()
-  _, domain_name, display_app_id = _ParseFullAppId(full_app_id_)
-  if domain_name:
-    return '%s%s%s' % (domain_name, _DOMAIN_SEPARATOR, display_app_id)
-  return display_app_id
+  return full_app_id.project_id()
 
 
 def get_default_version_hostname():
@@ -491,3 +462,8 @@ def get_access_token(scopes, service_account_id=None):
     scopes = [scopes]
   return _metadata_server.get_service_account_token(
       scopes=scopes, service_account=service_account_id)
+
+
+_ParseFullAppId = full_app_id.parse
+_PARTITION_SEPARATOR = '~'
+_DOMAIN_SEPARATOR = ':'
