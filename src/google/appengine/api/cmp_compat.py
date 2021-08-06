@@ -14,10 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""Helpers providing a bridge between the Python 2 __cmp__ and Python 3.
+"""Helpers providing a bridge between the Python 2 `__cmp__` and Python 3.
 
-Python 2 uses methods called __cmp__ to override object comparison behavior; in
-Python 3 __cmp__ is replaced by rich comparison functions.
+Python 2 uses methods called `__cmp__` to override object comparison behavior;
+in Python 3 `__cmp__` is replaced by rich comparison functions.
 
 Additionally, Python 2 allows code to compare objects of different types,
 falling back to lexographical class-name comparisons if types are different (so
@@ -33,14 +33,14 @@ from six.moves import zip
 
 
 def total_ordering_from_cmp(cls):
-  """Class decorator that fills in missing ordering methods from __cmp__.
+  """Class decorator that fills in missing ordering methods from `__cmp__`.
 
   This lets us take a class defined for Python 2's ordering system (using
-  __cmp__) and use it with minimal changes -- just a decorator -- in Python 3.
+  `__cmp__`) and use it with minimal changes — just a decorator — in Python 3.
 
   This implementation is adapted from the Python 2 version of
-  functools.total_ordering, which derives these methods from each other instead
-  of from __cmp__.
+  `functools.total_ordering`, which derives these methods from each other
+  instead of from `__cmp__`.
 
   Args:
     cls: The class to decorate.
@@ -99,8 +99,8 @@ else:
     Titanoboa's port of apphosting.
 
     Args:
-      a: an object to compare
-      b: another object to compare
+      a: An object to compare
+      b: Another object to compare
 
     Returns:
       Negative if a is less than b, 0 if a equals b, and positive otherwise.

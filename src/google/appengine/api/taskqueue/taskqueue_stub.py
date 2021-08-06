@@ -2044,14 +2044,21 @@ class _TaskExecutor(object):
       if header_key_lower == 'host' and queue.target is not None:
         if isinstance(
             self._request_data, titanoboa_request_info.LocalRequestInfo):
-
           raise titanoboa_request_info.NotSupportedError(
               "Titanoboa local launcher doesn't support"
               " multiple modules, versions, and instances yet,"
               " task cannot be routed properly.")
-        else:
+        elif self._default_host:
           headers.append((six.ensure_text(header.key), '.'.join(
               [queue.target, self._default_host])))
+        else:
+          target = queue.target.rsplit('.', 3)
+          module = target[-1]
+          version = len(target) > 1 and target[-2] or None
+          instance = len(target) > 2 and target[-3] or None
+          dispatcher = self._request_data.get_dispatcher()
+          headers.append((six.ensure_text(header.key),
+                          dispatcher.get_hostname(module, version, instance)))
       elif header_key_lower not in BUILT_IN_HEADERS:
         headers.append(
             (six.ensure_text(header.key), six.ensure_text(header.value)))
@@ -2465,7 +2472,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
         for r in request.add_request:
           has_host = False
           for h in r.header:
-            if str(h.key).lower() == 'host':
+            if h.key.lower() == b'host':
               has_host = True
               break
           if not has_host:

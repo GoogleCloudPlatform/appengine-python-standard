@@ -16,7 +16,7 @@
 #
 """Get the App Engine app ID from environment.
 
-Not to be confused with google.appengine.api.app_identity.get_application_id()
+Not to be confused with `google.appengine.api.app_identity.get_application_id()`
 which gets a "display" app ID.
 """
 
@@ -26,17 +26,17 @@ which gets a "display" app ID.
 
 
 import os
-from typing import MutableMapping, Text, Union
+from typing import MutableMapping, Text, Optional
 
 
-OsEnvironLike = Union[MutableMapping[Text, Text], None]
+OsEnvironLike = Optional[MutableMapping[Text, Text]]
 
 
 def get(environ: OsEnvironLike = None) -> str:
   """Get the application ID from the environment.
 
   Args:
-    environ: Environment dictionary; os.environ if None.
+    environ: Environment dictionary. Uses os.environ if `None`.
 
   Returns:
     Default application ID as a string.
@@ -55,8 +55,8 @@ def put(app_id: str, environ: OsEnvironLike = None):
   """Set the application ID in the environment.
 
   Args:
-    app_id: application ID as a string.
-    environ: Environment dictionary; os.environ if None.
+    app_id: Application ID as a string.
+    environ: Environment dictionary. Uses os.environ if `None`.
   """
 
   if environ is None:
@@ -76,7 +76,7 @@ def clear(environ: OsEnvironLike = None):
   """Unset the application ID in the environment.
 
   Args:
-    environ: Environment dictionary; os.environ if None.
+    environ: Environment dictionary. Uses os.environ if `None`.
   """
 
   if environ is None:
@@ -84,3 +84,52 @@ def clear(environ: OsEnvironLike = None):
 
   environ.pop('APPLICATION_ID', None)
   environ.pop('GAE_APPLICATION', None)
+
+
+_PARTITION_SEPARATOR = '~'
+_DOMAIN_SEPARATOR = ':'
+
+
+def parse(app_id: Optional[str] = None,
+          environ: OsEnvironLike = None):
+  """Parses a full app ID into `partition`, `domain_name`, and `display_app_id`.
+
+  Args:
+    app_id: The full partitioned app ID. Looks up from environ if `None`.
+    environ: Environment dictionary. Uses os.environ if `None`.
+
+  Returns:
+    A tuple `(partition, domain_name, display_app_id)`.  The partition and
+    domain name might be empty.
+  """
+  if app_id is None:
+    app_id = get(environ)
+  partition = ''
+  psep = app_id.find(_PARTITION_SEPARATOR)
+  if psep > 0:
+    partition = app_id[:psep]
+    app_id = app_id[psep+1:]
+  domain_name = ''
+  dsep = app_id.find(_DOMAIN_SEPARATOR)
+  if dsep > 0:
+    domain_name = app_id[:dsep]
+    app_id = app_id[dsep+1:]
+  return partition, domain_name, app_id
+
+
+def project_id(app_id: Optional[str] = None,
+               environ: OsEnvironLike = None):
+  """Parses the domain prefixed project ID from the app_id.
+
+  Args:
+    app_id: The full partitioned app ID. Looks up from environ if `None`.
+    environ: Environment dictionary. Uses os.environ if `None`.
+
+  Returns:
+    A tuple `(partition, domain_name, display_app_id)`.  The partition and
+    domain name might be empty.
+  """
+  _, domain_name, display_app_id = parse(app_id, environ)
+  if domain_name:
+    return f'{domain_name}{_DOMAIN_SEPARATOR}{display_app_id}'
+  return display_app_id

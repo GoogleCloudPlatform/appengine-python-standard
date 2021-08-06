@@ -17,6 +17,7 @@
 """Methods for gluing a user's application into the GAE environment."""
 
 import binascii
+import contextvars
 import functools
 import logging
 import logging.handlers
@@ -24,7 +25,8 @@ import os
 import sys
 import traceback
 
-import contextvars
+from google.appengine.api.runtime import runtime
+from google.appengine.runtime import background
 from google.appengine.runtime import callback
 from google.appengine.runtime import context
 from google.appengine.runtime import default_api_stub
@@ -356,3 +358,19 @@ def RunInNewContextMiddleware(app, wsgi_env, start_response):
   """
   ctx = contextvars.copy_context()
   return ctx.run(app, wsgi_env, start_response)
+
+
+
+WARMUP_IP = '0.1.0.3'
+
+
+@middleware
+def BackgroundAndShutdownMiddleware(app, wsgi_env, start_response):
+  path = wsgi_env['PATH_INFO']
+  if (path == '/_ah/background' and wsgi_env.get('REMOTE_ADDR') == WARMUP_IP):
+    return background.App(wsgi_env, start_response)
+  elif (path == '/_ah/stop' and wsgi_env.get('REMOTE_ADDR') == WARMUP_IP):
+    runtime.__BeginShutdown()
+    start_response('200 OK', [('Content-Type', 'text/plain')])
+    return [b'ok']
+  return app(wsgi_env, start_response)

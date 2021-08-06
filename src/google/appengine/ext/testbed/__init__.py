@@ -104,6 +104,7 @@ you can change those values with `self.setup_env()`.
 
 
 import os
+import re
 import sys
 import threading
 
@@ -117,6 +118,7 @@ from google.appengine.api import request_info
 from google.appengine.api import stublib
 from google.appengine.api import urlfetch_stub
 from google.appengine.api import user_service_stub
+from google.appengine.api.app_identity import app_identity
 from google.appengine.api.app_identity import app_identity_stub
 from google.appengine.api.blobstore import blobstore_stub
 from google.appengine.api.blobstore import dict_blob_storage
@@ -174,6 +176,8 @@ if not gae_runtime.startswith('python3'):
 
 
 DEFAULT_ENVIRONMENT = {
+    'GAE_APPLICATION': 'testbed-test',
+    'GOOGLE_CLOUD_PROJECT': 'testbed-test',
     'AUTH_DOMAIN': 'gmail.com',
     'HTTP_HOST': 'testbed.example.com',
     'CURRENT_MODULE_ID': 'default',
@@ -190,7 +194,7 @@ DEFAULT_ENVIRONMENT = {
 
 # Deprecated legacy aliases for default environment variables. New code
 
-DEFAULT_APP_ID = 'testbed-test'
+DEFAULT_APP_ID = DEFAULT_ENVIRONMENT['GAE_APPLICATION']
 DEFAULT_AUTH_DOMAIN = DEFAULT_ENVIRONMENT['AUTH_DOMAIN']
 DEFAULT_SERVER_NAME = DEFAULT_ENVIRONMENT['SERVER_NAME']
 DEFAULT_SERVER_SOFTWARE = DEFAULT_ENVIRONMENT['SERVER_SOFTWARE']
@@ -472,31 +476,40 @@ class Testbed(object):
       **kwargs: Environment variables to set. The name of the argument will be
           uppercased and used as a key in `os.environ`.
     """
-    merged_kwargs = {key.upper(): value for key, value in kwargs.items()}
+    user_specified = {key.upper(): value for key, value in kwargs.items()}
 
 
 
 
 
-    specified_app_id = merged_kwargs.get('APP_ID',
-                                         full_app_id.get(environ=merged_kwargs))
-    full_app_id.clear(environ=merged_kwargs)
-    merged_kwargs.pop('APP_ID', None)
-    if full_app_id.get():
 
 
-      if specified_app_id and overwrite:
-        full_app_id.put(specified_app_id)
-    else:
 
-      full_app_id.put(specified_app_id or DEFAULT_APP_ID)
+    specified_app_id = (user_specified.get('APP_ID')
+                        or full_app_id.get(environ=user_specified)
+                        or user_specified.get('GOOGLE_CLOUD_PROJECT'))
+    full_app_id.clear(environ=user_specified)
+    user_specified.pop('APP_ID', None)
+    if specified_app_id:
 
+      user_specified.setdefault('GAE_APPLICATION', specified_app_id)
+
+
+      user_specified.setdefault('GOOGLE_CLOUD_PROJECT',
+                                full_app_id.project_id(specified_app_id))
+
+    merged_vars = user_specified.copy()
     if not overwrite:
       for key, value in six.iteritems(DEFAULT_ENVIRONMENT):
-        if key not in merged_kwargs:
-          merged_kwargs[key] = value
-    for key, value in six.iteritems(merged_kwargs):
-      if overwrite or key not in os.environ:
+        if key not in merged_vars:
+          merged_vars[key] = value
+    for key, value in six.iteritems(merged_vars):
+      if key == 'GAE_APPLICATION':
+        if overwrite or not full_app_id.get():
+          full_app_id.put(value)
+      elif overwrite or key not in os.environ:
+        if key == 'GOOGLE_CLOUD_PROJECT':
+          validate_project_id(value)
         os.environ[key] = value
 
   def _register_stub(self, service_name, stub, deactivate_callback=None):
@@ -908,3 +921,49 @@ class Testbed(object):
     """
     for service_name in SUPPORTED_SERVICES:
       self._init_stub(service_name, enable)
+
+_PROJECT_ID_VALID_CHARS = re.compile(r'[a-z0-9\-]+')
+
+
+def validate_project_id(project_id):
+  """Ensure that a GCP project ID is valid.
+
+  From
+  https://cloud.google.com/resource-manager/docs/creating-managing-projects#before_you_begin
+  The project ID must be a unique string of 6 to 30 lowercase letters, digits,
+  or hyphens. It must start with a letter, and cannot have a trailing hyphen.
+
+  Args:
+    project_id (str): project id, potentially including domain prefix, to
+      validate.
+  """
+
+  def err(msg):
+    raise ValueError(f'Invalid GCP project ID "{project_id}": {msg}.')
+
+  if '~' in project_id:
+    err('partition prefex (e.g. "s~") not allowed in project ID '
+        '(consider gae_application instead)')
+
+  chunks = project_id.split(':')
+  if len(chunks) > 2:
+    err('at most one colon is allowed (for domain prefix)')
+
+
+  project_id = chunks[-1]
+
+  if len(project_id) < 6:
+    err('must be at least 6 characters')
+
+  if len(project_id) > 30:
+    err('must not be longer than 30 characters')
+
+  if not _PROJECT_ID_VALID_CHARS.fullmatch(project_id):
+    err('only lowercase letters, digits, or hyphens are allowed')
+
+  if not project_id[0].islower():
+    err('must start with a lowercase letter')
+
+  if project_id[-1] == '-':
+    err('must not end with a hyphen')
+
