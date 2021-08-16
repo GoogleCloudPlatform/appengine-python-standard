@@ -35,8 +35,7 @@ Example for a Flask app:
   app.wsgi_app = google.appengine.api.wrap_wsgi_app(app.wsgi_app)
 ~~~
 
-Then deploy your app as usual, with `gcloud app deploy`.  The following modules
-are available:
+Then deploy your app as usual, with `gcloud beta app deploy` (currently only the Beta version has the capability to enable these APIs). The following modules are available:
 
 - `google.appengine.api.app_identity`
 - `google.appengine.api.capabilities`
