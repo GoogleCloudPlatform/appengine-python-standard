@@ -1,8 +1,10 @@
-# Google App Engine Python 3 Standard Environment API library (beta)
+# Google App Engine Python 3 Standard Environment API library (private preview)
 
-This is an alpha release of the App Engine SDK for Python 3.  It provides access
+This is a private preview release of the App Engine SDK for Python 3.  It provides access
 to various API endpoints that were previously only available on the Python 2.7
 runtime.
+
+To sign up for the private preview, visit https://docs.google.com/forms/d/e/1FAIpQLSd1hFLA2UFSYwIMxm9ZI3pwigORZBgjJRH0qrnhtE7nvhhRCQ/viewform.
 
 ## Using the SDK
 
