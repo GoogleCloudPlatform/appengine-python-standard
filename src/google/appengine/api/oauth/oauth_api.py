@@ -21,12 +21,13 @@
 A service that enables App Engine apps to validate OAuth requests.
 
 Classes defined here:
-  Error: base exception type
-  NotAllowedError: OAuthService exception
-  OAuthRequestError: OAuthService exception
-  InvalidOAuthParametersError: OAuthService exception
-  InvalidOAuthTokenError: OAuthService exception
-  OAuthServiceFailureError: OAuthService exception
+
+- `Error`: base exception type
+- `NotAllowedError`: OAuthService exception
+- `OAuthRequestError`: OAuthService exception
+- `InvalidOAuthParametersError`: OAuthService exception
+- `InvalidOAuthTokenError`: OAuthService exception
+- `OAuthServiceFailureError`: OAuthService exception
 """
 
 import json
@@ -108,7 +109,7 @@ def is_current_user_admin(_scope=None):
       which is accepted.
 
   Returns:
-    boolean
+    Boolean.
 
   Raises:
     OAuthRequestError: The request was not a valid OAuth request.

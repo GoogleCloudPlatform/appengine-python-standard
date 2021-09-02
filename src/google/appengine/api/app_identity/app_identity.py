@@ -16,10 +16,8 @@
 #
 """Provides access functions for the app identity service.
 
-To learn more about the App Identity API, review the `Overview`_ document.
-
-.. _Overview:
-   https://cloud.google.com/appengine/docs/python/appidentity/
+To learn more about the App Identity API, review the Overview document:
+https://cloud.google.com/appengine/docs/python/appidentity/
 """
 
 
@@ -152,10 +150,10 @@ class PublicCertificate(object):
 
   Attributes:
     key_name: Name of the certificate.
-    x509_certificate_pem: `X.509 certificates`_ in PEM format.
+    x509_certificate_pem: X.509
+        certificates (https://www.ietf.org/rfc/rfc2459.txt) in PEM format.
 
-  .. _X.509 certificates:
-     https://www.ietf.org/rfc/rfc2459.txt
+
   """
 
   def __init__(self, key_name, x509_certificate_pem):
@@ -182,7 +180,7 @@ def make_sign_blob_call(rpc, bytes_to_sign):
   """Executes the RPC call to sign a blob.
 
   Args:
-    rpc: A UserRPC instance.
+    rpc: A `UserRPC` instance.
     bytes_to_sign: Blob that must be signed.
 
   Returns:
@@ -204,7 +202,7 @@ def make_sign_blob_call(rpc, bytes_to_sign):
     post-call hooks on the first invocation.
 
     Args:
-      rpc: A UserRPC object.
+      rpc: A `UserRPC` object.
 
     Returns:
       A tuple that contains signing key name and signature.
@@ -227,7 +225,7 @@ def make_get_public_certificates_call(rpc):
   """Executes the RPC call to get a list of public certificates.
 
   Args:
-    rpc: A UserRPC instance.
+    rpc: A `UserRPC` instance.
 
   Returns:
     A list of `PublicCertificate` objects.
@@ -242,7 +240,7 @@ def make_get_public_certificates_call(rpc):
     post-call hooks on the first invocation.
 
     Args:
-      rpc: A UserRPC object.
+      rpc: A `UserRPC` object.
 
     Returns:
       A list of `PublicCertificate` objects.
@@ -267,7 +265,7 @@ def make_get_service_account_name_call(rpc):
   """Gets the service account name of the app.
 
   Args:
-    rpc: A UserRPC object.
+    rpc: A `UserRPC` object.
 
   Returns:
     Service account name of the app.
@@ -282,7 +280,7 @@ def make_get_service_account_name_call(rpc):
     post-call hooks on the first invocation.
 
     Args:
-      rpc: A UserRPC object.
+      rpc: A `UserRPC` object.
 
     Returns:
       A string of the service account name of the app.
@@ -305,7 +303,7 @@ def make_get_default_gcs_bucket_name_call(rpc):
   """Gets the default Google Cloud Storage bucket name for the app.
 
   Args:
-    rpc: A UserRPC object.
+    rpc: A `UserRPC` object.
 
   Returns:
     The default Google Cloud Storage bucket name for the app.
@@ -323,7 +321,7 @@ def make_get_default_gcs_bucket_name_call(rpc):
     post-call hooks on the first invocation.
 
     Args:
-      rpc: A UserRPC object.
+      rpc: A `UserRPC` object.
 
     Returns:
       A string of the name of the app's default Google Cloud Storage bucket.
@@ -411,8 +409,8 @@ def get_default_gcs_bucket_name(deadline=None):
 def get_application_id():
   """Gets the application ID of an app.
 
-  Not to be confused with google.appengine.api.full_app_id.get() which gets the
-  "raw" app ID.
+  Not to be confused with `google.appengine.api.full_app_id.get()`, which gets
+  the "raw" app ID.
 
   Returns:
     The application ID of the app.

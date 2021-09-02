@@ -19,7 +19,7 @@
 """App identity stub service implementation.
 
 This service behaves the same as the production service, except using
-a private key specified when starting dev_appserver.py.
+a private key specified when starting `dev_appserver.py`.
 """
 
 

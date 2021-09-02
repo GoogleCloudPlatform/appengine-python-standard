@@ -25,7 +25,6 @@
 
 
 
-
 import logging
 import time
 
@@ -66,13 +65,12 @@ MAX_REQUEST_SIZE = 32 << 20
 
 DEFAULT_MAX_SIZE_BYTES = 1e15
 
-
 if six.PY3:
   long = int
 
 
 class _LRUChainableElement(object):
-  """A base class for elements in the LRU cache."""
+  """A base class for elements in the `LRU` cache."""
 
   def __init__(self, key='', value=''):
     """Initializes an _LRUChainableElement."""
@@ -94,11 +92,11 @@ class CacheEntry(_LRUChainableElement):
 
     Args:
       value: String containing the data for this entry.
-      expiration: Number containing the expiration time or offset in seconds
-        for this entry.
+      expiration: Number containing the expiration time or offset in seconds for
+        this entry.
       flags: Opaque flags used by the memcache implementation.
       cas_id: Unique Compare-And-Set ID.
-      gettime: Used for testing. Function that works like time.time().
+      gettime: Used for testing. Function that works like `time.time()`.
       namespace: String namespace that this entry is stored under.
       key: String key used to retrieve the item from the namespace.
     """
@@ -122,9 +120,9 @@ class CacheEntry(_LRUChainableElement):
     """Sets the expiration for this entry.
 
     Args:
-      expiration: Number containing the expiration time or offset in seconds
-        for this entry. If expiration is above one month, then it's considered
-        an absolute time since the UNIX epoch.
+      expiration: Number containing the expiration time or offset in seconds for
+        this entry. If expiration is above one month, then it's considered an
+        absolute time since the UNIX epoch.
     """
     if expiration > (86400 * 30):
       self.expiration_time = expiration
@@ -132,7 +130,7 @@ class CacheEntry(_LRUChainableElement):
       self.expiration_time = self.gettime() + expiration
 
   def CheckExpired(self):
-    """Returns True if this entry has expired; False otherwise."""
+    """Returns `True` if this entry has expired; `False` otherwise."""
     return self.will_expire and self.gettime() >= self.expiration_time
 
   def ExpireAndLock(self, timeout):
@@ -149,7 +147,7 @@ class CacheEntry(_LRUChainableElement):
     self._SetExpiration(timeout)
 
   def CheckLocked(self):
-    """Returns True if this entry was deleted but has not yet timed out."""
+    """Returns `True` if this entry was deleted but has not yet timed out."""
     return self.locked and not self.CheckExpired()
 
 
@@ -169,9 +167,9 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
     """Initializer.
 
     Args:
-      gettime: time.time()-like function used for testing.
+      gettime: `time.time()`-like function used for testing.
       service_name: Service name expected for all calls.
-      max_size_bytes: The maximum total cache size in bytes, used for LRU
+      max_size_bytes: The maximum total cache size in bytes, used for `LRU`
         evictions.
     """
     super(MemcacheServiceStub, self).__init__(
@@ -201,7 +199,7 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
 
   @apiproxy_stub.Synchronized
   def _GetKey(self, namespace, key):
-    """Retrieves a CacheEntry from the cache if it hasn't expired.
+    """Retrieves a `CacheEntry` from the cache if it hasn't expired.
 
     Does not take deletion timeout into account.
 
@@ -210,7 +208,7 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
       key: The key to retrieve from the cache.
 
     Returns:
-      The corresponding CacheEntry instance, or None if it was not found or
+      The corresponding `CacheEntry` instance, or `None` if it was not found or
       has already expired.
     """
     namespace_dict = self._the_cache.get(namespace, None)
@@ -230,11 +228,11 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
 
   @apiproxy_stub.Synchronized
   def _Dynamic_Get(self, request, response):
-    """Implementation of MemcacheService::Get().
+    """Implementation of `MemcacheService::Get()`.
 
     Args:
-      request: A MemcacheGetRequest.
-      response: A MemcacheGetResponse.
+      request: A `MemcacheGetRequest`.
+      response: A `MemcacheGetResponse`.
     """
     namespace = request.name_space
     keys = set(request.key)
@@ -254,11 +252,11 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
 
   @apiproxy_stub.Synchronized
   def _Dynamic_Set(self, request, response):
-    """Implementation of MemcacheService::Set().
+    """Implementation of `MemcacheService::Set()`.
 
     Args:
-      request: A MemcacheSetRequest.
-      response: A MemcacheSetResponse.
+      request: A `MemcacheSetRequest`.
+      response: A `MemcacheSetResponse`.
     """
     namespace = request.name_space
     for item in request.item:
@@ -308,11 +306,11 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
 
   @apiproxy_stub.Synchronized
   def _Dynamic_Delete(self, request, response):
-    """Implementation of MemcacheService::Delete().
+    """Implementation of `MemcacheService::Delete()`.
 
     Args:
-      request: A MemcacheDeleteRequest.
-      response: A MemcacheDeleteResponse.
+      request: A `MemcacheDeleteRequest`.
+      response: A `MemcacheDeleteResponse`.
     """
     namespace = request.name_space
     for item in request.item:
@@ -334,17 +332,17 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
 
   @apiproxy_stub.Synchronized
   def _internal_increment(self, namespace, request, is_batch_increment=False):
-    """Internal function for incrementing from a MemcacheIncrementRequest.
+    """Internal function for incrementing from a `MemcacheIncrementRequest`.
 
     Args:
       namespace: A string containing the namespace for the request, if any.
         Pass an empty string if there is no namespace.
-      request: A MemcacheIncrementRequest instance.
-      is_batch_increment: True if this is part of a batch increment request.
-        InvalidValue errors are not raised during batch increments.
+      request: A `MemcacheIncrementRequest` instance.
+      is_batch_increment: `True` if this is part of a batch increment request.
+        `InvalidValue` errors are not raised during batch increments.
 
     Returns:
-      An integer or long if the offset was successful, None on error.
+      An integer or long if the offset was successful, `None` on error.
     """
     key = request.key
     entry = self._GetKey(namespace, key)
@@ -372,8 +370,9 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
       old_value = long(entry.value)
     except ValueError:
 
-      logging.error('Increment/decrement failed: Could not interpret '
-                    'value for key = "%s" as an unsigned integer.', key)
+      logging.error(
+          'Increment/decrement failed: Could not interpret '
+          'value for key = "%s" as an unsigned integer.', key)
       return self._RaiseInvalidValueError(is_batch_increment)
 
     if old_value < 0:
@@ -381,13 +380,15 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
 
 
 
-      logging.error('Increment/decrement failed: Could not interpret '
-                    'value for key = "%s" as an unsigned integer.', key)
+      logging.error(
+          'Increment/decrement failed: Could not interpret '
+          'value for key = "%s" as an unsigned integer.', key)
       return self._RaiseInvalidValueError(is_batch_increment)
 
     if old_value >= 2**64:
-      logging.error('Increment value for key = "%s" will be higher than the '
-                    'max value for a 64-bit integer.', key)
+      logging.error(
+          'Increment value for key = "%s" will be higher than the '
+          'max value for a 64-bit integer.', key)
       return self._RaiseInvalidValueError(is_batch_increment)
 
     delta = request.delta
@@ -401,17 +402,17 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
     return new_value
 
   def _RaiseInvalidValueError(self, is_batch_increment):
-    """Raise an InvalidValue error unless using a batch increment."""
+    """Raise an `InvalidValue` error unless using a batch increment."""
     if not is_batch_increment:
       raise apiproxy_errors.ApplicationError(
           memcache_service_pb2.MemcacheServiceError.INVALID_VALUE)
 
   def _Dynamic_Increment(self, request, response):
-    """Implementation of MemcacheService::Increment().
+    """Implementation of `MemcacheService::Increment()`.
 
     Args:
-      request: A MemcacheIncrementRequest.
-      response: A MemcacheIncrementResponse.
+      request: A `MemcacheIncrementRequest`.
+      response: A `MemcacheIncrementResponse`.
     """
     namespace = request.name_space
     new_value = self._internal_increment(namespace, request)
@@ -422,11 +423,11 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
 
   @apiproxy_stub.Synchronized
   def _Dynamic_BatchIncrement(self, request, response):
-    """Implementation of MemcacheService::BatchIncrement().
+    """Implementation of `MemcacheService::BatchIncrement()`.
 
     Args:
-      request: A MemcacheBatchIncrementRequest.
-      response: A MemcacheBatchIncrementResponse.
+      request: A `MemcacheBatchIncrementRequest`.
+      response: A `MemcacheBatchIncrementResponse`.
     """
     namespace = request.name_space
     for request_item in request.item:
@@ -441,21 +442,21 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
 
   @apiproxy_stub.Synchronized
   def _Dynamic_FlushAll(self, request, response):
-    """Implementation of MemcacheService::FlushAll().
+    """Implementation of `MemcacheService::FlushAll()`.
 
     Args:
-      request: A MemcacheFlushRequest.
-      response: A MemcacheFlushResponse.
+      request: A `MemcacheFlushRequest`.
+      response: A `MemcacheFlushResponse`.
     """
     self.Clear()
 
   @apiproxy_stub.Synchronized
   def _Dynamic_Stats(self, request, response):
-    """Implementation of MemcacheService::Stats().
+    """Implementation of `MemcacheService::Stats()`.
 
     Args:
-      request: A MemcacheStatsRequest.
-      response: A MemcacheStatsResponse.
+      request: A `MemcacheStatsRequest`.
+      response: A `MemcacheStatsResponse`.
     """
     stats = response.stats
     stats.hits = self._hits
@@ -470,31 +471,31 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
 
   @apiproxy_stub.Synchronized
   def _Dynamic_SetMaxSize(self, request, response):
-    """Implementation of MemcacheStubService::SetMaxSize().
+    """Implementation of `MemcacheStubService::SetMaxSize()`.
 
     Args:
-      request: A SetMaxSizeRequest.
-      response: A base_pb.VoidProto.
+      request: A `SetMaxSizeRequest`.
+      response: A `base_pb.VoidProto`.
     """
     self._max_size_bytes = request.max_size_bytes
 
   @apiproxy_stub.Synchronized
   def _Dynamic_GetLruChainLength(self, request, response):
-    """Implementation of MemcacheStubService::GetLruChainLength().
+    """Implementation of `MemcacheStubService::GetLruChainLength()`.
 
     Args:
-      request: A base_pb.VoidProto.
-      response: A GetLruChainLengthResponse.
+      request: A `base_pb.VoidProto`.
+      response: A `GetLruChainLengthResponse`.
     """
     response.chain_length = len(self._lru)
 
   @apiproxy_stub.Synchronized
   def _Dynamic_SetClock(self, request, response):
-    """Implementation of MemcacheStubService::SetClock().
+    """Implementation of `MemcacheStubService::SetClock()`.
 
     Args:
-      request: A SetClockRequest.
-      response: A base_pb.VoidProto.
+      request: A `SetClockRequest`.
+      response: A `base_pb.VoidProto`.
     """
     self._static_clock_time = request.clock_time_milliseconds / 1000.0
     self._gettime = lambda: self._static_clock_time
@@ -504,11 +505,11 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
 
   @apiproxy_stub.Synchronized
   def _Dynamic_AdvanceClock(self, request, response):
-    """Implementation of MemcacheStubService::AdvanceClock().
+    """Implementation of `MemcacheStubService::AdvanceClock()`.
 
     Args:
-      request: An AdvanceClockRequest.
-      response: An AdvanceClockResponse.
+      request: An `AdvanceClockRequest`.
+      response: An `AdvanceClockResponse`.
     """
     self._static_clock_time += request.milliseconds / 1000.0
     response.clock_time_milliseconds = self._static_clock_time * 1000
@@ -524,12 +525,12 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
 
 
 class LRU(object):
-  """Implements an LRU cache by intrusive chaining on elements.
+  """Implements an `LRU` cache by intrusive chaining on elements.
 
   Also keeps track of the total size of the elements in bytes, as well as the
-  length of the LRU chain.
+  length of the `LRU` chain.
 
-  Heavily inspired by //j/c/g/appengine/api/memcache/dev/LRU.java.
+  Heavily inspired by `//j/c/g/appengine/api/memcache/dev/LRU.java`.
   """
 
   def __init__(self):
@@ -550,7 +551,7 @@ class LRU(object):
     return self._oldest
 
   def Clear(self):
-    """Clears the LRU chain."""
+    """Clears the `LRU` chain."""
     self._newest = None
     self._oldest = None
     self._total_byte_size = 0
@@ -561,11 +562,11 @@ class LRU(object):
     return self._total_byte_size
 
   def IsEmpty(self):
-    """Checks if the LRU chain is empty."""
+    """Checks if the `LRU` chain is empty."""
     return self._newest is None and self._oldest is None
 
   def Update(self, element):
-    """Updates an item in the LRU chain."""
+    """Updates an item in the `LRU` chain."""
     if not element:
       raise ValueError('LRU Cache element cannot be empty')
     self.Remove(element)
@@ -580,7 +581,7 @@ class LRU(object):
     self._length += 1
 
   def Remove(self, element):
-    """Removes an item from the LRU chain."""
+    """Removes an item from the `LRU` chain."""
     if not element:
       raise ValueError('LRU Cache element cannot be empty')
     newer = element.newer
@@ -605,5 +606,5 @@ class LRU(object):
       self._total_byte_size -= element.byte_size
 
   def RemoveOldest(self):
-    """Removes the oldest item from the LRU chain."""
+    """Removes the oldest item from the `LRU` chain."""
     self.Remove(self.oldest)

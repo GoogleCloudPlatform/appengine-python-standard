@@ -14,10 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""A fake version of `apiproxy.py` for Titanoboa."""
-
-from google.appengine.runtime import callback as vmcallback
 
 
-def SetRequestEndCallback(callback):
-  vmcallback.SetRequestEndCallback(callback)
+
+
+
+
+
+from google.appengine.ext.deferred.deferred import *

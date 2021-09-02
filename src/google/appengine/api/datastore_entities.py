@@ -21,7 +21,7 @@
 
 Most of these kinds are based on the gd namespace "kinds" from GData:
 
-  https://developers.google.com/gdata/docs/1.0/elements
+https://developers.google.com/gdata/docs/1.0/elements
 """
 
 
@@ -47,7 +47,7 @@ class GdKind(datastore.Entity):
   """A base class for gd namespace kinds.
 
   This class contains common logic for all gd namespace kinds. For example,
-  this class translates datastore (app id, kind, key) tuples to tag:
+  this class translates datastore `(app id, kind, key)` tuples to tag:
   URIs appropriate for use in <key> tags.
   """
 
@@ -63,24 +63,25 @@ class GdKind(datastore.Entity):
   def __init__(self, kind, title, kind_properties, contact_properties=[]):
     """ Ctor.
 
-    title is the name of this particular entity, e.g. Bob Jones or Mom's
+    `title` is the name of this particular entity, e.g. Bob Jones or Mom's
     Birthday Party.
 
-    kind_properties is a list of property names that should be included in
+    `kind_properties` is a list of property names that should be included in
     this entity's XML encoding as first-class XML elements, instead of
-    <property> elements. 'title' and 'content' are added to kind_properties
-    automatically, and may not appear in contact_properties.
+    <property> elements. `title` and `content` are added to `kind_properties`
+    automatically, and may not appear in `contact_properties`.
 
-    contact_properties is a list of property names that are Keys that point to
-    Contact entities, and should be included in this entity's XML encoding as
-    <gd:who> elements. If a property name is included in both kind_properties
-    and contact_properties, it is treated as a Contact property.
+    `contact_properties` is a list of property names that are Keys that point to
+    `Contact` entities, and should be included in this entity's XML encoding as
+    `<gd:who>` elements. If a property name is included in both
+    `kind_properties` and `contact_properties`, it is treated as a Contact
+    property.
 
     Args:
-    kind: string
-    title: string
-    kind_properties: list of strings
-    contact_properties: list of string
+      kind: String
+      title: String
+      kind_properties: List of strings
+      contact_properties: List of string
     """
     datastore.Entity.__init__(self, kind)
 
@@ -105,7 +106,7 @@ class GdKind(datastore.Entity):
     by property name.
 
     Returns:
-    string  # the XML representation of the gd kind properties
+      String  # the XML representation of the gd kind properties
     """
     properties = self._kind_properties.intersection(set(self.keys()))
 
@@ -133,7 +134,7 @@ class GdKind(datastore.Entity):
     the XML elements in the output are sorted alphabetically by property name.
 
     Returns:
-    string  # the XML representation of the Contact properties
+      String  # the XML representation of the Contact properties
     """
     properties = self._contact_properties.intersection(set(self.keys()))
 
@@ -158,7 +159,7 @@ class GdKind(datastore.Entity):
     kind to XML.
 
     Returns:
-    string  # the XML representation of the leftover properties
+      String  # the XML representation of the leftover properties
     """
     leftovers = set(self.keys())
     leftovers -= self._kind_properties
@@ -189,24 +190,26 @@ class Message(GdKind):
 
   These properties are meaningful. They are all optional.
 
-  property name  property type    meaning
-  -------------------------------------
-  title          string         message subject
-  content        string         message body
-  from           Contact*       sender
-  to             Contact*       primary recipient
-  cc             Contact*       CC recipient
-  bcc            Contact*       BCC recipient
-  reply-to       Contact*       intended recipient of replies
-  link           Link*          attachment
-  category       Category*      tag or label associated with this message
-  geoPt          GeoPt*         geographic location the message was posted from
-  rating         Rating*        message rating, as defined by the application
+  Property name   | Property type | Meaning
+  --------------- | ------------- | --------
+  `title`         | String        | Message subject
+  `content`       | String        | Message body
+  `from`          | Contact*      | Sender
+  `to`            | Contact*      | Primary recipient
+  `cc`            | Contact*      | CC recipient
+  `bcc`           | Contact*      | BCC recipient
+  `reply-to`      | Contact*      | Intended recipient of replies
+  `link`          | Link*         | Attachment
+  `category`      | Category*     | Tag or label associated with this message
+  `geoPt`         | GeoPt*        | Geographic location the message was posted
+                  :               : from
+  `rating`        | Rating*       | Message rating, as defined by the
+                  :               : application
 
-  * means this property may be repeated.
+  The asterisk (*) means this property may be repeated.
 
   The Contact properties should be Keys of Contact entities. They are
-  represented in the XML encoding as linked <gd:who> elements.
+  represented in the XML encoding as linked `<gd:who>` elements.
   """
   KIND_PROPERTIES = ['title', 'content', 'link', 'category', 'geoPt', 'rating']
   CONTACT_PROPERTIES = ['from', 'to', 'cc', 'bcc', 'reply-to']
@@ -227,23 +230,23 @@ class Event(GdKind):
 
   These properties are meaningful. They are all optional.
 
-  property name  property type    meaning
-  -------------------------------------
-  title          string         event name
-  content        string         event description
-  author         string         the organizer's name
-  where          string*        human-readable location (not a GeoPt)
-  startTime      timestamp      start time
-  endTime        timestamp      end time
-  eventStatus    string         one of the Event.Status values
-  link           Link*          page with more information
-  category       Category*      tag or label associated with this event
-  attendee       Contact*       attendees and other related people
+  Property name    |  Property type |  Meaning
+  ---------------- | ---------------| --------
+  `title`          | String         | Event name
+  `content`        | String         | Event description
+  `author`         | String         | The organizer's name
+  `where`          | String*        | Human-readable location (not a GeoPt)
+  `startTime`      | Timestamp      | Start time
+  `endTime`        | Timestamp      | End time
+  `eventStatus`    | String         | One of the `Event.Status` values
+  `link`           | Link*          | Page with more information
+  `category`       | Category*      | Tag or label associated with this event
+  `attendee`       | Contact*       | Attendees and other related people
 
-  * means this property may be repeated.
+  The asterisk (*) means this property may be repeated.
 
   The Contact properties should be Keys of Contact entities. They are
-  represented in the XML encoding as linked <gd:who> elements.
+  represented in the XML encoding as linked `<gd:who>` elements.
   """
   KIND_PROPERTIES = ['title', 'content', 'author', 'where', 'startTime',
                      'endTime', 'eventStatus', 'link', 'category']
@@ -259,8 +262,10 @@ class Event(GdKind):
                     Event.CONTACT_PROPERTIES)
 
   def ToXml(self):
-    """ Override GdKind.ToXml() to special-case author, gd:where, gd:when, and
-    gd:eventStatus.
+    """Returns the XML format of  `author`, `gd:where`, `gd:when`, and `gd:eventStatus`.
+
+    Overrides `GdKind.ToXml()` to `author`, `gd:where`, `gd:when`, and
+    `gd:eventStatus`.
     """
     xml = GdKind.HEADER % self.kind().lower()
 
@@ -301,30 +306,30 @@ class Event(GdKind):
 
 
 class Contact(GdKind):
-  """A contact: a person, a venue such as a club or a restaurant, or an
-  organization.
+  """A contact: a person, a venue (e.g., club, restaurant), or an organization.
 
   This is the gd Contact kind. See:
   https://developers.google.com/gdata/docs/1.0/elements#gdContactKind
 
-  Most of the information about the contact is in the <gd:contactSection>
+  Most of the information about the contact is in the `<gd:contactSection>`
   element; see the reference section for that element for details.
 
   These properties are meaningful. They are all optional.
 
-  property name  property type    meaning
-  -------------------------------------
-  title          string         contact's name
-  content        string         notes
-  email          Email*         email address
-  geoPt          GeoPt*         geographic location
-  im             IM*            IM address
-  phoneNumber    Phonenumber*   phone number
-  postalAddress  PostalAddress* mailing address
-  link           Link*          link to more information
-  category       Category*      tag or label associated with this contact
+  Property name     | Property type   |  Meaning
+  ----------------- | --------------- | ---------
+  `title`           | String          | Contact's name
+  `content`         | String          | Notes
+  `email`           | Email*          | Email address
+  `geoPt`           | GeoPt*          | Geographic location
+  `im`              | IM*             | IM address
+  `phoneNumber`     | Phonenumber*    | Phone number
+  `postalAddress`   | PostalAddress*  | Mailing address
+  `link`            | Link*           | Link to more information
+  `category`        | Category*       | Tag or label associated with this
+                    :                 : contact
 
-  * means this property may be repeated.
+  An asterisk (*) means this property may be repeated.
   """
   CONTACT_SECTION_HEADER = """
   <gd:contactSection>"""
@@ -342,8 +347,10 @@ class Contact(GdKind):
     GdKind.__init__(self, kind, title, Contact.KIND_PROPERTIES)
 
   def ToXml(self):
-    """ Override GdKind.ToXml() to put some properties inside a
-    gd:contactSection.
+    """Returns the XML format of `gd:contactSection`.
+
+    Overrides `GdKind.ToXml()` to put some properties inside a
+    `gd:contactSection`.
     """
     xml = GdKind.HEADER % self.kind().lower()
 

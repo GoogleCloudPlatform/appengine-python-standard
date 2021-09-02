@@ -138,10 +138,10 @@ def v4_key_to_string(v4_key):
   both a name and an ID the name is ignored.
 
   Args:
-    v4_key: an entity_v4_pb2.Key
+    v4_key: An `entity_v4_pb2.Key`.
 
   Returns:
-    a string representing the key's path
+    A string representing the key's path.
   """
   path_element_strings = []
   for path_element in v4_key.path_element:
@@ -159,10 +159,10 @@ def is_complete_v4_key(v4_key):
   """Returns True if a key specifies an ID or name, False otherwise.
 
   Args:
-    v4_key: an entity_v4_pb2.Key
+    v4_key: An `entity_v4_pb2.Key`.
 
   Returns:
-    True if the key specifies an ID or name, False otherwise.
+    `True` if the key specifies an ID or name, `False` otherwise.
   """
   assert len(v4_key.path_element) >= 1
   last_element = v4_key.path_element(len(v4_key.path_element) - 1)
@@ -178,10 +178,10 @@ def v1_key_to_string(v1_key):
   both a name and an ID the name is ignored.
 
   Args:
-    v1_key: an googledatastore.Key
+    v1_key: An `googledatastore.Key`.
 
   Returns:
-    a string representing the key's path
+    A string representing the key's path.
   """
   path_element_strings = []
   for path_element in v1_key.path:
@@ -197,13 +197,13 @@ def v1_key_to_string(v1_key):
 
 
 def is_complete_v1_key(v1_key):
-  """Returns True if a key specifies an ID or name, False otherwise.
+  """Returns `True` if a key specifies an ID or name, `False` otherwise.
 
   Args:
-    v1_key: an googledatastore.Key
+    v1_key: An `googledatastore.Key`.
 
   Returns:
-    True if the key specifies an ID or name, False otherwise.
+    `True` if the key specifies an ID or name, `False` otherwise.
   """
   assert len(v1_key.path) >= 1
   last_element = v1_key.path[len(v1_key.path) - 1]
@@ -211,13 +211,13 @@ def is_complete_v1_key(v1_key):
 
 
 def is_complete_v3_key(v3_key):
-  """Returns True if a key specifies an ID or name, False otherwise.
+  """Returns `True` if a key specifies an ID or name, `False` otherwise.
 
   Args:
-    v3_key: a datastore_pb.Reference
+    v3_key: A `datastore_pb.Reference`.
 
   Returns:
-    True if the key specifies an ID or name, False otherwise.
+    `True` if the key specifies an ID or name, `False` otherwise.
   """
   assert len(v3_key.path.element) >= 1
   last_element = v3_key.path.element[-1]
@@ -229,11 +229,11 @@ def get_v1_mutation_key_and_entity(v1_mutation):
   """Returns the v1 key and entity for a v1 mutation proto, if applicable.
 
   Args:
-    v1_mutation: a googledatastore.Mutation
+    v1_mutation: A `googledatastore.Mutation`.
 
   Returns:
-    a tuple (googledatastore.Key for this mutation,
-             googledatastore.Entity or None if the mutation is a deletion)
+    A tuple `(googledatastore.Key for this mutation,
+             googledatastore.Entity or None if the mutation is a deletion)`.
   """
   if v1_mutation.HasField('delete'):
     return v1_mutation.delete, None
@@ -256,8 +256,8 @@ def check_conversion(condition, message):
   """Asserts a conversion condition and raises an error if it's not met.
 
   Args:
-    condition: (boolean) condition to enforce
-    message: error message
+    condition: A boolean condition to enforce.
+    message: Error message.
 
   Raises:
     InvalidConversionError: if condition is not met
@@ -281,11 +281,11 @@ class IdResolver(object):
   """A class that can handle project id <--> application id transformations."""
 
   def __init__(self, app_ids=()):
-    """Create a new IdResolver.
+    """Create a new `IdResolver`.
 
     Args:
      app_ids: A list of application ids with application id shard set. i.e.
-         s~my_app or e~my_app.
+       s~my_app or e~my_app.
     """
     resolver_map = {}
     for app_id in app_ids:
@@ -320,7 +320,7 @@ class IdResolver(object):
 
 
 class _IdentityIdResolver(IdResolver):
-  """An IdResolver that resolve app_id == project_id."""
+  """An `IdResolver` that resolve app_id == project_id."""
 
   def resolve_project_id(self, app_id):
     return app_id
@@ -333,11 +333,11 @@ class _EntityConverter(object):
   """Converter for entities and keys."""
 
   def __init__(self, id_resolver):
-    """Creates a new EntityConverter.
+    """Creates a new `EntityConverter`.
 
     Args:
-      id_resolver: an IdResolver object for converting
-      project_id <--> application_id
+      id_resolver: An `IdResolver` object for converting.
+        `project_id <--> application_id`.
     """
     self._id_resolver = id_resolver
 
@@ -345,8 +345,8 @@ class _EntityConverter(object):
     """Converts a v4 Key to a v3 Reference.
 
     Args:
-      v4_key: an entity_v4_pb2.Key
-      v3_ref: an entity_pb2.Reference to populate
+      v4_key: An `entity_v4_pb2.Key`.
+      v3_ref: An `entity_pb2.Reference` to populate.
     """
     v3_ref.Clear()
     if v4_key.HasField('partition_id'):
@@ -366,10 +366,10 @@ class _EntityConverter(object):
     """Converts a list of v4 Keys to a list of v3 References.
 
     Args:
-      v4_keys: a list of entity_v4_pb2.Key objects
+      v4_keys: A list of `entity_v4_pb2.Key` objects.
 
     Returns:
-      a list of entity_pb2.Reference objects
+      A list of `entity_pb2.Reference` objects.
     """
     v3_refs = []
     for v4_key in v4_keys:
@@ -382,8 +382,8 @@ class _EntityConverter(object):
     """Converts a v3 Reference to a v4 Key.
 
     Args:
-      v3_ref: an entity_p2b.Reference
-      v4_key: an entity_v4_pb2.Key to populate
+      v3_ref: An `entity_p2b.Reference`.
+      v4_key: An `entity_v4_pb2.Key` to populate.
     """
     v4_key.Clear()
     if not v3_ref.app:
@@ -403,10 +403,10 @@ class _EntityConverter(object):
     """Converts a list of v3 References to a list of v4 Keys.
 
     Args:
-      v3_refs: a list of entity_pb2.Reference objects
+      v3_refs: A list of `entity_pb2.Reference` objects.
 
     Returns:
-      a list of entity_v4_pb2.Key objects
+      A list of `entity_v4_pb2.Key` objects.
     """
     v4_keys = []
     for v3_ref in v3_refs:
@@ -416,12 +416,12 @@ class _EntityConverter(object):
     return v4_keys
 
   def v4_to_v3_entity(self, v4_entity, v3_entity, is_projection=False):
-    """Converts a v4 Entity to a v3 EntityProto.
+    """Converts a v4 Entity to a v3 `EntityProto`.
 
     Args:
-      v4_entity: an entity_v4_pb2.Entity
-      v3_entity: an entity_pb2.EntityProto to populate
-      is_projection: True if the v4_entity is from a projection query.
+      v4_entity: An `entity_v4_pb2.Entity`.
+      v3_entity: An `entity_pb2.EntityProto` to populate.
+      is_projection: `True` if the `v4_entity` is from a projection query.
     """
     v3_entity.Clear()
     for v4_property in v4_entity.property:
@@ -445,11 +445,11 @@ class _EntityConverter(object):
       pass
 
   def v3_to_v4_entity(self, v3_entity, v4_entity):
-    """Converts a v3 EntityProto to a v4 Entity.
+    """Converts a v3 `EntityProto` to a v4 Entity.
 
     Args:
-      v3_entity: an entity_pb2.EntityProto
-      v4_entity: an entity_v4_pb2.Proto to populate
+      v3_entity: An `entity_pb2.EntityProto`.
+      v4_entity: An `entity_v4_pb2.Proto` to populate.
     """
     v4_entity.Clear()
     self.v3_to_v4_key(v3_entity.key, v4_entity.key)
@@ -469,11 +469,11 @@ class _EntityConverter(object):
                                        False)
 
   def v4_value_to_v3_property_value(self, v4_value, v3_value):
-    """Converts a v4 Value to a v3 PropertyValue.
+    """Converts a v4 Value to a v3 `PropertyValue`.
 
     Args:
-      v4_value: an entity_v4_pb2.Value
-      v3_value: an entity_pb2.PropertyValue to populate
+      v4_value: An `entity_v4_pb2.Value`.
+      v3_value: An `entity_pb2.PropertyValue` to populate.
     """
     v3_value.Clear()
     if v4_value.HasField('boolean_value'):
@@ -518,9 +518,9 @@ class _EntityConverter(object):
     """Converts a v3 Property to a v4 Value.
 
     Args:
-      v3_property: an entity_pb2.Property
-      indexed: whether the v3 property is indexed
-      v4_value: an entity_v4_pb2.Value to populate
+      v3_property: An `entity_pb2.Property`.
+      indexed: Whether the v3 property is indexed.
+      v4_value: An `entity_v4_pb2.Value` to populate.
     """
     v4_value.Clear()
     v3_property_value = v3_property.value
@@ -633,14 +633,14 @@ class _EntityConverter(object):
                         v4_value, v3_property):
     """Converts info from a v4 Property to a v3 Property.
 
-    v4_value must not have a list_value.
+    `v4_value` must not have a `list_value`.
 
     Args:
-      property_name: the name of the property
-      is_multi: whether the property contains multiple values
-      is_projection: whether the property is projected
-      v4_value: an entity_v4_pb2.Value
-      v3_property: an entity_pb2.Property to populate
+      property_name: The name of the property.
+      is_multi: Whether the property contains multiple values.
+      is_projection: Whether the property is projected.
+      v4_value: An `entity_v4_pb2.Value`.
+      v3_property: An `entity_pb2.Property` to populate.
     """
     assert not v4_value.list_value, 'v4 list_value not convertable to v3'
     v3_property.Clear()
@@ -698,11 +698,11 @@ class _EntityConverter(object):
     """Adds a v3 Property to an Entity based on information from a v4 Property.
 
     Args:
-      property_name: the name of the property
-      is_multi: whether the property contains multiple values
-      is_projection: whether the property is a projection
-      v4_value: an entity_v4_pb2.Value
-      v3_entity: an entity_pb2.EntityProto
+      property_name: The name of the property.
+      is_multi: Whether the property contains multiple values.
+      is_projection: Whether the property is a projection.
+      v4_value: An `entity_v4_pb2.Value`.
+      v3_entity: An `entity_pb2.EntityProto`.
     """
     if v4_value.indexed:
       prop = v3_entity.property.add()
@@ -723,14 +723,15 @@ class _EntityConverter(object):
                                   indexed):
     """Adds a v4 Property to an entity or modifies an existing one.
 
-    property_map is used to track of properties that have already been added.
+    `property_map` is used to track of properties that have already been added.
     The same dict should be used for all of an entity's properties.
 
     Args:
-      v4_entity: an entity_v4_pb.Entity
-      property_map: a dict of name -> v4_property
-      v3_property: an entity_pb2.Property to convert to v4 and add to the dict
-      indexed: whether the property is indexed
+      v4_entity: An `entity_v4_pb.Entity`.
+      property_map: A dict of name -> v4_property.
+      v3_property: An `entity_pb2.Property` to convert to v4 and add to the
+        dict.
+      indexed: Whether the property is indexed.
     """
     property_name = v3_property.name
     if property_name in property_map:
@@ -750,10 +751,10 @@ class _EntityConverter(object):
     """Returns an integer value from a v4 Property.
 
     Args:
-      v4_property: an entity_v4_pb2.Property
+      v4_property: An `entity_v4_pb2.Property`.
 
     Returns:
-      an integer
+      An integer.
 
     Raises:
       InvalidConversionError: if the property doesn't contain an integer value
@@ -766,10 +767,10 @@ class _EntityConverter(object):
     """Returns a double value from a v4 Property.
 
     Args:
-      v4_property: an entity_v4_pb2.Property
+      v4_property: An `entity_v4_pb2.Property`.
 
     Returns:
-      a double
+      A double.
 
     Raises:
       InvalidConversionError: if the property doesn't contain a double value
@@ -779,13 +780,13 @@ class _EntityConverter(object):
     return v4_property.value.double_value
 
   def __get_v4_string_value(self, v4_property):
-    """Returns an string value from a v4 Property.
+    """Returns a string value from a v4 Property.
 
     Args:
-      v4_property: an entity_v4_pb2.Property
+      v4_property: An `entity_v4_pb2.Property`.
 
     Returns:
-      a string
+      A string.
 
     Throws:
       InvalidConversionError: if the property doesn't contain a string value
@@ -798,12 +799,12 @@ class _EntityConverter(object):
     """Creates a single-integer-valued v4 Property.
 
     Args:
-      name: the property name
-      value: the integer value of the property
-      indexed: whether the value should be indexed
+      name: The property name.
+      value: The integer value of the property.
+      indexed: Whether the value should be indexed.
 
     Returns:
-      an entity_v4_pb2.Property
+      An `entity_v4_pb2.Property`.
     """
     v4_property = entity_v4_pb2.Property()
     v4_property.name = name
@@ -816,12 +817,12 @@ class _EntityConverter(object):
     """Creates a single-double-valued v4 Property.
 
     Args:
-      name: the property name
-      value: the double value of the property
-      indexed: whether the value should be indexed
+      name: The property name.
+      value: The double value of the property.
+      indexed: Whether the value should be indexed.
 
     Returns:
-      an entity_v4_pb2.Property
+      An `entity_v4_pb2.Property`.
     """
     v4_property = entity_v4_pb2.Property()
     v4_property.name = name
@@ -834,12 +835,12 @@ class _EntityConverter(object):
     """Creates a single-string-valued v4 Property.
 
     Args:
-      name: the property name
-      value: the string value of the property
-      indexed: whether the value should be indexed
+      name: The property name.
+      value: The string value of the property.
+      indexed: Whether the value should be indexed.
 
     Returns:
-      an entity_v4_pb2.Property
+      An `entity_v4_pb2.Property`.
     """
     v4_property = entity_v4_pb2.Property()
     v4_property.name = name
@@ -849,11 +850,11 @@ class _EntityConverter(object):
     return v4_property
 
   def __v4_to_v3_point_value(self, v4_point_entity, v3_point_value):
-    """Converts a v4 point Entity to a v3 PointValue.
+    """Converts a v4 point Entity to a v3 `PointValue`.
 
     Args:
-      v4_point_entity: an entity_v4_pb2.Entity representing a point
-      v3_point_value: an entity_pb2.PropertyValue.PointValue to populate
+      v4_point_entity: An `entity_v4_pb2.Entity` representing a point.
+      v3_point_value: An `entity_pb2.PropertyValue.PointValue` to populate.
     """
     v3_point_value.Clear()
     name_to_v4_property = self.__build_name_to_v4_property_map(v4_point_entity)
@@ -861,11 +862,11 @@ class _EntityConverter(object):
     v3_point_value.y = self.__get_v4_double_value(name_to_v4_property['y'])
 
   def __v3_to_v4_point_entity(self, v3_point_value, v4_entity):
-    """Converts a v3 UserValue to a v4 user Entity.
+    """Converts a v3 `UserValue` to a v4 user Entity.
 
     Args:
-      v3_point_value: an entity_pb2.PropertyValue.PointValue
-      v4_entity: an entity_v4_pb2.Entity to populate
+      v3_point_value: An `entity_pb2.PropertyValue.PointValue`.
+      v4_entity: An `entity_v4_pb2.Entity` to populate.
     """
     v4_entity.Clear()
     v4_entity.property.append(
@@ -874,11 +875,11 @@ class _EntityConverter(object):
         self.__v4_double_property(PROPERTY_NAME_Y, v3_point_value.y, False))
 
   def v4_entity_to_v3_user_value(self, v4_user_entity, v3_user_value):
-    """Converts a v4 user Entity to a v3 UserValue.
+    """Converts a v4 user Entity to a v3 `UserValue`.
 
     Args:
-      v4_user_entity: an entity_v4_pb2.Entity representing a user
-      v3_user_value: an entity_pb2.PropertyValue.UserValue to populate
+      v4_user_entity: An `entity_v4_pb2.Entity` representing a user.
+      v3_user_value: An `entity_pb2.PropertyValue.UserValue` to populate.
     """
     v3_user_value.Clear()
     name_to_v4_property = self.__build_name_to_v4_property_map(v4_user_entity)
@@ -904,11 +905,11 @@ class _EntityConverter(object):
           name_to_v4_property[PROPERTY_NAME_FEDERATED_PROVIDER])
 
   def v3_user_value_to_v4_entity(self, v3_user_value, v4_entity):
-    """Converts a v3 UserValue to a v4 user Entity.
+    """Converts a v3 `UserValue` to a v4 user Entity.
 
     Args:
-      v3_user_value: an entity_pb2.PropertyValue.UserValue
-      v4_entity: an entity_v4_pb2.Entity to populate
+      v3_user_value: An `entity_pb2.PropertyValue.UserValue`.
+      v4_entity: An `entity_v4_pb2.Entity` to populate.
     """
     v4_entity.Clear()
     v4_entity.property.append(
@@ -939,8 +940,8 @@ class _EntityConverter(object):
     """Converts a v1 Key to a v3 Reference.
 
     Args:
-      v1_key: an googledatastore.Key
-      v3_ref: an entity_pb2.Reference to populate
+      v1_key: An `googledatastore.Key`.
+      v3_ref: An `entity_pb2.Reference` to populate.
     """
     v3_ref.Clear()
     if v1_key.HasField('partition_id'):
@@ -963,10 +964,10 @@ class _EntityConverter(object):
     """Converts a list of v1 Keys to a list of v3 References.
 
     Args:
-      v1_keys: a list of googledatastore.Key objects
+      v1_keys: A list of `googledatastore.Key` objects.
 
     Returns:
-      a list of entity_pb2.Reference objects
+      A list of `entity_pb2.Reference` objects.
     """
     v3_refs = []
     for v1_key in v1_keys:
@@ -979,8 +980,8 @@ class _EntityConverter(object):
     """Converts a v3 Reference to a v1 Key.
 
     Args:
-      v3_ref: an entity_pb2.Reference
-      v1_key: an googledatastore.Key to populate
+      v3_ref: An `entity_pb2.Reference`.
+      v1_key: An `googledatastore.Key` to populate.
     """
     v1_key.Clear()
     if not v3_ref.app:
@@ -1001,10 +1002,10 @@ class _EntityConverter(object):
     """Converts a list of v3 References to a list of v1 Keys.
 
     Args:
-      v3_refs: a list of entity_pb2.Reference objects
+      v3_refs: A list of `entity_pb2.Reference` objects.
 
     Returns:
-      a list of googledatastore.Key objects
+      A list of `googledatastore.Key` objects.
     """
     v1_keys = []
     for v3_ref in v3_refs:
@@ -1028,12 +1029,12 @@ class _EntityConverter(object):
       return v3_entity.raw_property.add()
 
   def v1_to_v3_entity(self, v1_entity, v3_entity, is_projection=False):
-    """Converts a v1 Entity to a v3 EntityProto.
+    """Converts a v1 Entity to a v3 `EntityProto`.
 
     Args:
-      v1_entity: an googledatastore.Entity
-      v3_entity: an entity_pb2.EntityProto to populate
-      is_projection: True if the v1_entity is from a projection query.
+      v1_entity: An `googledatastore.Entity`.
+      v3_entity: An `entity_pb2.EntityProto` to populate.
+      is_projection: `True` if the `v1_entity` is from a projection query.
     """
     v3_entity.Clear()
     for property_name, v1_value in six.iteritems(v1_entity.properties):
@@ -1069,11 +1070,11 @@ class _EntityConverter(object):
       pass
 
   def v3_to_v1_entity(self, v3_entity, v1_entity):
-    """Converts a v3 EntityProto to a v1 Entity.
+    """Converts a v3 `EntityProto` to a v1 Entity.
 
     Args:
-      v3_entity: an entity_pb2.EntityProto
-      v1_entity: an googledatastore.Proto to populate
+      v3_entity: An `entity_pb2.EntityProto`.
+      v1_entity: An `googledatastore.Proto` to populate.
     """
     v1_entity.Clear()
     self.v3_to_v1_key(v3_entity.key, v1_entity.key)
@@ -1090,11 +1091,11 @@ class _EntityConverter(object):
       self.__add_v1_property_to_entity(v1_entity, v3_property, False)
 
   def v1_value_to_v3_property_value(self, v1_value, v3_value):
-    """Converts a v1 Value to a v3 PropertyValue.
+    """Converts a v1 Value to a v3 `PropertyValue`.
 
     Args:
-      v1_value: an googledatastore.Value
-      v3_value: an entity_pb2.PropertyValue to populate
+      v1_value: An `googledatastore.Value`.
+      v3_value: An `entity_pb2.PropertyValue` to populate.
     """
     v3_value.Clear()
     field = v1_value.WhichOneof('value_type')
@@ -1137,9 +1138,9 @@ class _EntityConverter(object):
     """Converts a v3 Property to a v1 Value.
 
     Args:
-      v3_property: an entity_pb2.Property
-      indexed: whether the v3 property is indexed
-      v1_value: an googledatastore.Value to populate
+      v3_property: An `entity_pb2.Property`.
+      indexed: Whether the v3 property is indexed.
+      v1_value: An `googledatastore.Value` to populate.
     """
     v1_value.Clear()
     v3_property_value = v3_property.value
@@ -1252,11 +1253,11 @@ class _EntityConverter(object):
     v1_value must not have an array_value.
 
     Args:
-      property_name: the name of the property, unicode
-      is_multi: whether the property contains multiple values
-      is_projection: whether the property is projected
-      v1_value: an googledatastore.Value
-      v3_property: an entity_pb2.Property to populate
+      property_name: The name of the property, unicode.
+      is_multi: whether The property contains multiple values.
+      is_projection: Whether the property is projected.
+      v1_value: An `googledatastore.Value`.
+      v3_property: An `entity_pb2.Property` to populate.
     """
     v1_value_type = v1_value.WhichOneof('value_type')
     if v1_value_type == 'array_value':
@@ -1310,9 +1311,10 @@ class _EntityConverter(object):
     """Adds a v1 Property to an entity or modifies an existing one.
 
     Args:
-      v1_entity: an googledatastore.Entity
-      v3_property: an entity_pb2.Property to convert to v1 and add to the dict
-      indexed: whether the property is indexed
+      v1_entity: An `googledatastore.Entity`.
+      v3_property: An `entity_pb2.Property` to convert to v1 and add to the
+        dict.
+      indexed: Whether the property is indexed.
     """
     property_name = v3_property.name
     v1_value = v1_entity.properties[property_name]
@@ -1326,10 +1328,10 @@ class _EntityConverter(object):
     """Returns an integer value from a v1 Value.
 
     Args:
-      v1_value: a googledatastore.Value
+      v1_value: A `googledatastore.Value`.
 
     Returns:
-      an integer
+      An integer.
 
     Raises:
       InvalidConversionError: if the value doesn't contain an integer value
@@ -1342,10 +1344,10 @@ class _EntityConverter(object):
     """Returns a double value from a v1 Value.
 
     Args:
-      v1_value: an googledatastore.Value
+      v1_value: An `googledatastore.Value`.
 
     Returns:
-      a double
+      A double.
 
     Raises:
       InvalidConversionError: if the value doesn't contain a double value
@@ -1358,10 +1360,10 @@ class _EntityConverter(object):
     """Returns an string value from a v1 Value.
 
     Args:
-      v1_value: an googledatastore.Value
+      v1_value: An `googledatastore.Value`.
 
     Returns:
-      a string
+      A string.
 
     Throws:
       InvalidConversionError: if the value doesn't contain a string value
@@ -1374,10 +1376,10 @@ class _EntityConverter(object):
     """Populates a single-integer-valued v1 Property.
 
     Args:
-      entity: the entity to populate
-      name: the name of the property to populate
-      value: the integer value of the property
-      indexed: whether the value should be indexed
+      entity: The entity to populate.
+      name: The name of the property to populate.
+      value: The integer value of the property.
+      indexed: Whether the value should be indexed.
     """
     v1_value = entity.properties[name]
     v1_value.exclude_from_indexes = not indexed
@@ -1387,10 +1389,10 @@ class _EntityConverter(object):
     """Populates a single-double-valued v1 Property.
 
     Args:
-      entity: the entity to populate
-      name: the name of the property to populate
-      value: the double value of the property
-      indexed: whether the value should be indexed
+      entity: The entity to populate.
+      name: The name of the property to populate.
+      value: The double value of the property.
+      indexed: Whether the value should be indexed.
     """
     v1_value = entity.properties[name]
     v1_value.exclude_from_indexes = not indexed
@@ -1400,21 +1402,21 @@ class _EntityConverter(object):
     """Populates a single-string-valued v1 Property.
 
     Args:
-      entity: the entity to populate
-      name: the name of the property to populate
-      value: the string value of the property
-      indexed: whether the value should be indexed
+      entity: The entity to populate.
+      name: The name of the property to populate.
+      value: The string value of the property.
+      indexed: Whether the value should be indexed.
     """
     v1_value = entity.properties[name]
     v1_value.exclude_from_indexes = not indexed
     v1_value.string_value = value
 
   def v1_entity_to_v3_user_value(self, v1_user_entity, v3_user_value):
-    """Converts a v1 user Entity to a v3 UserValue.
+    """Converts a v1 user Entity to a v3 `UserValue`.
 
     Args:
-      v1_user_entity: an googledatastore.Entity representing a user
-      v3_user_value: an entity_pb2.Property.UserValue to populate
+      v1_user_entity: An `googledatastore.Entity` representing a user.
+      v3_user_value: An `entity_pb2.Property.UserValue` to populate.
     """
     v3_user_value.Clear()
     properties = v1_user_entity.properties
@@ -1440,11 +1442,11 @@ class _EntityConverter(object):
           properties[PROPERTY_NAME_FEDERATED_PROVIDER])
 
   def v3_user_value_to_v1_entity(self, v3_user_value, v1_entity):
-    """Converts a v3 UserValue to a v1 user Entity.
+    """Converts a v3 `UserValue` to a v1 user Entity.
 
     Args:
-      v3_user_value: an entity_pb2.Property_UserValue
-      v1_entity: an googledatastore.Entity to populate
+      v3_user_value: An `entity_pb2.Property_UserValue`.
+      v1_entity: An `googledatastore.Entity` to populate.
     """
     v1_entity.Clear()
     self.__v1_string_property(v1_entity, PROPERTY_NAME_EMAIL,
@@ -1521,10 +1523,10 @@ class _EntityConverter(object):
     """Determines if a v3 Reference specifies an ID or name.
 
     Args:
-      v3_ref: an entity_pb2.Reference
+      v3_ref: An `entity_pb2.Reference`.
 
     Returns:
-      boolean: True if the last path element specifies an ID or name.
+      Boolean. `True` if the last path element specifies an ID or name.
     """
     path = v3_ref.path
     assert len(path.element) >= 1
@@ -1534,12 +1536,12 @@ class _EntityConverter(object):
   def v3_reference_to_group(self, v3_ref, group):
     """Converts a v3 Reference to a v3 Path representing the entity group.
 
-    The entity group is represented as an entity_pb2.Path containing only the
+    The entity group is represented as an `entity_pb2.Path` containing only the
     first element in the provided Reference.
 
     Args:
-      v3_ref: an entity_pb2.Reference
-      group: an entity_pb2.Path to populate
+      v3_ref: An `entity_pb2.Reference`.
+      group: An `entity_pb2.Path` to populate.
     """
     group.Clear()
     path = v3_ref.path
@@ -1549,11 +1551,11 @@ class _EntityConverter(object):
     group.element.append(element)
 
   def v3_reference_to_v3_property_value(self, v3_ref, v3_property_value):
-    """Converts a v3 Reference to a v3 PropertyValue.
+    """Converts a v3 Reference to a v3 `PropertyValue`.
 
     Args:
-      v3_ref: an entity_pb2.Reference
-      v3_property_value: an entity_pb2.PropertyValue to populate
+      v3_ref: An `entity_pb2.Reference`.
+      v3_property_value: An `entity_pb2.PropertyValue` to populate.
     """
     v3_property_value.Clear()
     reference_value = v3_property_value.referencevalue
@@ -1567,11 +1569,11 @@ class _EntityConverter(object):
       copy_path_element(v3_path_element, v3_ref_value_path_element)
 
   def __v3_reference_value_to_v3_reference(self, v3_ref_value, v3_ref):
-    """Converts a v3 ReferenceValue to a v3 Reference.
+    """Converts a v3 `ReferenceValue` to a v3 Reference.
 
     Args:
-      v3_ref_value: an entity_pb2.PropertyValue.ReferenceValue
-      v3_ref: an entity_pb2.Reference to populate
+      v3_ref_value: An `entity_pb2.PropertyValue.ReferenceValue`.
+      v3_ref: An `entity_pb2.Reference` to populate.
     """
     v3_ref.Clear()
     if v3_ref_value.HasField('app'):
@@ -1593,14 +1595,14 @@ class _QueryConverter(object):
     return self._entity_converter
 
   def _v3_filter_to_v1_property_filter(self, v3_filter, v1_property_filter):
-    """Converts a v3 Filter to a v1 PropertyFilter.
+    """Converts a v3 Filter to a v1 `PropertyFilter`.
 
     Args:
-      v3_filter: a datastore_pb.Filter
-      v1_property_filter: a googledatastore.PropertyFilter to populate
+      v3_filter: A `datastore_pb.Filter`.
+      v1_property_filter: A `googledatastore.PropertyFilter` to populate.
 
     Raises:
-      InvalidConversionError if the filter cannot be converted
+      `InvalidConversionError` if the filter cannot be converted
     """
     check_conversion(len(v3_filter.property) == 1, 'invalid filter')
     check_conversion(v3_filter.op <= 5,
@@ -1612,11 +1614,11 @@ class _QueryConverter(object):
                                                    v1_property_filter.value)
 
   def _v3_query_to_v1_ancestor_filter(self, v3_query, v1_property_filter):
-    """Converts a v3 Query to a v1 ancestor PropertyFilter.
+    """Converts a v3 Query to a v1 ancestor `PropertyFilter`.
 
     Args:
-      v3_query: a datastore_pb.Query
-      v1_property_filter: a googledatastore.PropertyFilter to populate
+      v3_query: A `datastore_pb.Query`.
+      v1_property_filter: A `googledatastore.PropertyFilter` to populate.
     """
     v1_property_filter.Clear()
     v1_property_filter.set_operator(
@@ -1633,25 +1635,25 @@ class _QueryConverter(object):
       v1_property_filter.value.null_value = googledatastore.NULL_VALUE
 
   def v3_order_to_v1_order(self, v3_order, v1_order):
-    """Converts a v3 Query order to a v1 PropertyOrder.
+    """Converts a v3 Query order to a v1 `PropertyOrder`.
 
     Args:
-      v3_order: a datastore_pb.Query.Order
-      v1_order: a googledatastore.PropertyOrder to populate
+      v3_order: A `datastore_pb.Query.Order`.
+      v1_order: A `googledatastore.PropertyOrder` to populate.
     """
     v1_order.property.name = v3_order.property
     if v3_order.HasField('direction'):
       v1_order.direction = v3_order.direction
 
   def _v3_filter_to_v4_property_filter(self, v3_filter, v4_property_filter):
-    """Converts a v3 Filter to a v4 PropertyFilter.
+    """Converts a v3 Filter to a v4 `PropertyFilter`.
 
     Args:
-      v3_filter: a datastore_pb.Filter
-      v4_property_filter: a datastore_v4_pb2.PropertyFilter to populate
+      v3_filter: A `datastore_pb.Filter`.
+      v4_property_filter: A `datastore_v4_pb2.PropertyFilter` to populate.
 
     Raises:
-      InvalidConversionError if the filter cannot be converted
+      `InvalidConversionError` if the filter cannot be converted
     """
     check_conversion(len(v3_filter.property) == 1, 'invalid filter')
     check_conversion(v3_filter.op <= 5,
@@ -1663,11 +1665,11 @@ class _QueryConverter(object):
                                                    v4_property_filter.value)
 
   def _v3_query_to_v4_ancestor_filter(self, v3_query, v4_property_filter):
-    """Converts a v3 Query to a v4 ancestor PropertyFilter.
+    """Converts a v3 Query to a v4 ancestor `PropertyFilter`.
 
     Args:
-      v3_query: a datastore_pb.Query
-      v4_property_filter: a datastore_v4_pb2.PropertyFilter to populate
+      v3_query: A `datastore_pb.Query`.
+      v4_property_filter: A `datastore_v4_pb2.PropertyFilter` to populate.
     """
     v4_property_filter.Clear()
     v4_property_filter.operator = datastore_v4_pb2.PropertyFilter.HAS_ANCESTOR
@@ -1676,11 +1678,11 @@ class _QueryConverter(object):
                                         v4_property_filter.value.key_value)
 
   def v3_order_to_v4_order(self, v3_order, v4_order):
-    """Converts a v3 Query order to a v4 PropertyOrder.
+    """Converts a v3 Query order to a v4 `PropertyOrder`.
 
     Args:
-      v3_order: a datastore_pb.Query.Order
-      v4_order: a datastore_v4_pb2.PropertyOrder to populate
+      v3_order: A `datastore_pb.Query.Order`.
+      v4_order: A `datastore_v4_pb2.PropertyOrder` to populate.
     """
     v4_order.property.name = v3_order.property
     if v3_order.HasField('direction'):
@@ -1691,7 +1693,7 @@ def get_entity_converter(id_resolver=None):
   """Returns a converter for v3 and v1 entities and keys.
 
   Args:
-    id_resolver: An IdResolver for project id resolution.
+    id_resolver: An `IdResolver` for project id resolution.
   """
   id_resolver = id_resolver or _IdentityIdResolver()
   return _EntityConverter(id_resolver)

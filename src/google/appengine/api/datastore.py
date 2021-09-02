@@ -16,7 +16,7 @@
 #
 
 
-"""The Python datastore `API` used by app developers.
+"""The Python datastore API used by app developers.
 
 Defines Entity, Query, and Iterator classes, as well as methods for all of the
 datastore's calls. Also defines conversions between the Python classes and
@@ -116,7 +116,7 @@ def NormalizeAndTypeCheck(arg, types):
 
   Returns:
     A `(list, bool)` tuple. The list is a normalized, shallow copy of the
-    argument. The boolean is True if the argument was a sequence, False
+    argument. The boolean is `True` if the argument was a sequence, False
     if it was a single object.
 
   Raises:
@@ -190,7 +190,7 @@ def _GetConfigFromKwargs(kwargs, convert_rpc=False,
   such as `Get()`.
 
   Args:
-    kwargs: A dict containing the keyword arguments passed to a public `API`.
+    kwargs: A dict containing the keyword arguments passed to a public API.
     convert_rpc: If the an rpc should be converted or passed on directly.
     config_class: The config class that should be generated.
 
@@ -444,7 +444,7 @@ def _PopConnection():
 
 
 def _MakeSyncCall(service, call, request, response, config=None):
-  """The `APIProxy` entry point for a synchronous `API` call.
+  """The `APIProxy` entry point for a synchronous API call.
 
   Args:
     service: For backwards compatibility, must be 'datastore_v3'.
@@ -516,7 +516,7 @@ def CreateConfig(**kwds):
       system default deadline will be used, typically 5 seconds).
     on_completion: Optional callback function; default None.  If
       specified, it will be called with a `UserRPC` object as argument
-      when an `RPC` completes.
+      when an RPC completes.
     read_policy: Optional read policy; set to EVENTUAL_CONSISTENCY to
       enable eventually consistent reads (i.e. reads that may be
       satisfied from an older version of the datastore in some cases).
@@ -542,7 +542,7 @@ def CreateTransactionOptions(**kwds):
       system default deadline will be used, typically 5 seconds).
     on_completion: Optional callback function; default None.  If
       specified, it will be called with a `UserRPC` object as argument
-      when an `RPC` completes.
+      when an RPC completes.
     xg: set to true to allow cross-group transactions (high replication
       datastore only)
     retries: set the number of retries for a transaction
@@ -1549,7 +1549,7 @@ class Query(dict):
     return self
 
   def IsKeysOnly(self):
-    """Returns True if this query is keys only, false otherwise."""
+    """Returns `True` if this query is keys only, `False` otherwise."""
     return self.__query_options.keys_only
 
   def GetQueryOptions(self):
@@ -1617,7 +1617,7 @@ class Query(dict):
     return None
 
   def GetDistinct(self):
-    """Returns True if the current instance is distinct.
+    """Returns `True` if the current instance is distinct.
 
     Returns:
       A boolean indicating if the distinct flag is set.
@@ -2789,8 +2789,8 @@ def _DoOneTry(function, args, kwargs):
 def _MaybeSetupTransaction(request, keys):
   """Begin a transaction, if necessary, and populate it in the request.
 
-  This `API` exists for internal backwards compatibility, primarily with
-  api/taskqueue/taskqueue.py.
+  This API exists for internal backwards compatibility, primarily with
+  `api/taskqueue/taskqueue.py`.
 
   Args:
     request: A protobuf with a `mutable_transaction()` method.
@@ -2806,7 +2806,7 @@ def IsInTransaction():
   """Determine whether already running in transaction.
 
   Returns:
-    True if already running in transaction, else False.
+    `True` if already running in transaction, else `False`.
   """
 
   return isinstance(_GetConnection(), datastore_rpc.TransactionalConnection)
@@ -2852,7 +2852,7 @@ def Transactional(_func=None, **kwargs):
 def NonTransactional(_func=None, allow_existing=True):
   """A decorator that insures a function is run outside a transaction.
 
-  If there is an existing transaction (and allow_existing=True), the existing
+  If there is an existing transaction (and `allow_existing=True`), the existing
   transaction is paused while the function is executed.
 
   Args:

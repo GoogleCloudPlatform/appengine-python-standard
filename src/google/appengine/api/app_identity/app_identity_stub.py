@@ -47,7 +47,7 @@ class AppIdentityServiceStub(app_identity_stub_base.AppIdentityServiceStubBase):
   deployment.
 
   Automatically creates appropriate stub (default credentials or key based)
-  using Create().
+  using `Create()`.
   """
   THREADSAFE = True
 

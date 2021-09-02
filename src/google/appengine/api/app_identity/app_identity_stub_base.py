@@ -109,8 +109,8 @@ class AppIdentityServiceStubBase(apiproxy_stub.APIProxyStub):
        _Dynamic_GetAccessToken
 
   And provides following helpers:
-    * SetDefaultGcsBucketName: set default bucket name from the request
-                               if possible, set from APP_DEFAULT_GCS_BUCKET_NAME
+    * SetDefaultGcsBucketName: set default bucket name from the request if
+                               possible, set from `APP_DEFAULT_GCS_BUCKET_NAME`
                                constant otherwise.
     * Clear: Reset state of the stub.
 
@@ -166,7 +166,7 @@ class AppIdentityServiceStubBase(apiproxy_stub.APIProxyStub):
   def _patch_get_service_account_token(self, scopes, service_account=None):
     """test implementation for _metadata_server.get_service_account_token.
 
-    This API returns an invalid token, as the dev_appserver does not have
+    This API returns an invalid token, as the `dev_appserver` does not have
     access to an actual service account.  Subclasses override this function with
     more useful implementations.
 

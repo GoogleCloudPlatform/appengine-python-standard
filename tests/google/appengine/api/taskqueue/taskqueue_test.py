@@ -22,10 +22,12 @@
 import datetime
 import functools
 import os
-import sys
 import time
 
 import google
+
+
+from google.appengine.tools import os_compat
 
 from absl import app
 from google.appengine.api import apiproxy_rpc
@@ -39,7 +41,7 @@ from google.appengine.api.modules import modules_service_pb2
 from google.appengine.api.taskqueue import taskqueue
 from google.appengine.api.taskqueue import taskqueue_service_bytes_pb2 as taskqueue_service_pb2
 from google.appengine.runtime import apiproxy_errors
-from google.appengine.tools import os_compat
+from google.appengine.runtime.context import ctx_test_util
 import mox
 import six
 from six.moves import range
@@ -206,14 +208,10 @@ class TaskQueueBulkAddRequestComparator(mox.Comparator):
 
 
 class HttpEnvironTest(absltest.TestCase):
+
   def setUp(self):
-    self.original_environ = os.environ.copy()
     os.environ['DEFAULT_VERSION_HOSTNAME'] = DEFAULT_HOSTNAME
     os.environ['HTTP_HOST'] = DEFAULT_HOSTNAME
-
-  def tearDown(self):
-    os.environ.clear()
-    os.environ.update(self.original_environ)
 
 
 class HelpersTest(absltest.TestCase):
@@ -3844,14 +3842,13 @@ class AsyncQueueStatisticsTest(QueueStatisticsTest):
     self.assertIs(returned_rpc, rpc)
 
 
-class TestNamespace(HttpEnvironTest):
+@ctx_test_util.isolated_context()
+class TestNamespace(absltest.TestCase):
   """Taskqueue namespace tests."""
 
   def setUp(self):
     """Sets up the test harness."""
     HttpEnvironTest.setUp(self)
-    os.environ.pop('HTTP_X_APPENGINE_CURRENT_NAMESPACE', None)
-    os.environ.pop('HTTP_X_APPENGINE_DEFAULT_NAMESPACE', None)
 
   def assertExpectedTaskHeaders(self, header_overrides, task_headers):
     expected_headers = _base_headers.copy()

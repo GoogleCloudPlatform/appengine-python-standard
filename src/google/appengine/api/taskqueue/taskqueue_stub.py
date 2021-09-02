@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-
 """Stub version of the Task Queue API.
 
 This stub stores tasks and runs them via dev_appserver's AddEvent capability.
@@ -52,22 +51,19 @@ import string
 import threading
 import time
 
-from google.appengine.api.taskqueue import taskqueue_service_bytes_pb2 as taskqueue_service_pb2
-import six
-from six.moves import map
-from six.moves import range
-from six.moves import zip
-
-from google.appengine.api import titanoboa_request_info
 from google.appengine.api import api_base_pb2
 from google.appengine.api import apiproxy_stub
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import queueinfo
 from google.appengine.api import request_info
 from google.appengine.api.taskqueue import taskqueue
+from google.appengine.api.taskqueue import taskqueue_service_bytes_pb2 as taskqueue_service_pb2
 from google.appengine.runtime import apiproxy_errors
 from google.appengine.tools import queue_xml_parser
-
+import six
+from six.moves import map
+from six.moves import range
+from six.moves import zip
 
 
 
@@ -86,9 +82,9 @@ MAX_ETA = datetime.timedelta(days=30)
 
 
 
-MAX_PULL_TASK_SIZE_BYTES = 2 ** 20
+MAX_PULL_TASK_SIZE_BYTES = 2**20
 
-MAX_PUSH_TASK_SIZE_BYTES = 100 * (2 ** 10)
+MAX_PUSH_TASK_SIZE_BYTES = 100 * (2**10)
 
 MAX_TASK_SIZE = MAX_PUSH_TASK_SIZE_BYTES
 
@@ -97,14 +93,12 @@ MAX_REQUEST_SIZE = 32 << 20
 
 
 
-BUILT_IN_HEADERS = set(['x-appengine-queuename',
-                        'x-appengine-taskname',
-                        'x-appengine-taskexecutioncount',
-                        'x-appengine-taskpreviousresponse',
-                        'x-appengine-taskretrycount',
-                        'x-appengine-tasketa',
-                        'x-appengine-development-payload',
-                        'content-length'])
+BUILT_IN_HEADERS = frozenset([
+    'x-appengine-queuename', 'x-appengine-taskname',
+    'x-appengine-taskexecutioncount', 'x-appengine-taskpreviousresponse',
+    'x-appengine-taskretrycount', 'x-appengine-tasketa',
+    'x-appengine-development-payload', 'content-length'
+])
 
 
 
@@ -122,7 +116,8 @@ AUTOMATIC_QUEUES = {
     DEFAULT_QUEUE_NAME: (0.2, DEFAULT_BUCKET_SIZE, DEFAULT_RATE),
 
 
-    '__cron': (1, 1, '1/s')}
+    '__cron': (1, 1, '1/s')
+}
 
 TIME_STR_FMT = '%Y/%m/%d %H:%M:%S'
 
@@ -331,9 +326,9 @@ def ConvertGetQueuesResponseToQueuesDicts(response):
     queue_dict['max_rate'] = (
         six.ensure_str(queue.user_specified_rate)
         if queue.HasField('user_specified_rate') else '')
-    queue_dict['mode'] = ('pull' if
-                          queue.mode == taskqueue_service_pb2.TaskQueueMode.PULL
-                          else 'push')
+    queue_dict['mode'] = ('pull' if queue.mode
+                          == taskqueue_service_pb2.TaskQueueMode.PULL else
+                          'push')
     if queue.HasField('acl'):
       queue_dict['acl'] = queue.acl
     oldest_eta = queue_stat.oldest_eta_usec
@@ -344,8 +339,8 @@ def ConvertGetQueuesResponseToQueuesDicts(response):
       queue_dict['eta_delta'] = ''
     else:
       queue_dict['oldest_task'] = _FormatEta(queue_stat.oldest_eta_usec)
-      queue_dict['eta_delta'] = _EtaDelta(
-          oldest_eta, datetime.datetime.utcnow())
+      queue_dict['eta_delta'] = _EtaDelta(oldest_eta,
+                                          datetime.datetime.utcnow())
     queue_dict['tasks_in_queue'] = queue_stat.num_tasks
 
     if queue.HasField('retry_parameters'):
@@ -373,6 +368,7 @@ def ConvertTaskDictToTaskObject(task):
 
   Args:
     task: A dict in the format same as QueryTasksResponseToDict returns.
+
   Returns:
     A taskqueue.Task object.
   """
@@ -391,9 +387,13 @@ def ConvertTaskDictToTaskObject(task):
 
 
 
-  return taskqueue.Task(name=task['name'], method=task['method'],
-                        url=task['url'], headers=headers,
-                        payload=payload, eta=eta)
+  return taskqueue.Task(
+      name=task['name'],
+      method=task['method'],
+      url=task['url'],
+      headers=headers,
+      payload=payload,
+      eta=eta)
 
 
 class _Group(object):
@@ -519,8 +519,7 @@ class _Group(object):
     """
     queue_name = six.ensure_text(queue_name)
     self._ReloadQueuesFromYaml()
-    return queue_name in self._queues and (
-        self._queues[queue_name] is not None)
+    return queue_name in self._queues and (self._queues[queue_name] is not None)
 
   def GetQueue(self, queue_name):
     """Gets the _Queue instance for the specified queue.
@@ -629,9 +628,8 @@ class _Group(object):
       else:
         mode = QUEUE_MODE.PUSH
         if entry.rate is None:
-          logging.warning(
-              'Refill rate must be specified for push-based queue. '
-              'Please check queue.yaml file.')
+          logging.warning('Refill rate must be specified for push-based queue. '
+                          'Please check queue.yaml file.')
       max_rate = entry.rate
 
       if entry.acl is not None:
@@ -643,10 +641,14 @@ class _Group(object):
 
       if self._queues.get(queue_name) is None:
 
-        self._ConstructQueue(queue_name, bucket_capacity=bucket_size,
-                             user_specified_rate=max_rate, queue_mode=mode,
-                             acl=acl, retry_parameters=retry_parameters,
-                             target=entry.target)
+        self._ConstructQueue(
+            queue_name,
+            bucket_capacity=bucket_size,
+            user_specified_rate=max_rate,
+            queue_mode=mode,
+            acl=acl,
+            retry_parameters=retry_parameters,
+            target=entry.target)
       else:
 
 
@@ -781,9 +783,9 @@ class _Group(object):
 
     Args:
       request: The taskqueue_service_pb2.TaskQueueBulkAddRequest. See
-          taskqueue_service.proto.
+        taskqueue_service.proto.
       response: The taskqueue_service_pb2.TaskQueueBulkAddResponse. See
-          taskqueue_service.proto.
+        taskqueue_service.proto.
     """
     self._ReloadQueuesFromYaml()
 
@@ -844,8 +846,8 @@ class _Group(object):
 
 
 
-      apiproxy_stub_map.MakeSyncCall(
-          'datastore_v3', 'AddActions', request, api_base_pb2.VoidProto())
+      apiproxy_stub_map.MakeSyncCall('datastore_v3', 'AddActions', request,
+                                     api_base_pb2.VoidProto())
     except apiproxy_errors.ApplicationError as e:
       raise apiproxy_errors.ApplicationError(
           e.application_error +
@@ -1091,7 +1093,7 @@ class Retry(object):
 
     Args:
       task: A taskqueue_service_pb2.TaskQueueQueryTasksResponse.Task instance.
-          May be None.
+        May be None.
       queue: A _Queue instance. May be None.
     """
     if task is not None and task.HasField('retry_parameters'):
@@ -1139,7 +1141,7 @@ class Retry(object):
     max_backoff_usec = _SecToUsec(self._params.max_backoff_sec)
     backoff_usec = min_backoff_usec
     if exponent > 0:
-      backoff_usec *= (2 ** (min(1023, exponent)))
+      backoff_usec *= (2**(min(1023, exponent)))
     if linear_steps > 1:
       backoff_usec *= linear_steps
 
@@ -1253,7 +1255,7 @@ class _Queue(object):
 
     Args:
       f: The function to be delegated to. Must be a member function (take self
-          as the first parameter).
+        as the first parameter).
 
     Returns:
       The result of f.
@@ -1265,6 +1267,7 @@ class _Queue(object):
         if self._testing_validate_state:
           self.VerifyIndexes()
         return ret
+
     _Inner.__doc__ = f.__doc__
     return _Inner
 
@@ -1389,36 +1392,63 @@ class _Queue(object):
       else:
         response.result.append(self._DeleteNoAcquireLock(taskname))
 
-  def _QueryAndOwnTasksGetTaskList(self, max_rows, group_by_tag, now_eta_usec,
+  def _QueryAndOwnTasksGetTaskList(self,
+                                   max_rows,
+                                   group_by_tag,
+                                   now_eta_usec,
                                    tag=None):
+    """Find and lease tasks matching the criteria."""
     assert self._lock.locked()
     if group_by_tag and tag:
 
-      return self._IndexScan(self._sorted_by_tag,
-                             start_key=(tag, 0, '',),
-                             end_key=(tag, now_eta_usec, '',),
-                             max_rows=max_rows)
+      return self._IndexScan(
+          self._sorted_by_tag,
+          start_key=(
+              tag,
+              0,
+              '',
+          ),
+          end_key=(
+              tag,
+              now_eta_usec,
+              '',
+          ),
+          max_rows=max_rows)
     elif group_by_tag:
 
-      tasks = self._IndexScan(self._sorted_by_eta,
-                              start_key=(0, '',),
-                              end_key=(now_eta_usec, '',),
-                              max_rows=max_rows)
+      tasks = self._IndexScan(
+          self._sorted_by_eta,
+          start_key=(
+              0,
+              '',
+          ),
+          end_key=(
+              now_eta_usec,
+              '',
+          ),
+          max_rows=max_rows)
       if not tasks:
         return []
 
       if tasks[0].HasField('tag'):
         tag = six.ensure_text(tasks[0].tag)
-        return self._QueryAndOwnTasksGetTaskList(
-            max_rows, True, now_eta_usec, tag)
+        return self._QueryAndOwnTasksGetTaskList(max_rows, True, now_eta_usec,
+                                                 tag)
       else:
 
         return [task for task in tasks if not task.HasField('tag')]
     else:
-      return self._IndexScan(self._sorted_by_eta,
-                             start_key=(0, '',),
-                             end_key=(now_eta_usec, '',),
-                             max_rows=max_rows)
+      return self._IndexScan(
+          self._sorted_by_eta,
+          start_key=(
+              0,
+              '',
+          ),
+          end_key=(
+              now_eta_usec,
+              '',
+          ),
+          max_rows=max_rows)
 
   @_WithLock
   def QueryAndOwnTasks_Rpc(self, request, response):
@@ -1461,8 +1491,8 @@ class _Queue(object):
         tasks_to_delete.append(task)
         continue
 
-      self._PostponeTaskNoAcquireLock(
-          task, now_eta_usec + _SecToUsec(lease_seconds))
+      self._PostponeTaskNoAcquireLock(task,
+                                      now_eta_usec + _SecToUsec(lease_seconds))
 
 
       task_response = response.task.add()
@@ -1671,8 +1701,8 @@ class _Queue(object):
     name = six.ensure_text(task.task_name)
     bisect.insort_left(self._sorted_by_eta, (eta, name, task))
     if task.HasField('tag'):
-      bisect.insort_left(
-          self._sorted_by_tag, (six.ensure_text(task.tag), eta, name, task))
+      bisect.insort_left(self._sorted_by_tag,
+                         (six.ensure_text(task.tag), eta, name, task))
     bisect.insort_left(self._sorted_by_name, (name, task))
     self.task_name_archive.add(name)
 
@@ -1681,8 +1711,8 @@ class _Queue(object):
     """Change the eta of a task to now.
 
     Args:
-      task: The TaskQueueQueryTasksResponse.Task run now. This must be
-          stored in this queue (otherwise an AssertionError is raised).
+      task: The TaskQueueQueryTasksResponse.Task run now. This must be stored in
+        this queue (otherwise an AssertionError is raised).
     """
     self._PostponeTaskNoAcquireLock(task, 0, increase_retries=False)
 
@@ -1692,26 +1722,29 @@ class _Queue(object):
 
     Args:
       task: The TaskQueueQueryTasksResponse.Task to postpone. This must be
-          stored in this queue (otherwise an AssertionError is raised).
+        stored in this queue (otherwise an AssertionError is raised).
       new_eta_usec: The new eta to set on the task. This must be greater then
-          the current eta on the task.
+        the current eta on the task.
     """
     assert new_eta_usec > task.eta_usec
     self._PostponeTaskNoAcquireLock(task, new_eta_usec)
 
-  def _PostponeTaskNoAcquireLock(self, task, new_eta_usec,
+  def _PostponeTaskNoAcquireLock(self,
+                                 task,
+                                 new_eta_usec,
                                  increase_retries=True):
+    """Postpone the given task."""
     assert self._lock.locked()
     if increase_retries:
       self._IncRetryCount(task)
     name = six.ensure_text(task.task_name)
     eta = task.eta_usec
-    assert self._RemoveTaskFromIndex(
-        self._sorted_by_eta, (eta, name, task), task)
+    assert self._RemoveTaskFromIndex(self._sorted_by_eta, (eta, name, task),
+                                     task)
     if task.HasField('tag'):
       assert self._RemoveTaskFromIndex(
-          self._sorted_by_tag,
-          (six.ensure_text(task.tag), eta, name, task), task)
+          self._sorted_by_tag, (six.ensure_text(task.tag), eta, name, task),
+          task)
     self._PostponeTaskInsertOnly(task, new_eta_usec)
 
   def _PostponeTaskInsertOnly(self, task, new_eta_usec):
@@ -1782,20 +1815,30 @@ class _Queue(object):
     if tag is not None:
 
       tag = six.ensure_text(tag)
-      return self._IndexScan(self._sorted_by_tag,
-                             start_key=(tag, eta, name,),
-                             end_key=('%s\x00' % tag, 0, '',),
-                             max_rows=maximum)
+      return self._IndexScan(
+          self._sorted_by_tag,
+          start_key=(
+              tag,
+              eta,
+              name,
+          ),
+          end_key=(
+              '%s\x00' % tag,
+              0,
+              '',
+          ),
+          max_rows=maximum)
     elif eta is not None:
 
-      return self._IndexScan(self._sorted_by_eta,
-                             start_key=(eta, name,),
-                             max_rows=maximum)
+      return self._IndexScan(
+          self._sorted_by_eta, start_key=(
+              eta,
+              name,
+          ), max_rows=maximum)
     else:
 
-      return self._IndexScan(self._sorted_by_name,
-                             start_key=(name,),
-                             max_rows=maximum)
+      return self._IndexScan(
+          self._sorted_by_name, start_key=(name,), max_rows=maximum)
 
   @_WithLock
   def Count(self):
@@ -1939,15 +1982,15 @@ class _Queue(object):
 
 
     eta = old_task.eta_usec
-    if not self._RemoveTaskFromIndex(
-        self._sorted_by_eta, (eta, name, old_task), old_task):
+    if not self._RemoveTaskFromIndex(self._sorted_by_eta,
+                                     (eta, name, old_task), old_task):
       return taskqueue_service_pb2.TaskQueueServiceError.INTERNAL_ERROR
 
 
     if old_task.HasField('tag'):
       tag = six.ensure_text(old_task.tag)
-      if not self._RemoveTaskFromIndex(
-          self._sorted_by_tag, (tag, eta, name, old_task), old_task):
+      if not self._RemoveTaskFromIndex(self._sorted_by_tag,
+                                       (tag, eta, name, old_task), old_task):
         return taskqueue_service_pb2.TaskQueueServiceError.INTERNAL_ERROR
 
     return taskqueue_service_pb2.TaskQueueServiceError.OK
@@ -1987,8 +2030,7 @@ class _Queue(object):
       task.retry_count = retry_count
       task.execution_count = retry_count
       if random.random() < 0.3:
-        random_headers = [('nexus', 'one'),
-                          ('foo', 'bar'),
+        random_headers = [('nexus', 'one'), ('foo', 'bar'),
                           ('content-type', 'text/plain'),
                           ('from', 'user@email.com')]
         for _ in range(random.randint(1, 4)):
@@ -2004,6 +2046,49 @@ class _Queue(object):
       self._InsertTask(RandomTask())
 
 
+def _ParseHostHeader(dispatcher, default_version_hostname, host_header):
+  """Parse the Host header.
+
+  The taskqueue clients have an odd behavior of attaching information about the
+  desired target instance, version, and module onto the Host header... and this
+  stub does more of the same.
+
+  To make that work we have to parse the fields back out again.
+
+  Args:
+    dispatcher: An instance of request_info.Dispatcher.
+    default_version_hostname: Hostname of "default" version.
+    host_header: Host header from taskqueue client.
+
+  Returns:
+    A tuple of (module, version, instance), any of which could be None.
+  """
+
+
+
+
+  for module in dispatcher.get_module_names():
+    if dispatcher.get_hostname(module, None) == host_header:
+      return module, None, None
+
+
+
+
+  default_address_offset = host_header.find(default_version_hostname)
+  if default_address_offset >= 0:
+    target = host_header[:default_address_offset - 1]
+    return _ParseTarget(target)
+
+  return None, None, None
+
+
+def _ParseTarget(target):
+
+
+  ret = list(reversed(target.split('.')))
+  return ret + [None] * (3 - len(ret))
+
+
 class _TaskExecutor(object):
   """Executor for a task object.
 
@@ -2016,52 +2101,43 @@ class _TaskExecutor(object):
 
     Args:
       default_host: a string to use as the host/port to connect to if the host
-          header is not specified in the task.
+        header is not specified in the task.
       request_data: A request_info.RequestInfo instance used to look up state
-          associated with the request that generated an API call.
+        associated with the request that generated an API call.
     """
     self._default_host = default_host
     self._request_data = request_data
 
-  def _HeadersFromTask(self, task, queue):
-    """Constructs the http headers for the given task.
-
-    This function will remove special headers (values in BUILT_IN_HEADERS) and
-    add the taskqueue headers.
+  def ExecuteTask(self, task, queue):
+    """Construct a http request from the task and dispatch it.
 
     Args:
-      task: The task, a TaskQueueQueryTasksResponse.Task instance.
-      queue: The queue that this task belongs to, an _Queue instance.
+      task: The task to convert to a http request and then send. An instance of
+        taskqueue_service_pb2.TaskQueueQueryTasksResponse.Task
+      queue: The queue that this task belongs to. An instance of _Queue.
 
     Returns:
-      A list of tuples containing the http header and value. There
-          may be be mutiple entries with the same key.
+      Http Response code from the task's execution, 0 if an exception occurred.
     """
-    headers = []
-    for header in task.header:
-      header_key_lower = six.ensure_text(header.key).lower()
+    method = task.RequestMethod.Name(task.method)
 
-      if header_key_lower == 'host' and queue.target is not None:
-        if isinstance(
-            self._request_data, titanoboa_request_info.LocalRequestInfo):
-          raise titanoboa_request_info.NotSupportedError(
-              "Titanoboa local launcher doesn't support"
-              " multiple modules, versions, and instances yet,"
-              " task cannot be routed properly.")
-        elif self._default_host:
-          headers.append((six.ensure_text(header.key), '.'.join(
-              [queue.target, self._default_host])))
-        else:
-          target = queue.target.rsplit('.', 3)
-          module = target[-1]
-          version = len(target) > 1 and target[-2] or None
-          instance = len(target) > 2 and target[-3] or None
-          dispatcher = self._request_data.get_dispatcher()
-          headers.append((six.ensure_text(header.key),
-                          dispatcher.get_hostname(module, version, instance)))
-      elif header_key_lower not in BUILT_IN_HEADERS:
-        headers.append(
-            (six.ensure_text(header.key), six.ensure_text(header.value)))
+    dispatcher = self._request_data.get_dispatcher()
+
+    headers = []
+
+    host_header = None
+    for header in task.header:
+      header_key_lower = header.key.decode().lower()
+      header_value = header.value.decode()
+
+      if header_key_lower in BUILT_IN_HEADERS:
+        continue
+
+      if header_key_lower == 'host':
+        host_header = header_value
+        continue
+
+      headers.append((header_key_lower, header_value))
 
 
     headers.append(('X-AppEngine-QueueName', queue.queue_name))
@@ -2079,30 +2155,31 @@ class _TaskExecutor(object):
       headers.append(
           ('X-AppEngine-TaskPreviousResponse', str(task.runlog.response_code)))
 
-    return headers
+    if queue.target is not None:
 
-  def ExecuteTask(self, task, queue):
-    """Construct a http request from the task and dispatch it.
 
-    Args:
-      task: The task to convert to a http request and then send. An instance of
-          taskqueue_service_pb2.TaskQueueQueryTasksResponse.Task
-      queue: The queue that this task belongs to. An instance of _Queue.
+      target_module, target_version, target_instance = _ParseTarget(
+          queue.target)
+    elif host_header:
+      target_module, target_version, target_instance = _ParseHostHeader(
+          dispatcher, self._default_host, host_header)
+    else:
+      target_module = None
+      target_version = None
+      target_instance = None
 
-    Returns:
-      Http Response code from the task's execution, 0 if an exception occurred.
-    """
-    method = task.RequestMethod.Name(task.method)
-    headers = self._HeadersFromTask(task, queue)
-    dispatcher = self._request_data.get_dispatcher()
     try:
       response = dispatcher.add_request(
-          method, six.ensure_str(task.url), headers,
-          task.body if task.HasField('body') else '', '0.1.0.2')
-    except (
-        request_info.ModuleDoesNotExistError,
-        titanoboa_request_info.NotSupportedError):
-      logging.exception('Failed to dispatch task')
+          method=method,
+          relative_url=six.ensure_str(task.url),
+          headers=headers,
+          body=task.body if task.HasField('body') else '',
+          source_ip='0.1.0.2',
+          module_name=target_module,
+          version=target_version,
+          instance_id=target_instance)
+    except request_info.Error:
+      logging.exception('Failed to dispatch task %s', task)
       return 0
     return int(str(response.status).split(' ', 1)[0])
 
@@ -2121,14 +2198,14 @@ class _BackgroundTaskScheduler(object):
 
     Args:
       group: The group that we will automatically execute tasks from. Must be an
-          instance of _Group.
+        instance of _Group.
       task_executor: The class used to convert a task into a http request. Must
-          be an instance of _TaskExecutor.
+        be an instance of _TaskExecutor.
       retry_seconds: The number of seconds to delay a task by if its execution
-          fails.
+        fails.
       _get_time: a callable that returns the current time in seconds since the
-          epoch. This argument may only be passed in by keyword. If unset, use
-          time.time.
+        epoch. This argument may only be passed in by keyword. If unset, use
+        time.time.
     """
     self._group = group
     self._should_exit = False
@@ -2255,7 +2332,6 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
                default_http_server='localhost',
                _testing_validate_state=False,
                request_data=None,
-               enforce_host_header=False,
                gettime=lambda: time.time()):
     """Constructor.
 
@@ -2265,30 +2341,27 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
         a queue.yaml file. If None, then it's assumed no queue.yaml file is
         available.
       queue_config_path: The path to queue.yaml; supersedes root_path.
-      auto_task_running: When True, the dev_appserver should automatically
-        run tasks after they are enqueued.
-      task_retry_seconds: How long to wait between task executions after a
-        task fails.
-      _all_queues_valid: When True, all queues are considered to be valid,
-          i.e. tasks can be added to them even if they have not been created.
-          For internal testing of trusted apps only. This will break removing
-          queues from the queue.yaml file.
+      auto_task_running: When True, the dev_appserver should automatically run
+        tasks after they are enqueued.
+      task_retry_seconds: How long to wait between task executions after a task
+        fails.
+      _all_queues_valid: When True, all queues are considered to be valid, i.e.
+        tasks can be added to them even if they have not been created. For
+        internal testing of trusted apps only. This will break removing queues
+        from the queue.yaml file.
       default_http_server: server where task will be executed unless host
-          specified in task.
+        specified in task.
       _testing_validate_state: Should this stub and all of its  _Groups (and
-          thus and all of its _Queues) validate their state after each
-          operation? This should only be used during testing of the
-          taskqueue_stub.
+        thus and all of its _Queues) validate their state after each operation?
+        This should only be used during testing of the taskqueue_stub.
       request_data: A request_info.RequestInfo instance used to look up state
-          associated with the request that generated an API call.
-      enforce_host_header: Always set a host header for tasks before adding
-          to the queue. Helpful in case when two or more services shares single
-          stub instance.
-      gettime: A function that returns the current time, real or mocked. Used
-          to make testing easier.
+        associated with the request that generated an API call.
+      gettime: A function that returns the current time, real or mocked. Used to
+        make testing easier.
     """
     super(TaskQueueServiceStub, self).__init__(
-        service_name, max_request_size=MAX_REQUEST_SIZE,
+        service_name,
+        max_request_size=MAX_REQUEST_SIZE,
         request_data=request_data)
 
 
@@ -2313,7 +2386,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
     self._auto_task_running = auto_task_running
     self._started = False
 
-    self._default_http_server = default_http_server
+    self._default_http_server = default_http_server or 'localhost'
     self._task_retry_seconds = task_retry_seconds
 
     self._task_scheduler = _BackgroundTaskScheduler(
@@ -2321,7 +2394,6 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
         _TaskExecutor(self._default_http_server, self.request_data),
         retry_seconds=self._task_retry_seconds)
     self._yaml_last_modified = None
-    self._enforce_host_header = enforce_host_header
 
   def EnableAutoTaskRunning(self):
     self._auto_task_running = True
@@ -2356,9 +2428,9 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
         yield self._queue_config_path
 
       if self._root_path is not None:
-        for queueyaml in (
-            'queue.yaml', 'queue.yml',
-            os.path.join('WEB-INF', 'appengine-generated', 'queue.yaml')):
+        for queueyaml in ('queue.yaml', 'queue.yml',
+                          os.path.join('WEB-INF', 'appengine-generated',
+                                       'queue.yaml')):
           yield os.path.join(self._root_path, queueyaml)
 
     for path in PossibleConfigs():
@@ -2414,9 +2486,9 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
 
     Args:
       request: The taskqueue_service_pb2.TaskQueueAddRequest. See
-          taskqueue_service.proto.
+        taskqueue_service.proto.
       response: The taskqueue_service_pb2.TaskQueueAddResponse. See
-          taskqueue_service.proto.
+        taskqueue_service.proto.
     """
     bulk_request = taskqueue_service_pb2.TaskQueueBulkAddRequest()
     bulk_response = taskqueue_service_pb2.TaskQueueBulkAddResponse()
@@ -2440,9 +2512,9 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
 
     Args:
       request: The taskqueue_service_pb2.TaskQueueBulkAddRequest. See
-          taskqueue_service.proto.
+        taskqueue_service.proto.
       response: The taskqueue_service_pb2.TaskQueueBulkAddResponse. See
-          taskqueue_service.proto.
+        taskqueue_service.proto.
     """
 
 
@@ -2458,27 +2530,29 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
 
 
 
-    assert len(request.add_request), 'taskqueue should prevent empty requests'
+    assert request.add_request, 'taskqueue should prevent empty requests'
     group = self._GetGroup(_GetAppId(request.add_request[0]))
-    if self._enforce_host_header:
 
 
 
-      queue = group.GetQueue(request.add_request[0].queue_name)
-      if not queue.target:
-        host = self.request_data.get_dispatcher().get_hostname(
-            module=self.request_data.get_module(None),
-            version=self.request_data.get_version(None)).encode()
-        for r in request.add_request:
-          has_host = False
-          for h in r.header:
-            if h.key.lower() == b'host':
-              has_host = True
-              break
-          if not has_host:
-            h = r.header.add()
-            h.key = b'host'
-            h.value = host
+
+
+
+
+
+    originating_module = self.request_data.get_module(None)
+
+
+    host_header = '.'.join((originating_module, self._default_http_server),)
+    for r in request.add_request:
+      for h in r.header:
+        if h.key.lower() == b'host':
+          break
+      else:
+        h = r.header.add()
+        h.key = b'host'
+        h.value = host_header.encode()
+
     group.BulkAdd_Rpc(request, response)
 
   def GetQueues(self):
@@ -2560,8 +2634,8 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
 
     Args:
       request: A taskqueue_service_pb2.TaskQueueUpdateQueueRequest.
-      unused_response: A taskqueue_service_pb2.TaskQueueUpdateQueueResponse.
-                       Not used.
+      unused_response: A taskqueue_service_pb2.TaskQueueUpdateQueueResponse. Not
+        used.
     """
     self._GetGroup(_GetAppId(request)).UpdateQueue_Rpc(request, unused_response)
 
@@ -2804,8 +2878,8 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
         kwargs[k] = getattr(request, field_name)()
     if request.HasField('request_data'):
       kwargs['request_data'] = pickle.loads(request.request_data)
-    apiproxy_stub_map.apiproxy.ReplaceStub(
-        'taskqueue', TaskQueueServiceStub(**kwargs))
+    apiproxy_stub_map.apiproxy.ReplaceStub('taskqueue',
+                                           TaskQueueServiceStub(**kwargs))
 
 
 
@@ -2979,7 +3053,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
       url: A URL that all returned tasks should point at.
       name: The name of all returned tasks.
       queue_names: A list of queue names to retrieve tasks from. If left blank
-          this will get default to all queues available.
+        this will get default to all queues available.
 
     Returns:
       A filtered list of dicts from self.GetTasks.
@@ -3017,7 +3091,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
       url: A URL that all returned tasks should point at.
       name: The name of all returned tasks.
       queue_names: A list of queue names to retrieve tasks from. If left blank
-          this will get default to all queues available.
+        this will get default to all queues available.
 
     Returns:
       A list of taskqueue.Task objects.
