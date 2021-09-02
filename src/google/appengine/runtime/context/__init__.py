@@ -15,26 +15,40 @@
 # limitations under the License.
 #
 """Wrapper for contextvars that can fall back to old os.environ hack."""
+import contextvars
 import os
 
-import contextvars
 from google.appengine.runtime.context import gae_headers
 from google.appengine.runtime.context import wsgi
 
-READ_FROM_OS_ENVIRON = os.environ.get('READ_GAE_CONTEXT_FROM_OS_ENVIRON',
-                                      'true') == 'true'
+USE_LEGACY_CONTEXT_MODE = True
+
+
+def _getvar(key):
+  return vars(gae_headers).get(key, vars(wsgi).get(key))
 
 
 def get(key, default=None):
-  """Read context from os.environ if READ_GAE_CONTEXT_FROM_OS_ENVIRON else, from contextvars."""
-  if READ_FROM_OS_ENVIRON:
+  """Read context from os.environ if USE_LEGACY_CONTEXT_MODE else, from contextvars."""
+  if USE_LEGACY_CONTEXT_MODE:
     return os.environ.get(key, default)
-  ctxvar = vars(gae_headers).get(key, vars(wsgi).get(key))
+  ctxvar = _getvar(key)
   assert isinstance(ctxvar, contextvars.ContextVar)
   val = ctxvar.get(default)
   if isinstance(val, bool):
     return '1' if val else '0'
   return val
+
+
+def put(key, value):
+  """Write context to os.environ if USE_LEGACY_CONTEXT_MODE and to contextvars if they exist."""
+  if USE_LEGACY_CONTEXT_MODE:
+    os.environ[key] = value
+  ctxvar = _getvar(key)
+  assert isinstance(ctxvar, contextvars.ContextVar)
+  if key == 'USER_IS_ADMIN':
+    ctxvar.set(value == '1')
+  ctxvar.set(value)
 
 
 def init_from_wsgi_environ(wsgi_env):

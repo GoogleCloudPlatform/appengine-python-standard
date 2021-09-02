@@ -21,14 +21,16 @@ import os
 
 import google
 
-import mox
-
 from google.appengine.api.modules import modules
 from google.appengine.api.modules import modules_service_pb2
 from google.appengine.runtime import apiproxy_errors
+from google.appengine.runtime.context import ctx_test_util
+import mox
+
 from absl.testing import absltest
 
 
+@ctx_test_util.isolated_context()
 class ModulesTest(absltest.TestCase):
 
   def setUp(self):
@@ -39,12 +41,6 @@ class ModulesTest(absltest.TestCase):
     """Tear down testing environment."""
     self.mox.VerifyAll()
     self.mox.UnsetStubs()
-    os.environ.pop('CURRENT_MODULE_ID', None)
-    os.environ.pop('CURRENT_VERSION_ID', None)
-    os.environ.pop('INSTANCE_ID', None)
-    os.environ.pop('GAE_SERVICE', None)
-    os.environ.pop('GAE_VERSION', None)
-    os.environ.pop('GAE_INSTANCE', None)
 
   def testGetCurrentModuleName_DefaultModule(self):
     """Test get_current_module_name for default engine."""

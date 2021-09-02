@@ -26,6 +26,7 @@ import sys
 import traceback
 
 from google.appengine.api.runtime import runtime
+from google.appengine.ext.deferred import deferred
 from google.appengine.runtime import background
 from google.appengine.runtime import callback
 from google.appengine.runtime import context
@@ -373,4 +374,23 @@ def BackgroundAndShutdownMiddleware(app, wsgi_env, start_response):
     runtime.__BeginShutdown()
     start_response('200 OK', [('Content-Type', 'text/plain')])
     return [b'ok']
+  return app(wsgi_env, start_response)
+
+
+@middleware
+def AddDeferredMiddleware(app, wsgi_env, start_response):
+  """Intercept calls to the default endpoint for Deferred.
+
+  Handle requests made to /_ah/queue/deferred
+
+  Args:
+    app: the WSGI app to wrap
+    wsgi_env: see PEP 3333
+    start_response: see PEP 3333
+  Returns:
+    The wrapped WSGI app response in UTF-8 format
+  """
+  path = wsgi_env['PATH_INFO']
+  if path == '/_ah/queue/deferred':
+    return deferred.application(wsgi_env, start_response)
   return app(wsgi_env, start_response)

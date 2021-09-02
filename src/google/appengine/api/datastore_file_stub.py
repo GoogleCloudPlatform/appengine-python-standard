@@ -23,8 +23,8 @@ and searches are implemented as in-memory scans over all entities.
 
 Stores entities across sessions as pickled proto bufs in a single file. On
 startup, all entities are read from the file and loaded into memory. On
-every Put(), the file is wiped and all entities are written from scratch.
-Clients can also manually Read() and Write() the file themselves.
+every `Put()`, the file is wiped and all entities are written from scratch.
+Clients can also manually `Read()` and `Write()` the file themselves.
 """
 
 import collections
@@ -82,16 +82,16 @@ class _StoredEntity(object):
   """Simple wrapper around an entity (and its metadata) stored by the stub.
 
   Public properties:
-    record: the original EntityRecord that was stored by the stub.
+    record: The original `EntityRecord` that was stored by the stub.
     encoded_protobuf: Encoded binary representation of entity protobuf,
         including a special property that holds the pickled metadata object.
   """
 
   def __init__(self, record):
-    """Create a _StoredEntity object and store an entity.
+    """Creates a `_StoredEntity` object and store an entity.
 
     Args:
-      record: the EntityRecord to store.
+      record: The `EntityRecord` to store.
     """
     self.record = record
 
@@ -110,7 +110,7 @@ class KindPseudoKind(object):
   Provides a Query method to perform the actual query.
 
   Public properties:
-    name: the pseudo-kind name
+    name: The pseudo-kind name
   """
   name = '__kind__'
 
@@ -118,15 +118,15 @@ class KindPseudoKind(object):
     """Perform a query on this pseudo-kind.
 
     Args:
-      query: the original datastore_pb.Query.
-      filters: the filters from query.
-      orders: the orders from query.
+      query: The original `datastore_pb.Query`.
+      filters: The filters from query.
+      orders: The orders from query.
 
     Returns:
-      (results, remaining_filters, remaining_orders)
-      results is a list of entity_pb2.EntityProto
-      remaining_filters and remaining_orders are the filters and orders that
-      should be applied in memory
+      `(results, remaining_filters, remaining_orders)`.
+      `results` is a list of `entity_pb2.EntityProto`.
+      `remaining_filters` and `remaining_orders` are the filters and orders that
+      should be applied in memory.
     """
     kind_range = datastore_stub_util.ParseKindQuery(query, filters, orders)
     app_namespace_str = datastore_types.EncodeAppIdNamespace(
@@ -151,7 +151,7 @@ class PropertyPseudoKind(object):
   Provides a Query method to perform the actual query.
 
   Public properties:
-    name: the pseudo-kind name
+    name: The pseudo-kind name.
   """
   name = '__property__'
 
@@ -159,15 +159,15 @@ class PropertyPseudoKind(object):
     """Perform a query on this pseudo-kind.
 
     Args:
-      query: the original datastore_pb.Query.
-      filters: the filters from query.
-      orders: the orders from query.
+      query: The original `datastore_pb.Query`.
+      filters: The filters from query.
+      orders: The orders from query.
 
     Returns:
-      (results, remaining_filters, remaining_orders)
-      results is a list of entity_pb2.EntityProto
-      remaining_filters and remaining_orders are the filters and orders that
-      should be applied in memory
+      `(results, remaining_filters, remaining_orders)`.
+      `results` is a list of `entity_pb2.EntityProto`.
+      `remaining_filters` and `remaining_orders` are the filters and orders that
+      should be applied in memory.
     """
     property_range = datastore_stub_util.ParsePropertyQuery(query, filters,
                                                             orders)
@@ -253,7 +253,7 @@ class NamespacePseudoKind(object):
   Provides a Query method to perform the actual query.
 
   Public properties:
-    name: the pseudo-kind name
+    name: The pseudo-kind name.
   """
   name = '__namespace__'
 
@@ -261,13 +261,13 @@ class NamespacePseudoKind(object):
     """Perform a query on this pseudo-kind.
 
     Args:
-      query: the original datastore_pb.Query.
-      filters: the filters from query.
-      orders: the orders from query.
+      query: The original `datastore_pb.Query`.
+      filters: The filters from query.
+      orders: The orders from query.
 
     Returns:
-      (results, remaining_filters, remaining_orders)
-      results is a list of entity_pb2.EntityProto
+      `(results, remaining_filters, remaining_orders)`.
+      `results` is a list of entity_pb2.EntityProto
       remaining_filters and remaining_orders are the filters and orders that
       should be applied in memory
     """
@@ -297,10 +297,10 @@ class NamespacePseudoKind(object):
 class DatastoreFileStub(datastore_stub_util.BaseDatastore,
                         apiproxy_stub.APIProxyStub,
                         datastore_stub_util.DatastoreStub):
-  """ Persistent stub for the Python datastore API.
+  """Persistent stub for the Python datastore API.
 
   Stores all entities in memory, and persists them to a file as pickled
-  protocol buffers. A DatastoreFileStub instance handles a single app's data
+  protocol buffers. A `DatastoreFileStub` instance handles a single app's data
   and is backed by files on disk.
   """
 
@@ -321,23 +321,23 @@ class DatastoreFileStub(datastore_stub_util.BaseDatastore,
     Initializes and loads the datastore from the backing files, if they exist.
 
     Args:
-      app_id: string
-      datastore_file: string, stores all entities across sessions.  Use None
+      app_id: String
+      datastore_file: String. Stores all entities across sessions. Use `None`
           not to use a file.
-      history_file: DEPRECATED. No-op.
-      require_indexes: bool, default False.  If True, composite indexes must
-          exist in index.yaml for queries that need them.
-      service_name: Service name expected for all calls.
-      trusted: bool, default False.  If True, this stub allows an app to
+      history_file: DEPRECATE`. No-op.
+      require_indexes: Bool. Default is `False`. If `True`, composite indexes
+          must exist in `index.yaml` for queries that need them.
+      service_name: Service name is expected for all calls.
+      trusted: Bool. Default is `False`. If `True`, this stub allows an app to
         access the data of another app.
-      consistency_policy: The consistency policy to use or None to use the
+      consistency_policy: The consistency policy to use or `None` to use the
         default. Consistency policies can be found in
-        datastore_stub_util.*ConsistencyPolicy
-      save_changes: bool, default True. If this stub should modify
-        datastore_file when entities are changed.
-      root_path: string, the root path of the app.
-      use_atexit: bool, indicates if the stub should save itself atexit.
-      auto_id_policy: enum, datastore_stub_util.SEQUENTIAL or .SCATTERED
+        `datastore_stub_util.*ConsistencyPolicy`.
+      save_changes: Bool. Default is `True`. If this stub should modify
+        `datastore_file` when entities are changed.
+      root_path: String. The root path of the app.
+      use_atexit: Bool. Indicates if the stub should save itself atexit.
+      auto_id_policy: Enum. `datastore_stub_util.SEQUENTIAL` or `.SCATTERED`.
     """
 
 
@@ -387,8 +387,8 @@ class DatastoreFileStub(datastore_stub_util.BaseDatastore,
     self.Read()
 
   def Clear(self):
-    """ Clears the datastore by deleting all currently stored entities and
-    queries. """
+    """Clears the datastore by deleting all currently stored entities and queries.
+    """
     self.__entities_lock.acquire()
     try:
       datastore_stub_util.BaseDatastore.Clear(self)
@@ -404,7 +404,7 @@ class DatastoreFileStub(datastore_stub_util.BaseDatastore,
     """Get all entities.
 
     Returns:
-      Map from kind to _StoredEntity() list. Do not modify directly.
+      Map from kind to `_StoredEntity()` list. Do not modify directly.
     """
     return self.__entities_by_kind
 
@@ -436,7 +436,7 @@ class DatastoreFileStub(datastore_stub_util.BaseDatastore,
     Any needed locking should be managed by the caller.
 
     Args:
-      record: The EntityRecord to store.
+      record: The `EntityRecord` to store.
       insert: If we should check for existence.
     """
     app_kind, eg_k, k = self._GetEntityLocation(record.entity.key)
@@ -461,19 +461,19 @@ class DatastoreFileStub(datastore_stub_util.BaseDatastore,
                     'the --clear_datastore flag.\n')
 
   def Read(self):
-    """ Reads the datastore and history files into memory.
+    """Reads the datastore and history files into memory.
 
     The in-memory query history is cleared, but the datastore is *not*
     cleared; the entities in the files are merged into the entities in memory.
-    If you want them to overwrite the in-memory datastore, call Clear() before
-    calling Read().
+    If you want them to overwrite the in-memory datastore, call `Clear()` before
+    calling `Read()`.
 
     If the datastore file contains an entity with the same app name, kind, and
     key as an entity already in the datastore, the entity from the file
     overwrites the entity in the datastore.
 
-    Also sets each ID counter to one greater than the highest ID allocated so
-    far in that counter's ID space.
+    Also sets each `ID` counter to one greater than the highest `ID` allocated
+    so far in that counter's `ID` space.
     """
     if self.__datastore_file and self.__datastore_file != '/dev/null':
       entities = self.__ReadPickled(self.__datastore_file)
@@ -499,7 +499,7 @@ class DatastoreFileStub(datastore_stub_util.BaseDatastore,
   def Write(self):
     """Writes out the datastore and history files.
 
-    Be careful! If the files already exist, this method overwrites them!
+    Important: If the files already exist, this method overwrites them.
     """
     super(DatastoreFileStub, self).Write()
     self.__WriteDatastore()
@@ -509,8 +509,9 @@ class DatastoreFileStub(datastore_stub_util.BaseDatastore,
             self.__save_changes)
 
   def __WriteDatastore(self):
-    """ Writes out the datastore file. Be careful! If the file already exists,
-    this method overwrites it!
+    """Writes out the datastore file.
+
+    Be careful: If the file already exists, this method overwrites it!
     """
     if self.__IsSaveable():
       encoded = []
@@ -587,7 +588,7 @@ class DatastoreFileStub(datastore_stub_util.BaseDatastore,
       self.__file_lock.release()
 
   def MakeSyncCall(self, service, call, request, response, request_id=None):
-    """ The main RPC entry point. service must be 'datastore_v3'."""
+    """The main RPC entry point. Service must be datastore_v3."""
     self.assertPbIsInitialized(request)
     super(DatastoreFileStub, self).MakeSyncCall(service,
                                                 call,
@@ -597,7 +598,7 @@ class DatastoreFileStub(datastore_stub_util.BaseDatastore,
     self.assertPbIsInitialized(response)
 
   def assertPbIsInitialized(self, pb):
-    """Raises an exception if the given PB is not initialized and valid."""
+    """Raises an exception if the given `PB` is not initialized and valid."""
     explanation = []
 
     pb.SerializeToString()
@@ -696,15 +697,15 @@ class DatastoreFileStub(datastore_stub_util.BaseDatastore,
                                              index_list)
 
   def _SetIdCounter(self, id_space, value):
-    """Set the ID counter for id_space to value."""
+    """Sets the `ID` counter for id_space to value."""
     self.__id_counters[id_space] = value
 
   def _IdCounter(self, id_space):
-    """Return current value of ID counter for id_space."""
+    """Returns current value of `ID` counter for id_space."""
     return self.__id_counters[id_space]
 
   def _SetMaxId(self, max_id):
-    """Infer ID space and advance corresponding counter."""
+    """Infers `ID` space and advance corresponding counter."""
     count, id_space = datastore_stub_util.IdToCounter(max_id)
     if count >= self._IdCounter(id_space):
       self._SetIdCounter(id_space, count + 1)

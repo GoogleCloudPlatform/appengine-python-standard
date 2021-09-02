@@ -14,15 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-r"""An Encoder class for Protocol Buffers that preserves sorting characteristics.
+r"""An Encoder class for protocol buffers (PB) that preserves sorting characteristics.
 
-This is used by datastore_sqlite_stub and datastore_types to match the ordering
-semantics of the production datastore. Broadly, there are four
+This is used by `datastore_sqlite_stub` and `datastore_types` to match the
+ordering semantics of the production datastore. Broadly, there are four
 changes from regular PB encoding:
 
  - Strings are escaped and null terminated instead of length-prefixed. The
-   escaping replaces \x00 with \x01\x01 and \x01 with \x01\x02, thus preserving
-   the ordering of the original string.
+   escaping replaces `\x00` with `\x01\x01` and `\x01` with `\x01\x02`, thus
+   preserving the ordering of the original string.
  - Variable length integers are encoded using a variable length encoding that
    preserves order. The first byte stores the absolute value if it's between
    -119 to 119, otherwise it stores the number of bytes that follow.
@@ -75,7 +75,7 @@ def FromBytes(arr, b):
 
 
 def GetFieldNumber(field_tuple):
-  """Get the field number from the tuple returned by Message.ListFields."""
+  """Get the field number from the tuple returned by `Message.ListFields`."""
   return field_tuple[0].number
 
 
@@ -99,7 +99,7 @@ _WIRE_TYPES = {
 
 
 class Encoder(object):
-  """Encodes Protocol Buffers in a form that sorts nicely."""
+  """Encodes protocol buffers in a form that sorts nicely."""
 
   @classmethod
   def EncodeMessage(cls, msg):
@@ -147,7 +147,7 @@ class Encoder(object):
     return
 
   def _PutVarInt(self, value):
-    """Encode a varint value in the buffer."""
+    """Encode a `varint` value in the buffer."""
     if value is None:
       self.buf.append(0)
       return
@@ -184,19 +184,19 @@ class Encoder(object):
       self.buf.append(b & 0xff)
 
   def PutVarInt32(self, value):
-    """Encode a 32 bit varint value in the buffer."""
+    """Encode a 32 bit `varint` value in the buffer."""
     if value >= 0x80000000 or value < -0x80000000:
       raise message.EncodeError('int32 too big')
     self._PutVarInt(value)
 
   def PutVarInt64(self, value):
-    """Encode a 64 bit varint value in the buffer."""
+    """Encode a 64 bit `varint` value in the buffer."""
     if value >= 0x8000000000000000 or value < -0x8000000000000000:
       raise message.EncodeError('int64 too big')
     self._PutVarInt(value)
 
   def PutVarUint64(self, value):
-    """Encode a 64 bit unsigned varint value in the buffer."""
+    """Encode a 64 bit unsigned `varint` value in the buffer."""
     if value < 0 or value >= 0x10000000000000000:
       raise message.EncodeError('uint64 too big')
     self._PutVarInt(value)
@@ -388,7 +388,7 @@ class Decoder(object):
             | (h << 16) | (i << 8) | j)
 
   def GetVarInt64(self):
-    """Decode the next bits as a varint."""
+    """Decode the next bits as a `varint`."""
     b = self.Get8()
     if b >= _OFFSET and b <= _POS_OFFSET:
       return b - _OFFSET + _MIN_INLINE
@@ -415,14 +415,14 @@ class Decoder(object):
       return ret + _MAX_INLINE
 
   def GetVarInt32(self):
-    """Decode the next bits as a varint and check it's a 32 bit value."""
+    """Decode the next bits as a `varint` and check it's a 32 bit value."""
     result = self.GetVarInt64()
     if result >= 0x80000000 or result < -0x80000000:
       raise message.DecodeError('corrupted')
     return result
 
   def GetVarUint64(self):
-    """Decode the next bits as a varint and check it's non-negative value."""
+    """Decode the next bits as a `varint` and check it's non-negative value."""
     result = self.GetVarInt64()
     if result < 0:
       raise message.DecodeError('corrupted')

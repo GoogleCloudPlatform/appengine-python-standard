@@ -23,15 +23,19 @@
 
 
 import os
-import six
-from absl.testing import absltest
+
 from google.appengine.api import apiproxy_stub
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import user_service_pb2
 from google.appengine.api import user_service_stub
 from google.appengine.api import users
+from google.appengine.runtime.context import ctx_test_util
+import six
+
+from absl.testing import absltest
 
 
+@ctx_test_util.isolated_context()
 class UserTest(absltest.TestCase):
   def setUp(self):
 
@@ -62,16 +66,6 @@ class UserTest(absltest.TestCase):
         self.users_stub._Dynamic_CreateLogoutURL(request, response, request_id)
 
     apiproxy_stub_map.apiproxy.RegisterStub('user', TestStub('user'))
-
-
-  def tearDown(self):
-    os.environ.pop('SERVER_NAME', None)
-    os.environ.pop('SERVER_PORT', None)
-    os.environ.pop('USER_EMAIL', None)
-    os.environ.pop('USER_ID', None)
-    os.environ.pop('USER_IS_ADMIN', None)
-    os.environ.pop('FEDERATED_IDENTITY', None)
-    os.environ.pop('FEDERATED_PROVIDER', None)
 
   def testGetEmail(self):
     jon = users.User('jonmac@google.com', _user_id='11000')

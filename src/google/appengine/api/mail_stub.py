@@ -15,8 +15,10 @@
 # limitations under the License.
 #
 
-"""Stub version of the mail API, writes email to logs and can optionally
-send real email via SMTP or sendmail."""
+"""Stub version of the mail API, writes email to logs.
+
+Can optionally send real email via SMTP or sendmail.
+"""
 
 
 
@@ -89,8 +91,8 @@ class MailServiceStub(apiproxy_stub.APIProxyStub):
       enable_sendmail: Whether sendmail enabled or not.
       show_mail_body: Whether to show mail body in log.
       service_name: Service name expected for all calls.
-      allow_tls: Allow TLS support. If True, use TLS provided the server
-        announces support in the EHLO response. If False, do not use TLS.
+      allow_tls: Allow TLS support. If `True`, use TLS provided the server
+        announces support in the `EHLO` response. If `False`, do not use TLS.
     """
     super(MailServiceStub, self).__init__(service_name,
                                           max_request_size=MAX_REQUEST_SIZE)
@@ -181,9 +183,9 @@ class MailServiceStub(apiproxy_stub.APIProxyStub):
   def _email_message_from_mime_message(self, mime_message, mail_message_proto):
     """Construct a mail.EmailMessage from the given mime message and protobuf.
 
-    Unlike the main constructor for EmailMessage, this method ensures that
+    Unlike the main constructor for `EmailMessage`, this method ensures that
     optional headers from the request protobuf are properly set on the
-    EmailMessage.
+    `EmailMessage`.
 
     Args:
       mime_message: An email.MIMEMultipart instance.
@@ -218,7 +220,7 @@ class MailServiceStub(apiproxy_stub.APIProxyStub):
       subject: A regular expression that the message subject must match.
       body: A regular expression that the text body must match.
       html: A regular expression that the HTML body must match.
-      amp_html: A regular expression that the AMP HTML body must match.
+      amp_html: A regular expression that the `AMP` HTML body must match.
 
     Returns:
       A list of matching mail.EmailMessage or mail.AdminEmailMessage objects.
@@ -272,7 +274,7 @@ class MailServiceStub(apiproxy_stub.APIProxyStub):
     currently support encryption.
 
     Args:
-      mime_message: MimeMessage to send.  Create using ToMIMEMessage.
+      mime_message: `MimeMessage` to send.  Create using `ToMIMEMessage`.
       smtp_lib: Class of SMTP library.  Used for dependency injection.
     """
     smtp = smtp_lib()
@@ -299,11 +301,11 @@ class MailServiceStub(apiproxy_stub.APIProxyStub):
                     sendmail_command='sendmail'):
     """Send MIME message via sendmail, if exists on computer.
 
-    Attempts to send email via sendmail.  Any IO failure, including
+    Attempts to send email via sendmail.  Any `IO` failure, including
     the program not being found is ignored.
 
     Args:
-      mime_message: MimeMessage to send.  Create using ToMIMEMessage.
+      mime_message: `MimeMessage` to send.  Create using `ToMIMEMessage`.
       popen: popen function to create a new sub-process.
     """
     try:
@@ -413,7 +415,7 @@ class MailServiceStub(apiproxy_stub.APIProxyStub):
   def _Dynamic_GetSentMessages(self, request, response):
     """Get a list of all mail messages sent via the Mail API.
 
-    Used by the Java LocalMailService to retrieve all sent messages.
+    Used by the Java `LocalMailService` to retrieve all sent messages.
 
     Args:
       request: An unused api_base_pb2.VoidProto.
@@ -473,7 +475,7 @@ class MailServiceStub(apiproxy_stub.APIProxyStub):
     """Implementation of MailServer::Send().
 
     Args:
-      request: The message to validate, a SendMailRequest.
+      request: The message to validate, a `SendMailRequest`.
 
     Raises:
       mail_errors.InvalidAttachmentTypeError if the attachment type is invalid.
@@ -505,7 +507,7 @@ def _Base64EncodeAttachments(mime_message):
   """Base64 encode all individual attachments that are not text.
 
   Args:
-    mime_message: MimeMessage to process.
+    mime_message: `MimeMessage` to process.
   """
   for item in mime_message.get_payload():
     if (item.get_content_maintype() not in ['multipart', 'text'] and

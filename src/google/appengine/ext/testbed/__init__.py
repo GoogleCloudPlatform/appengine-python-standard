@@ -22,10 +22,10 @@ To test applications that use App Engine services, such as datastore,
 developers can use the available stub implementations. Service stubs behave like
 the original service without causing permanent side effects. The datastore stub,
 for example, allows you to write entities into memory without storing them to
-the actual datastore. The testbed module makes using those stubs for testing
+the actual datastore. The `testbed` module makes using those stubs for testing
 easier.
 
-Example::
+Example:
 
     import unittest
 
@@ -68,7 +68,8 @@ Example::
 Enable stubs and disable services
 ---------------------------------
 
-The testbed module allows you to use stubs for the following services:
+The `testbed` module allows you to use stubs for the following services:
+
     - capability_service
     - channel
     - datastore_v3 (aka datastore)
@@ -92,8 +93,8 @@ Environment variables
 
 App Engine service stubs often depend on environment variables. For example, the
 datastore stub uses an environment variable to store entities linked to a
-particular app. testbed will use default values if nothing else is provided, but
-you can change those values with `self.setup_env()`.
+particular app. `testbed` will use default values if nothing else is provided,
+but you can change those values with `self.setup_env()`.
 """
 
 
@@ -244,7 +245,7 @@ def urlfetch_to_gcs_stub(url, payload, method, headers, request, response,
                          follow_redirects=False, deadline=None,
                          validate_certificate=None, http_proxy=None):
 
-  """Forwards Google Cloud Storage `urlfetch` requests to gcs_dispatcher."""
+  """Forwards Google Cloud Storage `urlfetch` requests to `gcs_dispatcher`."""
   headers_map = dict(
       (header.Key.lower(), header.Value) for header in headers)
   result = gcs_dispatcher.dispatch(method, headers_map, url, payload)
@@ -326,9 +327,9 @@ class EmulatorSupportChecker(object):
   def check(cls):
     """Checks whether cloud datastore should be used.
 
-    In a unittest test process, the first call to this method sets the value of
-    _use_datastore_emulator and _api_port. Subsequent calls to this method can
-    read _use_datastore_emulator.
+    In a unit test process, the first call to this method sets the value of
+    `_use_datastore_emulator` and `_api_port`. Subsequent calls to this method
+    can read `_use_datastore_emulator`.
 
     Returns:
       A boolean that indicates whether cloud datastore should be used.
@@ -388,7 +389,7 @@ class Testbed(object):
     the application ID. You can set custom values with `setup_env()`.
 
     Args:
-      use_datastore_emulator: True if user specifies testbed to use the Cloud
+      use_datastore_emulator: `True` if user specifies testbed to use the Cloud
         Datastore Emulator.
     """
     self._orig_env = dict(os.environ)
@@ -454,10 +455,10 @@ class Testbed(object):
     """Sets default and custom environment variables.
 
     By default, all of the items in `DEFAULT_ENVIRONMENT` will be created
-    without being specified.  To set a value other than the default, or to pass
+    without being specified. To set a value other than the default, or to pass
     a custom environment variable, pass a corresponding keyword argument.
 
-    Example::
+    Example:
 
         # All defaults
         testbed_instance.setup_env()
@@ -471,7 +472,7 @@ class Testbed(object):
     Passing this value will not result in an `OVERWRITE` entry in `os.environ`.
 
     Args:
-      overwrite: Boolean; specifies whether to overwrite items with
+      overwrite: Boolean. Specifies whether to overwrite items with
           corresponding entries in `os.environ`.
       **kwargs: Environment variables to set. The name of the argument will be
           uppercased and used as a key in `os.environ`.
@@ -656,7 +657,7 @@ class Testbed(object):
     Args:
       enable: `True` if the fake service should be enabled, or `False` if the
           real service should be disabled.
-      datastore_file: File name of a dev_appserver datastore file.
+      datastore_file: File name of a `dev_appserver` datastore file.
       use_sqlite: `True` to use the Sqlite stub, or `False` (default) to use
           the file stub.
       auto_id_policy: How datastore stub assigns auto IDs. This value can be
@@ -664,7 +665,7 @@ class Testbed(object):
       **stub_kw_args: Keyword arguments passed on to the service stub.
 
     Raises:
-      StubNotSupportedError: If datastore_sqlite_stub is None.
+      StubNotSupportedError: If `datastore_sqlite_stub` is `None`.
     """
     if self._use_datastore_emulator:
 
@@ -751,7 +752,7 @@ class Testbed(object):
   def init_images_stub(self, enable=True, **stub_kwargs):
     """Enables the images stub.
 
-    The images service stub is only available in dev_appserver because it uses
+    The images service stub is only available in `dev_appserver` because it uses
     the PIL library.
 
     Args:
@@ -768,7 +769,7 @@ class Testbed(object):
   def init_mail_stub(self, enable=True, **stub_kw_args):
     """Enables the mail stub.
 
-    The email service stub is only available in dev_appserver because it uses
+    The email service stub is only available in `dev_appserver` because it uses
     the `subprocess` module.
 
     Args:
@@ -820,17 +821,17 @@ class Testbed(object):
     self._register_stub(TASKQUEUE_SERVICE_NAME, stub)
 
   def init_urlfetch_stub(self, enable=True, urlmatchers=None):
-    """Enables the urlfetch stub.
+    """Enables the `urlfetch` stub.
 
-    The urlfetch service stub uses the urllib module to make requests. On
-    appserver, urllib also relies the urlfetch infrastructure, so using this
+    The `urlfetch` service stub uses the `urllib` module to make requests. On
+    appserver, `urllib` also relies the `urlfetch` infrastructure, so using this
     stub will have no effect.
 
     Args:
       enable: `True` if the fake service should be enabled, or `False` if the
           real service should be disabled.
-      urlmatchers: optional initial sequence of (matcher, fetcher) pairs to
-          populate urlmatchers_to_fetch_functions; matchers passed here, if
+      urlmatchers: optional initial sequence of `(matcher, fetcher)` pairs to
+          populate `urlmatchers_to_fetch_functions`; matchers passed here, if
           any, take precedence over default matchers dispatching GCS access.
     """
     if not enable:

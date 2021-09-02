@@ -21,16 +21,15 @@
 
 
 
-
-import os
-
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import module_testutil
 from google.appengine.api import oauth
 from google.appengine.api import user_service_pb2
 from google.appengine.api import user_service_stub
 from google.appengine.runtime import apiproxy_errors
+from google.appengine.runtime.context import ctx_test_util
 from absl.testing import absltest
+
 
 class ModuleInterfaceTest(module_testutil.ModuleInterfaceTest,
                           absltest.TestCase):
@@ -39,19 +38,13 @@ class ModuleInterfaceTest(module_testutil.ModuleInterfaceTest,
   MODULE = oauth
 
 
+@ctx_test_util.isolated_context()
 class OAuthApiTest(absltest.TestCase):
+
   def setUp(self):
     self.users_stub = user_service_stub.UserServiceStub()
     apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()
     apiproxy_stub_map.apiproxy.RegisterStub('user', self.users_stub)
-
-  def tearDown(self):
-    os.environ.pop('OAUTH_EMAIL', None)
-    os.environ.pop('OAUTH_AUTH_DOMAIN', None)
-    os.environ.pop('OAUTH_USER_ID', None)
-    os.environ.pop('OAUTH_IS_ADMIN', None)
-    os.environ.pop('OAUTH_ERROR_CODE', None)
-    os.environ.pop('OAUTH_CLIENT_ID', None)
 
   def testGetCurrentUserSuccess(self):
     user = oauth.get_current_user()

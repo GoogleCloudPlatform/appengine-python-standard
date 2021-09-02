@@ -349,7 +349,8 @@ def _parse_mime_message(
   """Helper function that converts `mime_message` into `email.message.Message`.
 
   Args:
-    mime_message: MIME message, string, or file that contains the MIME message.
+    mime_message: MIME message, string, or file that contains the MIME
+    message.
 
   Returns:
     An instance of `email.message.Message`. This method will return
@@ -427,7 +428,7 @@ SendMailToAdmins = send_mail_to_admins
 
 
 def _GetMimeType(file_name):
-  """Determines the MINE type from the file name.
+  """Determines the `MINE` type from the file name.
 
   This function parses the file name and determines the MIME type based on
   an extension map.
@@ -739,21 +740,21 @@ class Attachment(object):
       unpack to a `(filename, payload)` tuple, but will compare unequally to
       that tuple.
 
-      Thus, the following comparison will succeed::
+      Thus, the following comparison will succeed:
 
           attachment = mail.Attachment('foo.jpg', 'data')
           filename, payload = attachment
           attachment == filename, payload
 
 
-      ...while the following will fail::
+      ...while the following will fail:
 
           attachment = mail.Attachment('foo.jpg', 'data', content_id='<foo>')
           filename, payload = attachment
           attachment == filename, payload
 
 
-      The following comparison will pass::
+      The following comparison will pass:
 
         attachment = mail.Attachment('foo.jpg', 'data', content_id='<foo>')
         attachment == (attachment.filename,
@@ -900,7 +901,7 @@ class EncodedPayload(object):
       return NotImplemented
 
   def __hash__(self):
-    """Hashes an EncodedPayload."""
+    """Hashes an `EncodedPayload`."""
     return hash((self.payload, self.charset, self.encoding))
 
   def copy_to(self, mime_message):
@@ -1282,10 +1283,10 @@ class _EmailMessageBase(object):
     """Updates a payload of a mail message from `mime_message`.
 
     This function works recursively when it receives a multi-part body. If the
-    function receives a non-multi-part MIME object, it will determine whether it
-    is an attachment by whether it contains a file name. Attachments and bodies
-    are then wrapped in `EncodedPayload` that use the correct character sets and
-    encodings.
+    function receives a non-multi-part MIME object, it will determine whether
+    it is an attachment by whether it contains a file name. Attachments and
+    bodies are then wrapped in `EncodedPayload` that use the correct character
+    sets and encodings.
 
     Args:
       mime_message: A Message MIME email object.
@@ -1371,7 +1372,7 @@ class _EmailMessageBase(object):
           select only specific types of content. You can use the base type or
           the content type.
 
-          For example::
+          For example:
 
               content_type = 'text/html'  # Matches only HTML content.
               content_type = 'text'       # Matches text of any kind.
@@ -1403,7 +1404,7 @@ class EmailMessage(_EmailMessageBase):
   Mail API. To use this class, construct an instance, populate its fields and
   call `Send()`.
 
-  An EmailMessage can be built completely by the constructor::
+  An `EmailMessage` can be built completely by the constructor:
 
       EmailMessage(sender='sender@nowhere.com',
                    to='recipient@nowhere.com',
@@ -1412,7 +1413,7 @@ class EmailMessage(_EmailMessageBase):
 
 
   You might want your application to build an email in different places
-  throughout the code. For this usage, EmailMessage is mutable::
+  throughout the code. For this usage, `EmailMessage` is mutable:
 
         message = EmailMessage()
         message.sender = 'sender@nowhere.com'
@@ -1513,7 +1514,7 @@ class AdminEmailMessage(_EmailMessageBase):
   Unlike normal email messages, addresses in the recipient fields are ignored
   and not used to send the message.
 
-  An AdminEmailMessage can be built completely by the constructor::
+  An `AdminEmailMessage` can be built completely by the constructor:
 
       AdminEmailMessage(sender='sender@nowhere.com',
                         subject='a subject',
@@ -1521,7 +1522,7 @@ class AdminEmailMessage(_EmailMessageBase):
 
 
   You might want your application to build an administrator email in different
-  places throughout the code. For this, AdminEmailMessage is mutable::
+  places throughout the code. For this, `AdminEmailMessage` is mutable:
 
       message = AdminEmailMessage()
       message.sender = 'sender@nowhere.com'
@@ -1548,9 +1549,9 @@ class InboundEmailMessage(EmailMessage):
   bodies. These additional attributes make the email more flexible as required
   for incoming mail, where the developer has less control over the content.
 
-  Example::
+  Example:
 
-      # Read mail message from CGI input.
+      # Read mail message from `CGI` input.
       message = InboundEmailMessage(sys.stdin.read())
       logging.info('Received email message from %s at %s',
                    message.sender,
@@ -1577,7 +1578,7 @@ class InboundEmailMessage(EmailMessage):
 
     Args:
       mime_message: The `email.Message` instance from which you want to copy
-          information.
+        information.
     """
     mime_message = _parse_mime_message(mime_message)
     super(InboundEmailMessage, self).update_from_mime_message(mime_message)
@@ -1595,8 +1596,8 @@ class InboundEmailMessage(EmailMessage):
     plain or HTML body or have any unidentified bodies.
 
     This method will not overwrite existing HTML and body values. Therefore,
-    when the message is updated with the body, the text and HTML bodies that are
-    first in the MIME document order are assigned to the body and HTML
+    when the message is updated with the body, the text and HTML bodies that
+    are first in the MIME document order are assigned to the body and HTML
     properties.
 
     Args:
@@ -1624,10 +1625,8 @@ class InboundEmailMessage(EmailMessage):
           select only specific types of content. You can use the base type or
           the content type.
 
-          For example::
-
-              content_type = 'text/html'  # Matches only HTML content.
-              content_type = 'text'       # Matches text of any kind.
+          For example, `content_type = 'text/html'` matches only HTML content,
+          and `content_type = 'text'` matches text of any kind.
 
 
     Yields:

@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-"""Performs translation of queue.xml to queue.yaml."""
+"""Performs translation of `queue.xml` to `queue.yaml`."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -67,7 +67,7 @@ class QueueXmlParser(object):
     Args:
       xml_str: The XML string.
     Returns:
-      A QueueXml object containing information about task queue
+      A `QueueXml` object containing information about task queue
       specifications from the XML.
     Raises:
       AppEngineConfigException: In case of malformed XML or illegal inputs.
@@ -96,28 +96,32 @@ class QueueXmlParser(object):
       raise AppEngineConfigException('Bad input -- not valid XML: %s' % e)
 
   def ProcessQueueNode(self, node):
-    """Processes XML <queue> nodes into Queue objects.
+    """Processes XML `<queue>` nodes into Queue objects.
 
     The following information is parsed out:
-      name
-      mode: can be either push or pull
-      retry-parameters:
-        task-retry-limit
-    ---- push queues only ----
-        task-age-limit
-        min-backoff-seconds
-        max-back-off-seconds
-        max-doubling
-      bucket-size
-      max-concurrent-requests
-      rate: how often tasks are processed on this queue.
-      target: version of application on which tasks on this queue will be
+
+    - name
+    - mode: can be either push or pull
+    - retry-parameters: task-retry-limit
+
+    For push queues only:
+
+    - task-age-limit
+    - min-backoff-seconds
+    - max-back-off-seconds
+    - max-doubling
+    - bucket-size
+    - max-concurrent-requests
+    - rate: how often tasks are processed on this queue.
+    - target: version of application on which tasks on this queue will be
         invoked.
-    ---- pull queues only ----
-      acl: access control list - lists user and writer email addresses.
+
+    For pull queues only:
+
+    - acl: access control list - lists user and writer email addresses.
 
     Args:
-      node: Current <queue> XML node being processed.
+      node: Current `<queue>` XML node being processed.
     """
 
     name = xml_parser_utils.GetChildNodeText(node, 'name')

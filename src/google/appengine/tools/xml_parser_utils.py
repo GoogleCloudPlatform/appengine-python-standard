@@ -35,6 +35,7 @@ def GetChild(node, tag):
 
 
 def BooleanValue(node_text):
+  """Returns boolean value."""
   return node_text.lower() in ('1', 'true')
 
 
@@ -44,7 +45,7 @@ def GetAttribute(node, attr):
 
 
 def GetChildNodeText(node, child_tag, default=''):
-  """Finds child xml node with desired tag and returns its text."""
+  """Finds child XML node with desired tag and returns its text."""
   for child in node.getchildren():
     if GetTag(child) == child_tag:
       return GetNodeText(child) or default
