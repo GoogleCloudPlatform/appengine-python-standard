@@ -10,7 +10,7 @@ To sign up for the private preview, visit https://docs.google.com/forms/d/e/1FAI
 
 In your `requirements.txt` file, add the following:
 
-`appengine-python-standard>=0.1.1`
+`appengine-python-standard>=0.2.0`
 
 In your app's `app.yaml`, add the following:
 
@@ -38,16 +38,22 @@ Example for a Flask app:
 ~~~
 
 Then deploy your app as usual, with `gcloud beta app deploy` (currently only the Beta version has the capability to enable these APIs). The following modules are available:
-
 - `google.appengine.api.app_identity`
+- `google.appengine.api.background_thread`
+- `google.appengine.api.blobstore`
 - `google.appengine.api.capabilities`
+- `google.appengine.api.croninfo`
+- `google.appengine.api.dispatchinfo`
+- `google.appengine.api.images`
 - `google.appengine.api.mail`
 - `google.appengine.api.memcache`
 - `google.appengine.api.modules`
 - `google.appengine.api.oauth`
+- `google.appengine.api.runtime`
 - `google.appengine.api.taskqueue`
 - `google.appengine.api.urlfetch`
 - `google.appengine.api.users`
+- `google.appengine.ext.blobstore`
 - `google.appengine.ext.db`
 - `google.appengine.ext.gql`
 - `google.appengine.ext.key_range`
