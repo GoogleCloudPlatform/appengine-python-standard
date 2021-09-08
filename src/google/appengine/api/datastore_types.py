@@ -17,20 +17,20 @@
 
 
 
-"""Higher-level, semantic data types for the datastore. These types
-are expected to be set as attributes of Entities.  See "Supported Data Types"
-in the API Guide.
+"""Higher-level, semantic data types for the datastore.
+
+These types are expected to be set as attributes of `Entities`.
 
 Most of these types are based on XML elements from Atom and GData elements
-from the atom and gd namespaces. For more information, see:
+from the `atom` and `gd` namespaces. For more information, see:
 
-  http://www.atomenabled.org/developers/syndication/
-  https://developers.google.com/gdata/docs/1.0/elements
+- http://www.atomenabled.org/developers/syndication/
+- https://developers.google.com/gdata/docs/1.0/elements
 
 The namespace schemas are:
 
-  http://www.w3.org/2005/Atom
-  http://schemas.google.com/g/2005
+- http://www.w3.org/2005/Atom
+- http://schemas.google.com/g/2005
 """
 
 
@@ -176,18 +176,18 @@ def ValidateString(value,
                    exception=datastore_errors.BadValueError,
                    max_len=_MAX_STRING_LENGTH,
                    empty_ok=False):
-  """Raises an exception if value is not a valid string or a subclass thereof.
+  """Raises an exception if the value is not a valid string or a subclass thereof.
 
-  A string is valid if it's not empty, no more than _MAX_STRING_LENGTH bytes,
+  A string is valid if it's not empty, no more than `_MAX_STRING_LENGTH` bytes,
   and not a Blob. The exception type can be specified with the exception
-  argument; it defaults to BadValueError.
+  argument; it defaults to `BadValueError`.
 
   Args:
-    value: the value to validate.
-    name: the name of this value; used in the exception message.
-    exception: the type of exception to raise.
-    max_len: the maximum allowed length, in bytes.
-    empty_ok: allow empty value.
+    value: The value to validate.
+    name: The name of this value; used in the exception message.
+    exception: The type of exception to raise.
+    max_len: The maximum allowed length, in bytes.
+    empty_ok: Allow empty value.
   """
   if value is None and empty_ok:
     return
@@ -220,16 +220,16 @@ def ValidateInteger(value,
   """Raises an exception if value is not a valid integer.
 
   An integer is valid if it's not negative or empty and is an integer
-  (either int or long).  The exception type raised can be specified
-  with the exception argument; it defaults to BadValueError.
+  (either `int` or `long`). The exception type raised can be specified
+  with the exception argument; it defaults to `BadValueError`.
 
   Args:
-    value: the value to validate.
-    name: the name of this value; used in the exception message.
-    exception: the type of exception to raise.
-    empty_ok: allow None value.
-    zero_ok: allow zero value.
-    negative_ok: allow negative value.
+    value: The value to validate.
+    name: The name of this value; used in the exception message.
+    exception: The type of exception to raise.
+    empty_ok: Allow `None` value.
+    zero_ok: Allow zero value.
+    negative_ok: Allow negative value.
   """
   if value is None and empty_ok:
     return
@@ -242,16 +242,16 @@ def ValidateInteger(value,
     raise exception('%s must not be negative.' % name)
 
 def ResolveAppId(app):
-  """Validate app id, providing a default.
+  """Validates the application ID, providing a default.
 
   Args:
-    app: The app id argument value to be validated.
+    app: The app ID argument value to be validated.
 
   Returns:
-    The value of app, or the substituted default.  Always a non-empty string.
+    The value of the app, or the substituted default. Always a non-empty string.
 
   Raises:
-    BadArgumentError if the value is empty or not a string.
+    `BadArgumentError` if the value is empty or not a string.
   """
   if app is None:
     app = full_app_id.get()
@@ -260,9 +260,9 @@ def ResolveAppId(app):
 
 
 def ResolveNamespace(namespace):
-  """Validate app namespace, providing a default.
+  """Validates the app namespace, providing a default.
 
-  If the argument is None, namespace_manager.get_namespace() is substituted.
+  If the argument is `None`, `namespace_manager.get_namespace()` is substituted.
 
   Args:
     namespace: The namespace argument value to be validated.
@@ -272,7 +272,7 @@ def ResolveNamespace(namespace):
     to denote the empty namespace.
 
   Raises:
-    BadArgumentError if the value is not a string.
+    `BadArgumentError` if the value is not a string.
   """
   if namespace is None:
     namespace = namespace_manager.get_namespace()
@@ -283,16 +283,16 @@ def ResolveNamespace(namespace):
 
 
 def EncodeAppIdNamespace(app_id, namespace):
-  """Concatenates app id and namespace into a single string.
+  """Concatenates the application ID and namespace into a single string.
 
-  This method is needed for xml and datastore_file_stub.
+  This method is needed for XML and `datastore_file_stub`.
 
   Args:
-    app_id: The application id to encode
-    namespace: The namespace to encode
+    app_id: The application ID to encode.
+    namespace: The namespace to encode.
 
   Returns:
-    The string encoding for the app_id, namespace pair.
+    The string encoding for the `app_id`, namespace pair.
   """
   if not namespace:
     return app_id
@@ -301,17 +301,17 @@ def EncodeAppIdNamespace(app_id, namespace):
 
 
 def DecodeAppIdNamespace(app_namespace_str):
-  """Decodes app_namespace_str into an (app_id, namespace) pair.
+  """Decodes `app_namespace_str` into an `(app_id, namespace)` pair.
 
-  This method is the reverse of EncodeAppIdNamespace and is needed for
-  datastore_file_stub.
+  This method is the reverse of `EncodeAppIdNamespace` and is needed for
+  `datastore_file_stub`.
 
   Args:
-    app_namespace_str: An encoded app_id, namespace pair created by
-      EncodeAppIdNamespace
+    app_namespace_str: An encoded `(app_id, namespace)` pair created by
+      `EncodeAppIdNamespace`.
 
   Returns:
-    (app_id, namespace) pair encoded in app_namespace_str
+    `(app_id, namespace)` pair encoded in `app_namespace_str`.
   """
   sep = app_namespace_str.find(_NAMESPACE_SEPARATOR)
   if sep < 0:
@@ -324,9 +324,9 @@ def SetNamespace(proto, namespace):
   """Sets the namespace for a protocol buffer or clears the field.
 
   Args:
-    proto: An entity_pb2.Reference to update
-    namespace: the new namespace (None or an empty string will clear out the
-        field).
+    proto: An `entity_pb2.Reference` to update
+    namespace: The new namespace. `None` or an empty string will clear out the
+        field.
   """
   if not namespace:
     proto.ClearField('name_space')
@@ -335,12 +335,13 @@ def SetNamespace(proto, namespace):
 
 
 def PartitionString(value, separator):
-  """Equivalent to python2.5 str.partition()
-     TODO use str.partition() when python 2.5 is adopted.
+  """Returns a 3-element tuple containing the part before the separator and the part after the separator.
+
+  Equivalent to python2.5 `str.partition()`.
 
   Args:
-    value: String to be partitioned
-    separator: Separator string
+    value: String to be partitioned.
+    separator: Separator string.
   """
   index = value.find(separator)
   if index == -1:
@@ -353,11 +354,11 @@ def PartitionString(value, separator):
 class Key(object):
   """The primary key for a datastore entity.
 
-  A datastore GUID. A Key instance uniquely identifies an entity across all
+  A datastore `GUID`. A `Key` instance uniquely identifies an entity across all
   apps, and includes all information necessary to fetch the entity from the
-  datastore with Get().
+  datastore with `Get()`.
 
-  Key implements __hash__, and key instances are immutable, so Keys may be
+  `Key` implements `__hash__`, and key instances are immutable, so Keys may be
   used in sets and as dictionary keys.
   """
   __reference = None
@@ -447,29 +448,29 @@ class Key(object):
 
   @staticmethod
   def from_path(*args, **kwds):
-    """Static method to construct a Key out of a "path" (kind, id or name, ...).
+    """Static method to construct a `Key` out of a "path" (`kind`, `id` or `name`, ...).
 
     This is useful when an application wants to use just the id or name portion
-    of a key in e.g. a URL, where the rest of the URL provides enough context to
-    fill in the rest, i.e. the app id (always implicit), the entity kind, and
-    possibly an ancestor key. Since ids and names are usually small, they're
-    more attractive for use in end-user-visible URLs than the full string
-    representation of a key.
+    of a key in, e.g., a URL, where the rest of the URL provides enough
+    context to fill in the other properties. For example, the app id (always
+    implicit), the entity kind, and possibly an ancestor key. Since ids and
+    names are usually small, they're more attractive for use in end-user-visible
+    URLs than the full string representation of a key.
 
     Args:
-      kind: the entity kind (a str or unicode instance)
-      id_or_name: the id (an int or long) or name (a str or unicode instance)
-      parent: optional parent Key; default None.
-      namespace: optional namespace to use otherwise namespace_manager's
+      kind: The entity kind (a str or unicode instance)
+      id_or_name: The id (an int or long) or name (a str or unicode instance)
+      parent: Optional parent `Key`; default `None`.
+      namespace: Optional namespace to use otherwise namespace_manager's
         default namespace is used.
 
     Returns:
-      A new Key instance whose .kind() and .id() or .name() methods return
-      the *last* kind and id or name positional arguments passed.
+      A new `Key` instance whose `.kind()` and `.id()` or `.name()` methods
+      return the *last* kind and id or name positional arguments passed.
 
     Raises:
-      BadArgumentError for invalid arguments.
-      BadKeyError if the parent key is incomplete.
+      `BadArgumentError` for invalid arguments.
+      `BadKeyError` if the parent key is incomplete.
     """
 
     parent = kwds.pop('parent', None)
@@ -618,7 +619,7 @@ class Key(object):
   def ToTagUri(self):
     """Returns a tag: URI for this entity for use in XML output.
 
-    Foreign keys for entities may be represented in XML output as tag URIs.
+    Foreign keys for entities may be represented in XML output as tag `URIs`.
     RFC 4151 describes the tag URI scheme. From http://taguri.org/:
 
       The tag algorithm lets people mint - create - identifiers that no one
@@ -627,14 +628,14 @@ class Key(object):
       and remember. The identifiers conform to the URI (URL) Syntax.
 
     Tag URIs for entities use the app's auth domain and the date that the URI
-     is generated. The namespace-specific part is <kind>[<key>].
+     is generated. The namespace-specific part is `<kind>[<key>]`.
 
     For example, here is the tag URI for a Kitten with the key "Fluffy" in the
     catsinsinks app:
 
       tag:catsinsinks.googleapps.com,2006-08-29:Kitten[Fluffy]
 
-    Raises a BadKeyError if this entity's key is incomplete.
+    Raises a `BadKeyError` if this entity's key is incomplete.
     """
     if not self.has_id_or_name():
       raise datastore_errors.BadKeyError(
@@ -692,7 +693,7 @@ class Key(object):
     entity_pb classes.e
 
     Returns:
-      # the Reference PB representation of this Key
+      # The `Reference` `PB` representation of this Key
       entity_pb2.Reference
     """
     pb = entity_pb2.Reference()
@@ -701,11 +702,11 @@ class Key(object):
     return pb
 
   def __str__(self):
-    """Encodes this Key as an opaque string.
+    """Encodes this `Key` as an opaque string.
 
     Returns a string representation of this key, suitable for use in HTML,
     URLs, and other similar use cases. If the entity's key is incomplete,
-    raises a BadKeyError.
+    raises a `BadKeyError`.
 
     Unfortunately, this string encoding isn't particularly compact, and its
     length varies with the length of the path. If you want a shorter identifier
@@ -733,13 +734,10 @@ class Key(object):
 
 
   def __repr__(self):
-    """Returns an eval()able string representation of this key.
-
-    Returns a Python string of the form 'datastore_types.Key.from_path(...)'
-    that can be used to recreate this key.
+    """Returns a Python string of the form `datastore_types.Key.from_path(...)` that can be used to recreate this key.
 
     Returns:
-      string
+      String
     """
     args = []
     for elem in self.__reference.path.element:
@@ -834,13 +832,11 @@ class Category(six.text_type):
   and later returned by a queries for that tag. Tags can also be used for
   ranking results (frequency), photo captions, clustering, activity, etc.
 
-  Here's a more in-depth description:  http://www.zeldman.com/daily/0405d.shtml
-
-  This is the Atom "category" element. In XML output, the tag is provided as
+  This is the Atom `category` element. In XML output, the tag is provided as
   the term attribute. See:
   http://www.atomenabled.org/developers/syndication/#category
 
-  Raises BadValueError if tag is not a string or subtype.
+  Raises `BadValueError` if tag is not a string or subtype.
   """
   TERM = 'user-tag'
 
@@ -857,14 +853,14 @@ class Link(six.text_type):
   """A fully qualified URL. Usually http: scheme, but may also be file:, ftp:,
   news:, among others.
 
-  If you have email (mailto:) or instant messaging (aim:, xmpp:) links,
-  consider using the Email or IM classes instead.
+  If you have email (`mailto:`) or instant messaging (`aim:`, `xmpp:`) links,
+  consider using the `Email` or `IM` classes instead.
 
-  This is the Atom "link" element. In XML output, the link is provided as the
+  This is the Atom `link` element. In XML output, the link is provided as the
   href attribute. See:
   http://www.atomenabled.org/developers/syndication/#link
 
-  Raises BadValueError if link is not a fully qualified, well-formed URL.
+  Raises `BadValueError` if link is not a fully qualified, well-formed URL.
   """
   def __init__(self, link):
     super(Link, self).__init__()
@@ -880,14 +876,13 @@ class Link(six.text_type):
 
 
 class Email(six.text_type):
-  """An RFC2822 email address. Makes no attempt at validation; apart from
-  checking MX records, email address validation is a rathole.
+  """An RFC2822 email address. Makes no attempt at validation.
 
-  This is the gd:email element. In XML output, the email address is provided as
-  the address attribute. See:
+  This is the `gd:email` element. In XML output, the email address is provided
+  as the address attribute. See:
   https://developers.google.com/gdata/docs/1.0/elements#gdEmail
 
-  Raises BadValueError if email is not a valid email address.
+  Raises `BadValueError` if email is not a valid email address.
   """
   def __init__(self, email):
     super(Email, self).__init__()
@@ -901,13 +896,12 @@ class Email(six.text_type):
 class GeoPt(object):
   """A geographical point, specified by floating-point latitude and longitude
   coordinates. Often used to integrate with mapping sites like Google Maps.
-  May also be used as ICBM coordinates.
 
-  This is the georss:point element. In XML output, the coordinates are
-  provided as the lat and lon attributes. See: http://georss.org/
+  This is the `georss:point` element. In XML output, the coordinates are
+  provided as the `lat` and `lon` attributes. See: http://georss.org/
 
-  Serializes to '<lat>,<lon>'. Raises BadValueError if it's passed an invalid
-  serialized string, or if lat and lon are not valid floating points in the
+  Serializes to `<lat>,<lon>`. Raises `BadValueError` if it's passed an invalid
+  serialized string, or if `lat` and `lon` are not valid floating points in the
   ranges [-90, 90] and [-180, 180], respectively.
   """
   lat = None
@@ -943,7 +937,7 @@ class GeoPt(object):
     self.lon = lon
 
   def __cmp__(self, other):
-    """Returns negative, zero, or positive when comparing two GeoPts."""
+    """Returns negative, zero, or positive when comparing two `GeoPts`."""
 
     if not isinstance(other, GeoPt):
       try:
@@ -961,7 +955,7 @@ class GeoPt(object):
   def __hash__(self):
     """Returns an integer hash of this point.
 
-    Implements Python's hash protocol so that GeoPts may be used in sets and
+    Implements Python's hash protocol so that `GeoPts` may be used in sets and
     as dictionary keys.
 
     Returns:
@@ -970,12 +964,10 @@ class GeoPt(object):
     return hash((self.lat, self.lon))
 
   def __repr__(self):
-    """Returns an eval()able string representation of this GeoPt.
-
-    The returned string is of the form 'datastore_types.GeoPt([lat], [lon])'.
+    """Returns a string of the form `datastore_types.GeoPt([lat], [lon])`.
 
     Returns:
-      string
+      String
     """
     return 'datastore_types.GeoPt(%r, %r)' % (self.lat, self.lon)
 
@@ -1012,7 +1004,7 @@ class IM(object):
   provided as the address and protocol attributes, respectively. See:
   https://developers.google.com/gdata/docs/1.0/elements#gdIm
 
-  Serializes to '<protocol> <address>'. Raises BadValueError if tag is not a
+  Serializes to `<protocol> <address>`. Raises `BadValueError` if tag is not a
   standard IM scheme or a URL.
   """
   PROTOCOLS = [ 'sip', 'unknown', 'xmpp' ]
@@ -1040,7 +1032,7 @@ class IM(object):
     self.protocol = protocol
 
   def __cmp__(self, other):
-    """Returns negative, zero, or positive when comparing two IMs."""
+    """Returns negative, zero, or positive when comparing two `IM`s."""
 
     if not isinstance(other, IM):
       try:
@@ -1062,11 +1054,7 @@ class IM(object):
                           (other.address, other.protocol))
 
   def __repr__(self):
-    """Returns an eval()able string representation of this IM.
-
-    The returned string is of the form:
-
-      datastore_types.IM('address', 'protocol')
+    """Returns a string of the form `datastore_types.IM('address', 'protocol')`.
 
     Returns:
       string
@@ -1095,11 +1083,11 @@ class PhoneNumber(six.text_type):
   VOIP, SMS, and alternative networks like Skype, XFire and Roger Wilco. They
   all have their own numbering and addressing formats.
 
-  This is the gd:phoneNumber element. In XML output, the phone number is
+  This is the `gd:phoneNumber` element. In XML output, the phone number is
   provided as the text of the element. See:
   https://developers.google.com/gdata/docs/1.0/elements#gdPhoneNumber
 
-  Raises BadValueError if phone is not a string or subtype.
+  Raises `BadValueError` if phone is not a string or subtype.
   """
   def __init__(self, phone):
     super(PhoneNumber, self).__init__()
@@ -1117,7 +1105,7 @@ class PostalAddress(six.text_type):
   as the text of the element. See:
   https://developers.google.com/gdata/docs/1.0/elements#gdPostalAddress
 
-  Raises BadValueError if address is not a string or subtype.
+  Raises `BadValueError` if address is not a string or subtype.
   """
   def __init__(self, address):
     super(PostalAddress, self).__init__()
@@ -1136,7 +1124,7 @@ class Rating(_PREFERRED_NUM_TYPE):
   https://developers.google.com/gdata/docs/1.0/elements#gdRating
 
   Serializes to the decimal string representation of the rating. Raises
-  BadValueError if the rating is not an integer in the range [0, 100].
+  `BadValueError` if the rating is not an integer in the range [0, 100].
   """
   MIN = 0
   MAX = 100
@@ -1179,8 +1167,8 @@ class Text(six.text_type):
 
     Args:
       arg: optional unicode or str instance; default u''
-      encoding: optional encoding; disallowed when isinstance(arg, unicode),
-                defaults to 'ascii' when isinstance(arg, str);
+      encoding: optional encoding; disallowed when `isinstance(arg, unicode)`,
+                defaults to `ascii` when `isinstance(arg, str)`;
     """
     if arg is None:
       arg = u''
@@ -1261,20 +1249,21 @@ class Blob(_BaseByteType):
 
 
 class EmbeddedEntity(_BaseByteType):
-  """A proto encoded EntityProto.
+  """A proto encoded `EntityProto`.
 
   This behaves identically to Blob, except for the
-  constructor, which accepts a bytes or EntityProto argument.
+  constructor, which accepts a bytes or `EntityProto` argument.
 
-  Can be decoded using datastore.Entity.FromProto(), db.model_from_protobuf() or
-  ndb.LocalStructuredProperty.
+  Can be decoded using `datastore.Entity.FromProto()`,
+  `db.model_from_protobuf()`, or
+  `ndb.LocalStructuredProperty`.
   """
 
   def __new__(cls, arg=None):
     """Constructor.
 
     Args:
-      arg: optional str or EntityProto instance (default '')
+      arg: Optional str or `EntityProto` instance (default `''`).
     """
     if isinstance(arg, entity_pb2.EntityProto):
       arg = arg.SerializePartialToString()
@@ -1295,21 +1284,21 @@ class BlobKey(object):
   """Key used to identify a blob in Blobstore.
 
   This object wraps a string that gets used internally by the Blobstore API
-  to identify application blobs.  The BlobKey corresponds to the entity name
-  of the underlying BlobReference entity.
+  to identify application blobs. The `BlobKey` corresponds to the entity name
+  of the underlying `BlobReference` entity.
 
-  This class is exposed in the API in both google.appengine.ext.db and
-  google.appengine.ext.blobstore.
+  This class is exposed in the API in both `google.appengine.ext.db` and
+  `google.appengine.ext.blobstore`.
   """
 
   def __init__(self, blob_key):
     """Constructor.
 
-    Used to convert a string to a BlobKey.  Normally used internally by
+    Used to convert a string to a `BlobKey`.  Normally used internally by
     Blobstore API.
 
     Args:
-      blob_key:  Key name of BlobReference that this key belongs to.
+      blob_key:  Key name of `BlobReference` that this key belongs to.
     """
     ValidateString(blob_key, 'blob-key', empty_ok=True)
     self.__blob_key = blob_key
@@ -1319,13 +1308,10 @@ class BlobKey(object):
     return six.ensure_str(self.__blob_key)
 
   def __repr__(self):
-    """Returns an eval()able string representation of this key.
-
-    Returns a Python string of the form 'datastore_types.BlobKey(...)'
-    that can be used to recreate this key.
+    """Returns a Python string of the form 'datastore_types.BlobKey(...)' that can be used to recreate this key.
 
     Returns:
-      string
+      String
     """
     return 'datastore_types.%s(%r)' % (type(self).__name__, self.__blob_key)
 
@@ -1415,7 +1401,7 @@ def ValidatePropertyInteger(name, value):
     value: Integer value.
 
   Raises:
-    OverflowError if the value does not fit within a signed int64.
+    `OverflowError` if the value does not fit within a signed `int64`.
   """
   if not (-0x8000000000000000 <= value <= 0x7fffffffffffffff):
     raise OverflowError('%d is out of bounds for int64' % value)
@@ -1430,7 +1416,7 @@ def ValidateStringLength(name, value, max_len):
     max_len: Maximum length the string may be.
 
   Raises:
-    OverflowError if the value is larger than the maximum length.
+    `OverflowError` if the value is larger than the maximum length.
   """
 
   if isinstance(value, six.text_type):
@@ -1454,7 +1440,7 @@ def ValidatePropertyString(name, value):
 
 
 def ValidatePropertyLink(name, value):
-  """Validates the length of an indexed Link property.
+  """Validates the length of an indexed `Link` property.
 
   Args:
     name: Name of the property this is for.
@@ -1474,14 +1460,14 @@ def ValidatePropertyNothing(name, value):
 
 
 def ValidatePropertyKey(name, value):
-  """Raises an exception if the supplied datastore.Key instance is invalid.
+  """Raises an exception if the supplied `datastore.Key` instance is invalid.
 
   Args:
     name: Name of the property this is for.
-    value: A datastore.Key instance.
+    value: A `datastore.Key` instance.
 
   Raises:
-    datastore_errors.BadValueError if the value is invalid.
+    `datastore_errors.BadValueError` if the value is invalid.
   """
   if not value.has_id_or_name():
     raise datastore_errors.BadValueError(
@@ -1573,12 +1559,12 @@ def ValidateProperty(name, values, read_only=False):
   Args:
     name: Name of the property this is for.
     value: Value for the property as a Python native type.
-    read_only: deprecated
+    read_only: Deprecated.
 
   Raises:
-    BadPropertyError if the property name is invalid. BadValueError if the
+    `BadPropertyError` if the property name is invalid. `BadValueError` if the
     property did not validate correctly or the value was an empty list. Other
-    exception types (like OverflowError) if the property value does not meet
+    exception types (like `OverflowError`) if the property value does not meet
     type-specific criteria.
   """
   ValidateString(name, 'property name', datastore_errors.BadPropertyError)
@@ -1618,12 +1604,12 @@ ValidateReadProperty = ValidateProperty
 
 
 def PackBlob(name, value, pbvalue):
-  """Packs a Blob property into a entity_pb2.PropertyValue.
+  """Packs a Blob property into a `entity_pb2.PropertyValue`.
 
   Args:
     name: The name of the property as a string.
     value: A Blob instance.
-    pbvalue: The entity_pbs.PropertyValue to pack this value into.
+    pbvalue: The `entity_pbs.PropertyValue` to pack this value into.
   """
   pbvalue.stringValue = value
 
@@ -1647,22 +1633,24 @@ def PackString(name, value, pbvalue):
 
 
 def PackDatetime(name, value, pbvalue):
-  """Packs a datetime-typed property into a entity_pb2.PropertyValue.
+  """Packs a `datetime`-typed property into a `entity_pb2.PropertyValue`.
 
   Args:
     name: The name of the property as a string.
-    value: A datetime.datetime instance.
-    pbvalue: The entity_pb2.PropertyValue to pack this value into.
+    value: A `datetime.datetime` instance.
+    pbvalue: The `entity_pb2.PropertyValue` to pack this value into.
   """
   pbvalue.int64Value = DatetimeToTimestamp(value)
 
 
 def DatetimeToTimestamp(value):
-  """Converts a datetime.datetime to microseconds since the epoch, as a float.
-  Args:
-    value: datetime.datetime
+  """Converts a `datetime.datetime` to microseconds since the epoch, as a float.
 
-  Returns: value as a long
+  Args:
+    value: `datetime.datetime`
+
+  Returns:
+    Value as a `long`.
   """
   if value.tzinfo:
 
@@ -1672,24 +1660,24 @@ def DatetimeToTimestamp(value):
 
 
 def PackGeoPt(name, value, pbvalue):
-  """Packs a GeoPt property into a entity_pb2.PropertyValue.
+  """Packs a `GeoPt` property into a `entity_pb2.PropertyValue`.
 
   Args:
     name: The name of the property as a string.
-    value: A GeoPt instance.
-    pbvalue: The entity_pb2.PropertyValue to pack this value into.
+    value: A `GeoPt` instance.
+    pbvalue: The `entity_pb2.PropertyValue` to pack this value into.
   """
   pbvalue.pointvalue.x = value.lat
   pbvalue.pointvalue.y = value.lon
 
 
 def PackUser(name, value, pbvalue):
-  """Packs a User property into a entity_pb2.PropertyValue.
+  """Packs a `User` property into a `entity_pb2.PropertyValue`.
 
   Args:
     name: The name of the property as a string.
-    value: A users.User instance.
-    pbvalue: The entity_pb2.PropertyValue to pack this value into.
+    value: A `users.User` instance.
+    pbvalue: The `entity_pb2.PropertyValue` to pack this value into.
   """
   pbvalue.uservalue.email = value.email().encode('utf-8')
   pbvalue.uservalue.auth_domain = value.auth_domain().encode('utf-8')
@@ -1711,12 +1699,12 @@ def PackUser(name, value, pbvalue):
 
 
 def PackKey(name, value, pbvalue):
-  """Packs a reference property into a entity_pb2.PropertyValue.
+  """Packs a reference property into an `entity_pb2.PropertyValue`.
 
   Args:
     name: The name of the property as a string.
-    value: A Key instance.
-    pbvalue: The entity_pb2.PropertyValue to pack this value into.
+    value: A `Key` instance.
+    pbvalue: The `entity_pb2.PropertyValue` to pack this value into.
   """
   ref = value._Key__reference
   pbvalue.referencevalue.app = ref.app
@@ -1727,34 +1715,34 @@ def PackKey(name, value, pbvalue):
 
 
 def PackBool(name, value, pbvalue):
-  """Packs a boolean property into a entity_pb2.PropertyValue.
+  """Packs a boolean property into an `entity_pb2.PropertyValue`.
 
   Args:
     name: The name of the property as a string.
     value: A boolean instance.
-    pbvalue: The entity_pb2.PropertyValue to pack this value into.
+    pbvalue: The `entity_pb2.PropertyValue` to pack this value into.
   """
   pbvalue.booleanValue = value
 
 
 def PackInteger(name, value, pbvalue):
-  """Packs an integer property into a entity_pb2.PropertyValue.
+  """Packs an integer property into an `entity_pb2.PropertyValue`.
 
   Args:
     name: The name of the property as a string.
     value: An int or long instance.
-    pbvalue: The entity_pb2.PropertyValue to pack this value into.
+    pbvalue: The `entity_pb2.PropertyValue` to pack this value into.
   """
   pbvalue.int64Value = value
 
 
 def PackFloat(name, value, pbvalue):
-  """Packs a float property into a entity_pb2.PropertyValue.
+  """Packs a float property into a `entity_pb2.PropertyValue`.
 
   Args:
     name: The name of the property as a string.
     value: A float instance.
-    pbvalue: The entity_pb2.PropertyValue to pack this value into.
+    pbvalue: The `entity_pb2.PropertyValue` to pack this value into.
   """
   pbvalue.doubleValue = value
 
@@ -1797,21 +1785,21 @@ assert set(_PACK_PROPERTY_VALUES.keys()) == _PROPERTY_TYPES
 
 
 def ToPropertyPb(name, values):
-  """Creates type-specific entity_pb2.PropertyValues.
+  """Creates type-specific `entity_pb2.PropertyValues`.
 
-  Determines the type and meaning of the PropertyValue based on the Python
+  Determines the type and meaning of the `PropertyValue` based on the Python
   type of the input value(s).
 
   NOTE: This function does not validate anything!
 
   Args:
-    name: string or unicode; the property name
+    name: String or unicode; the property name.
     values: The values for this property, either a single one or a list of them.
       All values must be a supported type. Lists of values must all be of the
       same type.
 
   Returns:
-    A list of entity_pb2.Property instances.
+    A list of `entity_pb2.Property` instances.
   """
   encoded_name = six.ensure_str(name)
 
@@ -1855,16 +1843,16 @@ def ToPropertyPb(name, values):
 
 
 def FromReferenceProperty(value):
-  """Converts a reference PropertyValue to a Key.
+  """Converts a reference `PropertyValue` to a `Key`.
 
   Args:
-    value: entity_pb2.PropertyValue
+    value: `entity_pb2.PropertyValue`
 
   Returns:
-    Key
+    `Key`
 
   Raises:
-    BadValueError if the value is not a PropertyValue.
+    `BadValueError` if the value is not a `PropertyValue`.
   """
   assert isinstance(value, entity_pb2.PropertyValue)
   assert value.HasField('referencevalue')
@@ -1912,14 +1900,15 @@ _NON_UTF8_MEANINGS = frozenset(
 
 
 def FromPropertyPb(pb):
-  """Converts a property PB to a python value.
+  """Converts a property `PB` to a python value.
 
   Args:
-    pb: entity_pb2.Property
+    pb: `entity_pb2.Property`
 
   Returns:
-    # return type is determined by the type of the argument
-    string, int, bool, double, users.User, or one of the atom or gd types
+    The return type is determined by the type of the argument, such as
+    `string`, `int`, `bool`, `double`, `users.User`, or one of the `atom` or
+    `gd` types.
   """
   pbval = pb.value
   meaning = pb.meaning
@@ -1976,27 +1965,27 @@ def FromPropertyPb(pb):
 
 
 def RestoreFromIndexValue(index_value, data_type):
-  """Restores a index value to the correct datastore type.
+  """Restores an index value to the correct datastore type.
 
   Projection queries return property values directly from a datastore index.
-  These values are the native datastore values, one of str, bool, long, float,
-  GeoPt, Key or User. This function restores the original value when the
-  original type is known.
+  These values are the native datastore values that can be one of the following:
+  `str`, `bool`, `long`, `float`, `GeoPt`, `Key`, or `User`. This function
+  restores the original value when the original type is known.
 
   This function returns the value type returned when decoding a normal entity,
-  not necessarily of type data_type. For example, data_type=int returns a
-  long instance.
+  not necessarily of type `data_type`. For example, `data_type=int` returns a
+  `long` instance.
 
   Args:
-    index_value: The value returned by FromPropertyPb for the projected
+    index_value: The value returned by `FromPropertyPb` for the projected
       property.
-    data_type: The type of the value originally given to ToPropertyPb
+    data_type: The type of the value originally given to `ToPropertyPb`.
 
   Returns:
     The restored property value.
 
   Raises:
-    datastore_errors.BadValueError if the value cannot be restored.
+    `datastore_errors.BadValueError` if the value cannot be restored.
   """
   raw_type = _PROPERTY_TYPE_TO_INDEX_VALUE_TYPE.get(data_type)
   if raw_type is None:
@@ -2033,15 +2022,15 @@ def RestoreFromIndexValue(index_value, data_type):
 
 
 def PropertyTypeName(value):
-  """Returns the name of the type of the given property value, as a string.
+  """Returns the type name of the given property value, as a string.
 
-  Raises BadValueError if the value is not a valid property type.
+  Raises `BadValueError` if the value is not a valid property type.
 
   Args:
-    value: any valid property value
+    value: Any valid property value.
 
   Returns:
-    string
+    String.
   """
   if value.__class__ in _PROPERTY_MEANINGS:
     meaning = _PROPERTY_MEANINGS[value.__class__]
@@ -2093,7 +2082,7 @@ def FromPropertyTypeName(type_name):
     type_name: A string representation of a datastore type name.
 
   Returns:
-    A python type.
+    A Python type.
   """
   return _PROPERTY_TYPE_STRINGS[type_name]
 
@@ -2103,21 +2092,22 @@ def PropertyValueFromString(type_,
                             _auth_domain=None):
   """Returns an instance of a property value given a type and string value.
 
-  The reverse of this method is just str() and type() of the python value.
+  The reverse of this method is just `str()` and `type()` of the Python value.
 
   Note that this does *not* support non-UTC offsets in ISO 8601-formatted
-  datetime strings, e.g. the -08:00 suffix in '2002-12-25 00:00:00-08:00'.
-  It only supports -00:00 and +00:00 suffixes, which are UTC.
+  datetime strings, e.g., the `-08:00` suffix in `2002-12-25 00:00:00-08:00`.
+  It only supports `-00:00` and `+00:00` suffixes, which are UTC.
 
   Args:
-    type_: A python class.
+    type_: A Python class.
     value_string: A string representation of the value of the property.
 
   Returns:
-    An instance of 'type'.
+    An instance of `type`.
 
   Raises:
-    ValueError if type_ is datetime and value_string has a timezone offset.
+    `ValueError` if `type_` is datetime and `value_string` has a timezone
+    offset.
   """
   if type_ == datetime.datetime:
     value_string = value_string.strip()
@@ -2156,13 +2146,13 @@ def PropertyValueFromString(type_,
 
 
 def ReferenceToKeyValue(key, id_resolver=None):
-  """Converts a key into a comparable hashable "key" value.
+  """Converts a key into a comparable hashable `key` value.
 
   Args:
-    key: The entity_pb2.Reference or googledatastore.Key from which to construct
-        the key value.
-    id_resolver: An optional datastore_pbs.IdResolver. Only necessary for
-        googledatastore.Key values.
+    key: The `entity_pb2.Reference` or `googledatastore.Key` from which to
+        construct the key value.
+    id_resolver: An optional `datastore_pbs.IdResolver`. Only necessary for
+        `googledatastore.Key` values.
   Returns:
     A comparable and hashable representation of the given key that is
     compatible with one derived from a key property value.
@@ -2232,13 +2222,13 @@ def _encodeDoubleSortably(value):
 
 
 def PropertyValueToKeyValue(prop_value):
-  """Converts a entity_pb2.PropertyValue into a comparable hashable "key" value.
+  """Converts an `entity_pb2.PropertyValue` into a comparable hashable `key` value.
 
-  The values produces by this function mimic the native ording of the datastore
-  and uniquely identify the given PropertyValue.
+  The values produces by this function mimic the native ordering of the
+  datastore and uniquely identify the given `PropertyValue`.
 
   Args:
-    prop_value: The entity_pb2.PropertyValue from which to construct the key
+    prop_value: The `entity_pb2.PropertyValue` from which to construct the key
       value.
 
   Returns:
@@ -2303,7 +2293,7 @@ def PropertyValueToKeyValue(prop_value):
 
 
 def GetPropertyValueTag(value_pb):
-  """Returns the tag constant associated with the given entity_pb2.PropertyValue."""
+  """Returns the tag constant associated with the given `entity_pb2.PropertyValue`."""
   if value_pb.HasField('booleanValue'):
     return entity_pb2.PropertyValue.BOOLEANVALUE_FIELD_NUMBER
   elif value_pb.HasField('doubleValue'):
