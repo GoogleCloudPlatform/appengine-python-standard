@@ -47,9 +47,14 @@ def wrap_wsgi_app(app, use_legacy_context_mode=True, use_deferred=False):
   """Wrap a WSGI app with middlewares required to access App Engine APIs."""
 
 
+  from google.appengine.runtime import initialize
   from google.appengine.runtime import middlewares
   from google.appengine.runtime import default_api_stub
 
+
+
+
+  initialize.InitializeThreadingApis()
 
   default_api_stub.Register(default_api_stub.DefaultApiStub())
 

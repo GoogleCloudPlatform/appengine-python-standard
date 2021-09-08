@@ -33,7 +33,7 @@ class LocalDispatcher(request_info.Dispatcher):
   """Dispatch requests across all instances and modules of application.
 
   As Titanoboa doesn't support multiple instances, this dispatcher always
-  refers single module, version, and instance.
+  refers to a single module, version, and instance.
   """
 
   def __init__(self, default_hostname=None, app=None):

@@ -103,7 +103,6 @@ class MemcacheNamespaceTest(absltest.TestCase):
 
   def testAddNamespacePart(self):
     """Test _add_namespace_part and related methods."""
-    namespace_manager.set_namespace(None)
     request = MakeArbitraryGetRequest()
     expected = MemcacheGetRequest()
     expected.CopyFrom(request)

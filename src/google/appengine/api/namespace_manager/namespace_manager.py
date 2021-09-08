@@ -29,13 +29,9 @@ specified using this module.
 
 
 
-
-
 import os
 import re
 import warnings
-
-import six
 
 from google.appengine.api import lib_config
 
@@ -62,11 +58,9 @@ _NAMESPACE_MAX_LENGTH = 100
 _NAMESPACE_PATTERN = r'^[0-9A-Za-z._-]{0,%s}$' % _NAMESPACE_MAX_LENGTH
 _NAMESPACE_RE = re.compile(_NAMESPACE_PATTERN)
 
-class _ConfigDefaults(object):
-  def default_namespace_for_request():
-    return None
+_config = lib_config.register('namespace_manager_',
+                              {'default_namespace_for_request': lambda: None})
 
-_config = lib_config.register('namespace_manager_', _ConfigDefaults.__dict__)
 
 def set_namespace(namespace):
   """Set the default namespace for the current HTTP request.
@@ -96,6 +90,7 @@ def get_namespace():
 
 def google_apps_namespace():
   return os.environ.get(_ENV_DEFAULT_NAMESPACE, None)
+
 
 def enable_request_namespace():
   """Set the default namespace to the Google Apps domain referring this request.
@@ -133,9 +128,14 @@ def validate_namespace(value, exception=BadValueError):
   Raises:
     BadValueError: If value is not a valid namespace string.
   """
-  if not isinstance(value, (six.text_type, six.binary_type)):
+
+
+  if isinstance(value, bytes):
+    value = value.decode()
+
+  if not isinstance(value, str):
     raise exception(
         'value should be a string; received %r (a %s):' % (value, type(value)))
-  if not _NAMESPACE_RE.match(six.ensure_text(value)):
+  if not _NAMESPACE_RE.match(value):
     raise exception(
         'value "%s" does not match regex "%s"' % (value, _NAMESPACE_PATTERN))

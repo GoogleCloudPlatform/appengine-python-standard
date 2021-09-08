@@ -31,6 +31,7 @@ class MySuite(unittest.TestCase):
     ...
 
 """
+
 import contextvars
 import functools
 import os
@@ -59,7 +60,7 @@ def isolated_context(*args, **kwargs):
 
 
 def _decorate_callable(
-    backup_and_restore_os_environ=context.USE_LEGACY_CONTEXT_MODE,
+    backup_and_restore_os_environ=context.READ_FROM_OS_ENVIRON,
     set_up=None,
     tear_down=None):
   """Decorates a test function to run itself in a clean context."""
@@ -91,7 +92,7 @@ def _decorate_callable(
 
 
 def _decorate_class(
-    backup_and_restore_os_environ=context.USE_LEGACY_CONTEXT_MODE,
+    backup_and_restore_os_environ=context.READ_FROM_OS_ENVIRON,
     run_setup_and_teardown_inside_context=True):
   """Decorates a test class to run itself in a clean context."""
 
@@ -101,8 +102,20 @@ def _decorate_class(
       set_up = getattr(klass, 'setUp', lambda self: super(klass, self).setUp())
       tear_down = getattr(klass, 'tearDown',
                           lambda self: super(klass, self).tearDown())
-      setattr(klass, 'setUp', lambda self: None)
-      setattr(klass, 'tearDown', lambda self: None)
+
+
+
+
+
+
+
+
+      def run_only_in_subclasses(func):
+
+        return lambda self: None if type(self) is klass else func(self)
+
+      setattr(klass, 'setUp', run_only_in_subclasses(set_up))
+      setattr(klass, 'tearDown', run_only_in_subclasses(tear_down))
 
     for func_name, func in vars(klass).items():
       if callable(func) and func_name.startswith('test'):
