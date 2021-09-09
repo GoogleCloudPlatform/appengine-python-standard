@@ -42,8 +42,8 @@ from google.appengine.runtime import context
 def isolated_context(*args, **kwargs):
   """Decorates a test function or class to run itself in a clean context.
 
-  When used with a class, it will also run setUp and tearDown in that context
-  by default.
+  When used with a class, it will run each test function in its own context.
+  It will also run setUp, tearDown, and doCleanups in that context by default.
 
   Args:
     *args: See _decorate_class and _decorate_callable
@@ -60,66 +60,51 @@ def isolated_context(*args, **kwargs):
 
 
 def _decorate_callable(
-    backup_and_restore_os_environ=context.READ_FROM_OS_ENVIRON,
-    set_up=None,
-    tear_down=None):
-  """Decorates a test function to run itself in a clean context."""
+    backup_and_restore_os_environ=context.READ_FROM_OS_ENVIRON):
+  """Decorates a function to run itself in a clean context."""
 
   def argless_decorator(func):
-    def func_with_setup_teardown(*args, **kwargs):
-      self = kwargs.get('self') or args[0]
-      if set_up:
-        set_up(self)
-      try:
-        return func(*args, **kwargs)
-      finally:
-        if tear_down:
-          tear_down(self)
-
-    @functools.wraps(func)
-    def run_in_clean_context(*args, **kwargs):
-      if backup_and_restore_os_environ:
-        previous_os_environ = os.environ.copy()
-      try:
-        contextvars.Context().run(func_with_setup_teardown, *args, **kwargs)
-      finally:
-        if backup_and_restore_os_environ:
-          os.environ.clear()
-          os.environ.update(previous_os_environ)
-    return run_in_clean_context
+    def run_in_ctx(*args, **kwargs):
+      contextvars.Context().run(func, *args, **kwargs)
+    if backup_and_restore_os_environ:
+      run_in_ctx = _isolate_os_environ(run_in_ctx)
+    return run_in_ctx
 
   return argless_decorator
 
 
+def _isolate_os_environ(func):
+  """Save and restore os.environ."""
+
+  @functools.wraps(func)
+  def run_in_isolated_os_environ(*args, **kwargs):
+    previous_os_environ = os.environ.copy()
+    try:
+      func(*args, **kwargs)
+    finally:
+      os.environ.clear()
+      os.environ.update(previous_os_environ)
+
+  return run_in_isolated_os_environ
+
+
 def _decorate_class(
     backup_and_restore_os_environ=context.READ_FROM_OS_ENVIRON,
-    run_setup_and_teardown_inside_context=True):
+    run_setup_teardown_cleanup_inside_context=True):
   """Decorates a test class to run itself in a clean context."""
 
   def argless_decorator(klass):
-    set_up, tear_down = None, None
-    if run_setup_and_teardown_inside_context:
-      set_up = getattr(klass, 'setUp', lambda self: super(klass, self).setUp())
-      tear_down = getattr(klass, 'tearDown',
-                          lambda self: super(klass, self).tearDown())
 
-
-
-
-
-
-
-
-      def run_only_in_subclasses(func):
-
-        return lambda self: None if type(self) is klass else func(self)
-
-      setattr(klass, 'setUp', run_only_in_subclasses(set_up))
-      setattr(klass, 'tearDown', run_only_in_subclasses(tear_down))
-
-    for func_name, func in vars(klass).items():
-      if callable(func) and func_name.startswith('test'):
-        setattr(klass, func_name, _decorate_callable(
-            backup_and_restore_os_environ, set_up, tear_down)(func))
+    if run_setup_teardown_cleanup_inside_context:
+      run_fn = getattr(
+          klass, 'run',
+          lambda self, *args, **kwargs: super(klass, self).run(*args, **kwargs))
+      setattr(klass, 'run',
+              _decorate_callable(backup_and_restore_os_environ)(run_fn))
+    else:
+      for func_name, func in vars(klass).items():
+        if callable(func) and func_name.startswith('test'):
+          setattr(klass, func_name,
+                  _decorate_callable(backup_and_restore_os_environ)(func))
     return klass
   return argless_decorator
