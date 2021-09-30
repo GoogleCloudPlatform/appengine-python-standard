@@ -107,12 +107,6 @@ class MemcacheNamespaceTest(absltest.TestCase):
     expected = MemcacheGetRequest()
     expected.CopyFrom(request)
 
-    os.environ['HTTP_X_APPENGINE_DEFAULT_NAMESPACE'] = 'namespace_from_http'
-    namespace_manager.enable_request_namespace()
-    memcache._add_name_space(request)
-    expected.name_space = 'namespace_from_http'
-    self.assertEqual(expected, request)
-
     namespace_manager.set_namespace('a_namespace')
     self.assertEqual('a_namespace', namespace_manager.get_namespace())
     memcache._add_name_space(request)
@@ -128,9 +122,9 @@ class MemcacheNamespaceTest(absltest.TestCase):
     memcache._add_name_space(request)
     self.assertEqual(expected, request)
 
-    namespace_manager.enable_request_namespace()
+    namespace_manager.set_namespace('foo')
     memcache._add_name_space(request)
-    expected.name_space = 'namespace_from_http'
+    expected.name_space = 'foo'
     self.assertEqual(expected, request)
 
   def testAddNamespacePartEmptyString(self):
