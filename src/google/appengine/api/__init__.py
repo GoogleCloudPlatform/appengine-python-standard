@@ -87,6 +87,7 @@ def wrap_wsgi_app(app, use_legacy_context_mode=True, use_deferred=False):
       ]) + [
           middlewares.ErrorLoggingMiddleware,
           middlewares.BackgroundAndShutdownMiddleware,
+          middlewares.SetNamespaceFromHeader,
       ] + if_deferred_enabled([
           middlewares.AddDeferredMiddleware,
       ]))

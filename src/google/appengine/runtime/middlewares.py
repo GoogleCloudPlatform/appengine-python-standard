@@ -25,6 +25,7 @@ import os
 import sys
 import traceback
 
+from google.appengine.api import namespace_manager
 from google.appengine.api.runtime import runtime
 from google.appengine.ext.deferred import deferred
 from google.appengine.runtime import background
@@ -393,4 +394,12 @@ def AddDeferredMiddleware(app, wsgi_env, start_response):
   path = wsgi_env['PATH_INFO']
   if path == '/_ah/queue/deferred':
     return deferred.application(wsgi_env, start_response)
+  return app(wsgi_env, start_response)
+
+
+@middleware
+def SetNamespaceFromHeader(app, wsgi_env, start_response):
+  ns_from_header = wsgi_env.get('HTTP_X_APPENGINE_CURRENT_NAMESPACE')
+  if ns_from_header is not None:
+    namespace_manager.set_namespace(ns_from_header)
   return app(wsgi_env, start_response)

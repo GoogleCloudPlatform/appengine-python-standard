@@ -31,23 +31,19 @@ specified using this module.
 
 import os
 import re
-import warnings
-
-from google.appengine.api import lib_config
 
 __all__ = ['BadValueError',
            'set_namespace',
            'get_namespace',
            'google_apps_namespace',
-           'enable_request_namespace',
            'validate_namespace',
           ]
 
 
 
 
-_ENV_DEFAULT_NAMESPACE = 'HTTP_X_APPENGINE_DEFAULT_NAMESPACE'
-_ENV_CURRENT_NAMESPACE = 'HTTP_X_APPENGINE_CURRENT_NAMESPACE'
+_DEFAULT_NAMESPACE_HEADER = 'HTTP_X_APPENGINE_DEFAULT_NAMESPACE'
+_ENV_CURRENT_NAMESPACE = '_CURRENT_NAMESPACE'
 
 
 
@@ -58,9 +54,6 @@ _NAMESPACE_MAX_LENGTH = 100
 _NAMESPACE_PATTERN = r'^[0-9A-Za-z._-]{0,%s}$' % _NAMESPACE_MAX_LENGTH
 _NAMESPACE_RE = re.compile(_NAMESPACE_PATTERN)
 
-_config = lib_config.register('namespace_manager_',
-                              {'default_namespace_for_request': lambda: None})
-
 
 def set_namespace(namespace):
   """Set the default namespace for the current HTTP request.
@@ -69,47 +62,20 @@ def set_namespace(namespace):
     namespace: A string naming the new namespace to use. A value of None
       will unset the default namespace value.
   """
-  if namespace is None:
-    os.environ.pop(_ENV_CURRENT_NAMESPACE, None)
-  else:
+  if namespace is not None:
     validate_namespace(namespace)
-    os.environ[_ENV_CURRENT_NAMESPACE] = namespace
+  else:
+    namespace = ''
+  os.environ[_ENV_CURRENT_NAMESPACE] = namespace
 
 
 def get_namespace():
   """Get the current default namespace or (`''`) namespace if unset."""
-  name = os.environ.get(_ENV_CURRENT_NAMESPACE, None)
-  if name is None:
-    name = _config.default_namespace_for_request()
-    if name is not None:
-      set_namespace(name)
-  if name is None:
-    name = ''
-  return name
+  return os.environ.get(_ENV_CURRENT_NAMESPACE, '')
 
 
 def google_apps_namespace():
-  return os.environ.get(_ENV_DEFAULT_NAMESPACE, None)
-
-
-def enable_request_namespace():
-  """Set the default namespace to the Google Apps domain referring this request.
-
-  This method is deprecated, use `lib_config` instead.
-
-  Calling this function will set the default namespace to the
-  Google Apps domain that was used to create the URL for this request. This
-  works only for the current request and only if the current default namespace
-  is unset.
-
-  """
-  warnings.warn('namespace_manager.enable_request_namespace() is deprecated: '
-                'use lib_config instead.',
-                DeprecationWarning,
-                stacklevel=2)
-  if _ENV_CURRENT_NAMESPACE not in os.environ:
-    if _ENV_DEFAULT_NAMESPACE in os.environ:
-      os.environ[_ENV_CURRENT_NAMESPACE] = os.environ[_ENV_DEFAULT_NAMESPACE]
+  return os.environ.get(_DEFAULT_NAMESPACE_HEADER, None)
 
 
 class BadValueError(Exception):

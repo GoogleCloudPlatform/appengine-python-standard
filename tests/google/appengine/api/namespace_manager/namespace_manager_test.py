@@ -24,7 +24,6 @@ import os
 
 import google
 
-from google.appengine.api import lib_config
 from google.appengine.api import module_testutil
 from google.appengine.api import namespace_manager
 from absl.testing import absltest
@@ -46,19 +45,14 @@ class NamespaceManagerTest(absltest.TestCase):
   def testNamespaceNoEnvironment(self):
     """Basic namespace test."""
     self.assertEqual('', namespace_manager.get_namespace())
-    namespace_manager.enable_request_namespace()
-    self.assertEqual('', namespace_manager.get_namespace())
 
-  def testNamespaceWithEnvironment(self):
-    """Checks that the dasher domain becomes namespace when enabled."""
-    os.environ['HTTP_X_APPENGINE_DEFAULT_NAMESPACE'] = 'namespace_from_http'
-    self.assertEqual('', namespace_manager.get_namespace())
-    namespace_manager.enable_request_namespace()
-    self.assertEqual('namespace_from_http', namespace_manager.get_namespace())
-    namespace_manager.set_namespace('foo')
-    self.assertEqual('foo', namespace_manager.get_namespace())
-    namespace_manager.enable_request_namespace()
-    self.assertEqual('foo', namespace_manager.get_namespace())
+  def testGoogleAppsNamespaceNoEnvironment(self):
+    self.assertIsNone(namespace_manager.google_apps_namespace())
+
+  def testGoogleAppsNamespaceFromEnvironment(self):
+    os.environ['HTTP_X_APPENGINE_DEFAULT_NAMESPACE'] = 'apps_ns_from_http'
+    self.assertEqual('apps_ns_from_http',
+                     namespace_manager.google_apps_namespace())
 
   def testSetNamespaceEmptyString(self):
     """Makes sure that None is never returned from get_namespace()."""
@@ -92,66 +86,6 @@ class NamespaceManagerTest(absltest.TestCase):
     self.verifyException("!")
     self.verifyException(" ")
 
-
-class LocalException(Exception):
-  """Exception class unique to these tests."""
-
-
-class NamespaceManagerConfigTest(absltest.TestCase):
-
-  def setUp(self):
-    """Get a config handle for the namespace_manager."""
-    self.handle = lib_config.register('namespace_manager_', {})
-    self.default_namespace_functions = self.handle._defaults.copy()
-
-  def tearDown(self):
-    """Restore environment."""
-    os.environ = dict(INITIAL_ENVIRON)
-    self.handle = lib_config.register('namespace_manager_',
-                                      self.default_namespace_functions)
-
-  def _SetDefaultNamespaceForRequestFn(self, fn):
-    self.handle._update_defaults({'default_namespace_for_request': fn})
-
-  def testDefaultNamespaceForRequestIsCalled(self):
-    def default_namespace():
-      raise LocalException
-
-    self._SetDefaultNamespaceForRequestFn(default_namespace)
-    self.assertRaises(LocalException, namespace_manager.get_namespace)
-
-  def testDefaultNamespaceNotCalledAfterSetNamespace(self):
-    def default_namespace():
-      raise LocalException
-
-    self._SetDefaultNamespaceForRequestFn(default_namespace)
-    namespace_manager.set_namespace('foo')
-    try:
-      name = namespace_manager.get_namespace()
-    except LocalException:
-      self.fail('Unexpected LocalException')
-
-    self.assertEqual('foo', name)
-
-  def testDefaultNamespaceNotCalledAfterEmptySetNamespace(self):
-    def default_namespace():
-      raise LocalException
-
-    self._SetDefaultNamespaceForRequestFn(default_namespace)
-    namespace_manager.set_namespace('')
-    try:
-      name = namespace_manager.get_namespace()
-    except LocalException:
-      self.fail('Unexpected LocalException')
-
-    self.assertEqual('', name)
-
-  def testDefaultNamespaceReturnedOnlyWhenSetNamespaceUncalled(self):
-    self._SetDefaultNamespaceForRequestFn(lambda: 'footy')
-    self.assertEqual('footy', namespace_manager.get_namespace())
-
-    namespace_manager.set_namespace('ball')
-    self.assertEqual('ball', namespace_manager.get_namespace())
 
 if __name__ == '__main__':
   absltest.main()

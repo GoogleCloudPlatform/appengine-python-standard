@@ -37,6 +37,7 @@ from google.appengine.api import datastore_errors
 from google.appengine.api import full_app_id
 from google.appengine.api import module_testutil
 from google.appengine.api import modules
+from google.appengine.api import namespace_manager
 from google.appengine.api.modules import modules_service_pb2
 from google.appengine.api.taskqueue import taskqueue
 from google.appengine.api.taskqueue import taskqueue_service_bytes_pb2 as taskqueue_service_pb2
@@ -3871,7 +3872,7 @@ class TestNamespace(absltest.TestCase):
 
   def testHasCurrentNamespace(self):
     """Context has a current default namespace."""
-    os.environ['HTTP_X_APPENGINE_CURRENT_NAMESPACE'] = 'current-namespace'
+    namespace_manager.set_namespace('current-namespace')
     t = Task()
     self.assertExpectedTaskHeaders(
         {'X-AppEngine-Current-Namespace': 'current-namespace'},
@@ -3880,7 +3881,7 @@ class TestNamespace(absltest.TestCase):
   def testHasCurrentAndDefaultNamespace(self):
     """Context has a current and a request namespace."""
     os.environ['HTTP_X_APPENGINE_DEFAULT_NAMESPACE'] = 'request-namespace'
-    os.environ['HTTP_X_APPENGINE_CURRENT_NAMESPACE'] = 'current-namespace'
+    namespace_manager.set_namespace('current-namespace')
     t = Task()
     self.assertExpectedTaskHeaders(
         {'X-AppEngine-Current-Namespace': 'current-namespace',
@@ -3890,7 +3891,7 @@ class TestNamespace(absltest.TestCase):
   def testDoesNotOverrideHeaders(self):
     """Do not override headers in specified Task headers."""
     os.environ['HTTP_X_APPENGINE_DEFAULT_NAMESPACE'] = 'request-namespace'
-    os.environ['HTTP_X_APPENGINE_CURRENT_NAMESPACE'] = 'current-namespace'
+    namespace_manager.set_namespace('current-namespace')
     testheaders = {'X-AppEngine-Current-Namespace': '',
                    'AontherHeader': 'another-value'}
     t = Task(headers=testheaders)
@@ -3900,7 +3901,7 @@ class TestNamespace(absltest.TestCase):
   def testDoesNotOverrideAnyHeaders(self):
     """Do not override any headers in specified Task headers."""
     os.environ['HTTP_X_APPENGINE_DEFAULT_NAMESPACE'] = 'request-namespace'
-    os.environ['HTTP_X_APPENGINE_CURRENT_NAMESPACE'] = 'current-namespace'
+    namespace_manager.set_namespace('current-namespace')
     testheaders = {'X-AppEngine-Current-Namespace': '',
                    'X-AppEngine-Default-Namespace': 'abc-def',
                    'AontherHeader': 'another-value'}

@@ -10,7 +10,7 @@ To sign up for the private preview, visit https://docs.google.com/forms/d/e/1FAI
 
 In your `requirements.txt` file, add the following:
 
-`appengine-python-standard>=0.2.0`
+`appengine-python-standard>=0.2.1`
 
 In your app's `app.yaml`, add the following:
 
