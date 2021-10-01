@@ -5,9 +5,9 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="appengine-python-standard",
-    version="0.2.1",
+    version="0.2.2",
     author="Google LLC",
-    description="Google App Engine Python 3 Standard Environment API library",
+    description="Google App Engine services SDK for Python 3",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/GoogleCloudPlatform/appengine-python-standard",

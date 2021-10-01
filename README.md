@@ -1,16 +1,19 @@
-# Google App Engine Python 3 Standard Environment API library (private preview)
+# Google App Engine services SDK for Python 3 (preview)
 
-This is a private preview release of the App Engine SDK for Python 3.  It provides access
+This is a preview release of the App Engine services SDK for Python 3.  It provides access
 to various API endpoints that were previously only available on the Python 2.7
 runtime.
 
-To sign up for the private preview, visit https://docs.google.com/forms/d/e/1FAIpQLSd1hFLA2UFSYwIMxm9ZI3pwigORZBgjJRH0qrnhtE7nvhhRCQ/viewform.
+See the
+[documentation](https://cloud.google.com/appengine/docs/standard/python3/services/access) to learn more about using this SDK.
+
+We are working to support more App Engine bundled service APIs for Python 3. To sign up for the private preview, visit https://docs.google.com/forms/d/e/1FAIpQLSd1hFLA2UFSYwIMxm9ZI3pwigORZBgjJRH0qrnhtE7nvhhRCQ/viewform.
 
 ## Using the SDK
 
 In your `requirements.txt` file, add the following:
 
-`appengine-python-standard>=0.2.1`
+`appengine-python-standard>=0.2.2`
 
 In your app's `app.yaml`, add the following:
 
