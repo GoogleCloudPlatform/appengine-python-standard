@@ -153,6 +153,14 @@ def set_both(key, value):
   """Write to both legacy context (os.environ) and new contextvars."""
 
 
+  if key == 'DEFAULT_NAMESPACE' or key == 'HTTP_X_APPENGINE_DEFAULT_NAMESPACE':
+    key = 'DEFAULT_NAMESPACE'
+    os_env_key = 'HTTP_X_APPENGINE_DEFAULT_NAMESPACE'
+  else:
+    os_env_key = key
+
+
+
   strval = value
   if key == 'USER_IS_ADMIN':
 
@@ -160,7 +168,7 @@ def set_both(key, value):
       value = value == '1'
     elif isinstance(value, bool):
       strval = '1' if value else '0'
-  os.environ[key] = strval
+  os.environ[os_env_key] = strval
   ctxvar = vars(context.gae_headers).get(key, vars(context.wsgi).get(key))
   assert isinstance(ctxvar, contextvars.ContextVar)
   ctxvar.set(value)

@@ -208,9 +208,11 @@ class TaskQueueBulkAddRequestComparator(mox.Comparator):
     return 'TaskQueueBulkAddRequestComparator<%s>' % (str(self._expected))
 
 
+@ctx_test_util.isolated_context()
 class HttpEnvironTest(absltest.TestCase):
 
   def setUp(self):
+    super().setUp()
     os.environ['DEFAULT_VERSION_HOSTNAME'] = DEFAULT_HOSTNAME
     os.environ['HTTP_HOST'] = DEFAULT_HOSTNAME
 
@@ -417,7 +419,7 @@ class TaskTest(HttpEnvironTest):
 
   def setUp(self):
     """Sets up the test harness."""
-    HttpEnvironTest.setUp(self)
+    super().setUp()
     self.payload = b'this is the example payload'
     self.unicode_payload = u'\xfcmlauts are fun'
     self.encoded_payload = b'\xc3\xbcmlauts are fun'
@@ -445,7 +447,7 @@ class TaskTest(HttpEnvironTest):
   def tearDown(self):
     """Tears down the test harness."""
     setattr(Task, '_Task__determine_eta_posix', self.old_determine_eta_posix)
-    HttpEnvironTest.tearDown(self)
+    super().tearDown()
 
   def assertParamsEqual(self, expected, actual):
     self.assertSetEqual(set(expected.split('&')), set(actual.split('&')))
@@ -2211,7 +2213,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def setUp(self):
     """Sets up the test harness."""
-    HttpEnvironTest.setUp(self)
+    super().setUp()
     self.now = datetime.datetime(2009, 5, 5, 21, 50, 28, 517317)
     self.now_timestamp_usec = 1241560228517317
     self.params = {'one': 'two'}
@@ -2229,7 +2231,7 @@ class QueueAddTest(HttpEnvironTest):
     """Tears down the test harness."""
     self.mox.ResetAll()
     self.mox.UnsetStubs()
-    HttpEnvironTest.tearDown(self)
+    super().tearDown()
 
   def Add(self, queue, *args, **kwargs):
     """Exercise Queue's synchronous method add."""
@@ -3307,7 +3309,7 @@ class QueueTransactionalAddTest(HttpEnvironTest):
 
   def setUp(self):
     """Sets up the test harness."""
-    HttpEnvironTest.setUp(self)
+    super().setUp()
     self.now = datetime.datetime(2009, 5, 5, 21, 50, 28, 517317)
     self.now_timestamp_usec = 1241560228517317
     self.params = {'one': 'two'}
@@ -3323,7 +3325,7 @@ class QueueTransactionalAddTest(HttpEnvironTest):
     """Tears down the test harness."""
     self.mox.ResetAll()
     self.mox.UnsetStubs()
-    HttpEnvironTest.tearDown(self)
+    super().tearDown()
 
   def Add(self, queue, *args, **kwargs):
     """Exercise the synchronous method add."""
@@ -3843,13 +3845,11 @@ class AsyncQueueStatisticsTest(QueueStatisticsTest):
     self.assertIs(returned_rpc, rpc)
 
 
-@ctx_test_util.isolated_context()
-class TestNamespace(absltest.TestCase):
+class TestNamespace(HttpEnvironTest):
   """Taskqueue namespace tests."""
 
-  def setUp(self):
-    """Sets up the test harness."""
-    HttpEnvironTest.setUp(self)
+  def _SetDefaultNamespaceHeader(self, ns):
+    ctx_test_util.set_both('DEFAULT_NAMESPACE', ns)
 
   def assertExpectedTaskHeaders(self, header_overrides, task_headers):
     expected_headers = _base_headers.copy()
@@ -3863,7 +3863,7 @@ class TestNamespace(absltest.TestCase):
 
   def testHasDefaultNamespace(self):
     """Context has default namespace."""
-    os.environ['HTTP_X_APPENGINE_DEFAULT_NAMESPACE'] = 'request-namespace'
+    self._SetDefaultNamespaceHeader('request-namespace')
     t = Task()
     self.assertExpectedTaskHeaders(
         {'X-AppEngine-Current-Namespace': '',
@@ -3880,7 +3880,7 @@ class TestNamespace(absltest.TestCase):
 
   def testHasCurrentAndDefaultNamespace(self):
     """Context has a current and a request namespace."""
-    os.environ['HTTP_X_APPENGINE_DEFAULT_NAMESPACE'] = 'request-namespace'
+    self._SetDefaultNamespaceHeader('request-namespace')
     namespace_manager.set_namespace('current-namespace')
     t = Task()
     self.assertExpectedTaskHeaders(
@@ -3890,7 +3890,7 @@ class TestNamespace(absltest.TestCase):
 
   def testDoesNotOverrideHeaders(self):
     """Do not override headers in specified Task headers."""
-    os.environ['HTTP_X_APPENGINE_DEFAULT_NAMESPACE'] = 'request-namespace'
+    self._SetDefaultNamespaceHeader('request-namespace')
     namespace_manager.set_namespace('current-namespace')
     testheaders = {'X-AppEngine-Current-Namespace': '',
                    'AontherHeader': 'another-value'}
@@ -3900,7 +3900,7 @@ class TestNamespace(absltest.TestCase):
 
   def testDoesNotOverrideAnyHeaders(self):
     """Do not override any headers in specified Task headers."""
-    os.environ['HTTP_X_APPENGINE_DEFAULT_NAMESPACE'] = 'request-namespace'
+    self._SetDefaultNamespaceHeader('request-namespace')
     namespace_manager.set_namespace('current-namespace')
     testheaders = {'X-AppEngine-Current-Namespace': '',
                    'X-AppEngine-Default-Namespace': 'abc-def',
@@ -4092,3 +4092,4 @@ def main(argv):
 
 if __name__ == '__main__':
   absltest.main(main)
+

@@ -36,14 +36,14 @@ from google.appengine.ext import db
 
 
 class BaseStatistic(db.Model):
-  """Base Statistic Model class.
+  """Base Statistic `Model` class.
 
   Attributes:
-    bytes: the total number of bytes taken up in the datastore for the
-      statistic instance.
-    count: attribute is the total number of occurrences of the statistic
-      in the datastore.
-    timestamp: the time the statistic instance was written to the datastore.
+    bytes: The total number of bytes taken up in the datastore for the statistic
+      instance.
+    count: Attribute is the total number of occurrences of the statistic in the
+      datastore.
+    timestamp: The time the statistic instance was written to the datastore.
   """
 
   STORED_KIND_NAME = '__BaseStatistic__'
@@ -64,12 +64,12 @@ class BaseStatistic(db.Model):
 
 
 class BaseKindStatistic(BaseStatistic):
-  """Base Statistic Model class for stats associated with kinds.
+  """Base Statistic `Model` class for stats associated with kinds.
 
   Attributes:
-    kind_name: the name of the kind associated with the statistic instance.
-    entity_bytes: the number of bytes taken up to store the statistic
-      in the datastore minus the cost of storing indices.
+    kind_name: The name of the kind associated with the statistic instance.
+    entity_bytes: The number of bytes taken up to store the statistic in the
+      datastore minus the cost of storing indices.
   """
 
   STORED_KIND_NAME = '__BaseKindStatistic__'
@@ -120,9 +120,9 @@ class GlobalStat(BaseStatistic):
 class NamespaceStat(BaseStatistic):
   """An aggregate of all entities across an entire namespace.
 
-  This statistic has one instance per namespace.  The key_name is the
-  represented namespace. NamespaceStat entities will only be found
-  in the namespace "" (empty string). It contains the total
+  This statistic has one instance per namespace.  The `key_name` is the
+  represented namespace. `NamespaceStat` entities will only be found
+  in the namespace `""` (empty string). It contains the total
   number of entities stored and the total number of bytes they take up.
 
   Attributes:
@@ -158,18 +158,18 @@ class NamespaceStat(BaseStatistic):
 
 
 class KindStat(BaseKindStatistic):
-  """An aggregate of all entities at the granularity of their Kind.
+  """An aggregate of all entities at the granularity of their `Kind`.
 
-  There is an instance of the KindStat for every Kind that is in the
-  application's datastore.  This stat contains per-Kind statistics.
+  There is an instance of the `KindStat` for every `Kind` that is in the
+  application's datastore.  This stat contains per-`Kind` statistics.
 
   Attributes:
-    builtin_index_bytes: the number of bytes taken up to store builtin-in
-      index entries
-    builtin_index_count: the number of built-in index entries.
-    composite_index_bytes: the number of bytes taken up to store composite
-      index entries
-    composite_index_count: the number of composite index entries.
+    builtin_index_bytes: The number of bytes taken up to store builtin-in index
+      entries
+    builtin_index_count: The number of built-in index entries.
+    composite_index_bytes: The number of bytes taken up to store composite index
+      entries
+    composite_index_count: The number of composite index entries.
   """
   STORED_KIND_NAME = '__Stat_Kind__'
 
@@ -187,21 +187,21 @@ class KindStat(BaseKindStatistic):
 
 
 class KindRootEntityStat(BaseKindStatistic):
-  """Statistics of the number of root entities in the datastore by Kind.
+  """Statistics of the number of root entities in the datastore by `Kind`.
 
-  There is an instance of the KindRootEntityState for every Kind that is in the
-  application's datastore and has an instance that is a root entity.  This stat
-  contains statistics regarding these root entity instances.
+  There is an instance of the `KindRootEntityState` for every `Kind` that is in
+  the application's datastore and has an instance that is a root entity.  This
+  stat contains statistics regarding these root entity instances.
   """
   STORED_KIND_NAME = '__Stat_Kind_IsRootEntity__'
 
 
 class KindNonRootEntityStat(BaseKindStatistic):
-  """Statistics of the number of non root entities in the datastore by Kind.
+  """Statistics of the number of non root entities in the datastore by `Kind`.
 
-  There is an instance of the KindNonRootEntityStat for every Kind that is in
-  the application's datastore that is a not a root entity.  This stat contains
-  statistics regarding thse non root entity instances.
+  There is an instance of the `KindNonRootEntityStat` for every `Kind` that is
+  in the application's datastore that is a not a root entity.  This stat
+  contains statistics regarding thse non root entity instances.
   """
   STORED_KIND_NAME = '__Stat_Kind_NotRootEntity__'
 
@@ -209,8 +209,8 @@ class KindNonRootEntityStat(BaseKindStatistic):
 class PropertyTypeStat(BaseStatistic):
   """An aggregate of all properties across the entire application by type.
 
-  There is an instance of the PropertyTypeStat for every property type
-  (google.appengine.api.datastore_types._PROPERTY_TYPES) in use by the
+  There is an instance of the `PropertyTypeStat` for every property type
+  (`google.appengine.api.datastore_types._PROPERTY_TYPES`) in use by the
   application in its datastore.
 
   Attributes:
@@ -237,16 +237,16 @@ class PropertyTypeStat(BaseStatistic):
 
 
 class KindPropertyTypeStat(BaseKindStatistic):
-  """Statistics on (kind, property_type) tuples in the app's datastore.
+  """Statistics on `(kind, property_type)` tuples in the app's datastore.
 
-  There is an instance of the KindPropertyTypeStat for every
-  (kind, property_type) tuple in the application's datastore.
+  There is an instance of the `KindPropertyTypeStat` for every
+  `(kind, property_type)` tuple in the application's datastore.
 
   Attributes:
-    property_type: the property type associated with the statistic instance.
-    builtin_index_bytes: the number of bytes taken up to store builtin-in
-      index entries
-    builtin_index_count: the number of built-in index entries.
+    property_type: The property type associated with the statistic instance.
+    builtin_index_bytes: The number of bytes taken up to store builtin-in index
+      entries
+    builtin_index_count: The number of built-in index entries.
   """
   STORED_KIND_NAME = '__Stat_PropertyType_Kind__'
 
@@ -261,17 +261,17 @@ class KindPropertyTypeStat(BaseKindStatistic):
 
 
 class KindPropertyNameStat(BaseKindStatistic):
-  """Statistics on (kind, property_name) tuples in the app's datastore.
+  """Statistics on `(kind, property_name)` tuples in the app's datastore.
 
-  There is an instance of the KindPropertyNameStat for every
-  (kind, property_name) tuple in the application's datastore.
+  There is an instance of the `KindPropertyNameStat` for every
+  `(kind, property_name)` tuple in the application's datastore.
 
   Attributes:
-    property_name: the name of the property associated with the statistic
+    property_name: The name of the property associated with the statistic
       instance.
-    builtin_index_bytes: the number of bytes taken up to store builtin-in
-      index entries
-    builtin_index_count: the number of built-in index entries.
+    builtin_index_bytes: The number of bytes taken up to store builtin-in index
+      entries
+    builtin_index_count: The number of built-in index entries.
   """
   STORED_KIND_NAME = '__Stat_PropertyName_Kind__'
 
@@ -286,18 +286,18 @@ class KindPropertyNameStat(BaseKindStatistic):
 
 
 class KindPropertyNamePropertyTypeStat(BaseKindStatistic):
-  """Statistic on (kind, property_name, property_type) tuples in the datastore.
+  """Statistic on `(kind, property_name, property_type)` tuples in the datastore.
 
-  There is an instance of the KindPropertyNamePropertyTypeStat for every
-  (kind, property_name, property_type) tuple in the application's datastore.
+  There is an instance of the `KindPropertyNamePropertyTypeStat` for every
+  `(kind, property_name, property_type)` tuple in the application's datastore.
 
   Attributes:
-    property_type: the property type associated with the statistic instance.
-    property_name: the name of the property associated with the statistic
+    property_type: The property type associated with the statistic instance.
+    property_name: The name of the property associated with the statistic
       instance.
-    builtin_index_bytes: the number of bytes taken up to store builtin-in
-      index entries
-    builtin_index_count: the number of built-in index entries.
+    builtin_index_bytes: The number of bytes taken up to store builtin-in index
+      entries
+    builtin_index_count: The number of built-in index entries.
   """
   STORED_KIND_NAME = '__Stat_PropertyType_PropertyName_Kind__'
 
@@ -315,10 +315,10 @@ class KindPropertyNamePropertyTypeStat(BaseKindStatistic):
 
 
 class KindCompositeIndexStat(BaseStatistic):
-  """Statistic on (kind, composite_index_id) tuples in the datastore.
+  """Statistic on `(kind, composite_index_id)` tuples in the datastore.
 
-  There is an instance of the KindCompositeIndexStat for every unique
-  (kind, composite_index_id) tuple in the application's datastore indexes.
+  There is an instance of the `KindCompositeIndexStat` for every unique
+  `(kind, composite_index_id)` tuple in the application's datastore indexes.
 
   Attributes:
     index_id: the id of the composite index associated with the statistic
@@ -341,7 +341,7 @@ class KindCompositeIndexStat(BaseStatistic):
 
 
 class NamespaceGlobalStat(GlobalStat):
-  """GlobalStat equivalent for a specific namespace.
+  """`GlobalStat` equivalent for a specific namespace.
 
   These may be found in each specific namespace and represent stats for
   that particular namespace.
@@ -350,7 +350,7 @@ class NamespaceGlobalStat(GlobalStat):
 
 
 class NamespaceKindStat(KindStat):
-  """KindStat equivalent for a specific namespace.
+  """`KindStat` equivalent for a specific namespace.
 
   These may be found in each specific namespace and represent stats for
   that particular namespace.
@@ -359,7 +359,7 @@ class NamespaceKindStat(KindStat):
 
 
 class NamespaceKindRootEntityStat(KindRootEntityStat):
-  """KindRootEntityStat equivalent for a specific namespace.
+  """`KindRootEntityStat` equivalent for a specific namespace.
 
   These may be found in each specific namespace and represent stats for
   that particular namespace.
@@ -368,7 +368,7 @@ class NamespaceKindRootEntityStat(KindRootEntityStat):
 
 
 class NamespaceKindNonRootEntityStat(KindNonRootEntityStat):
-  """KindNonRootEntityStat equivalent for a specific namespace.
+  """`KindNonRootEntityStat` equivalent for a specific namespace.
 
   These may be found in each specific namespace and represent stats for
   that particular namespace.
@@ -377,7 +377,7 @@ class NamespaceKindNonRootEntityStat(KindNonRootEntityStat):
 
 
 class NamespacePropertyTypeStat(PropertyTypeStat):
-  """PropertyTypeStat equivalent for a specific namespace.
+  """`PropertyTypeStat` equivalent for a specific namespace.
 
   These may be found in each specific namespace and represent stats for
   that particular namespace.
@@ -386,7 +386,7 @@ class NamespacePropertyTypeStat(PropertyTypeStat):
 
 
 class NamespaceKindPropertyTypeStat(KindPropertyTypeStat):
-  """KindPropertyTypeStat equivalent for a specific namespace.
+  """`KindPropertyTypeStat` equivalent for a specific namespace.
 
   These may be found in each specific namespace and represent stats for
   that particular namespace.
@@ -395,7 +395,7 @@ class NamespaceKindPropertyTypeStat(KindPropertyTypeStat):
 
 
 class NamespaceKindPropertyNameStat(KindPropertyNameStat):
-  """KindPropertyNameStat equivalent for a specific namespace.
+  """`KindPropertyNameStat` equivalent for a specific namespace.
 
   These may be found in each specific namespace and represent stats for
   that particular namespace.
@@ -405,7 +405,7 @@ class NamespaceKindPropertyNameStat(KindPropertyNameStat):
 
 class NamespaceKindPropertyNamePropertyTypeStat(
     KindPropertyNamePropertyTypeStat):
-  """KindPropertyNamePropertyTypeStat equivalent for a specific namespace.
+  """`KindPropertyNamePropertyTypeStat` equivalent for a specific namespace.
 
   These may be found in each specific namespace and represent stats for
   that particular namespace.
@@ -414,7 +414,7 @@ class NamespaceKindPropertyNamePropertyTypeStat(
 
 
 class NamespaceKindCompositeIndexStat(KindCompositeIndexStat):
-  """KindCompositeIndexStat equivalent for a specific namespace.
+  """`KindCompositeIndexStat` equivalent for a specific namespace.
 
   These may be found in each specific namespace and represent stats for
   that particular namespace.

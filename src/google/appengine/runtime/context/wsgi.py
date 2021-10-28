@@ -17,7 +17,7 @@
 """Save a few WSGI vars into request context."""
 
 import contextvars
-
+from typing import Dict
 
 HTTP_HOST = contextvars.ContextVar('HTTP_HOST')
 HTTP_USER_AGENT = contextvars.ContextVar('HTTP_USER_AGENT')
@@ -34,8 +34,12 @@ SERVER_PORT = contextvars.ContextVar('SERVER_PORT')
 SERVER_PROTOCOL = contextvars.ContextVar('SERVER_PROTOCOL')
 
 
-def init_from_wsgi_environ(wsgi_env):
+def init_from_wsgi_environ(
+    wsgi_env) -> Dict[contextvars.ContextVar, contextvars.Token]:
+  reset_tokens: Dict[contextvars.ContextVar, contextvars.Token] = {}
   for ctxvar in [v for _, v in globals().items()
                  if isinstance(v, contextvars.ContextVar)]:
     if ctxvar.name in wsgi_env:
-      ctxvar.set(wsgi_env[ctxvar.name])
+      token = ctxvar.set(wsgi_env[ctxvar.name])
+      reset_tokens[ctxvar] = token
+  return reset_tokens

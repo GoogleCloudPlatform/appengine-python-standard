@@ -163,7 +163,7 @@ class KeyBasedAppIdentityServiceStub(
 
   def _Dynamic_GetServiceAccountName(self, request, response):
     """Implementation of AppIdentityService::GetServiceAccountName."""
-    response.service_account_name = self.__email_address
+    response.service_account_name = self.get_service_account_name()
 
   def _Dynamic_GetDefaultGcsBucketName(self, unused_request, response):
     """Implementation of AppIdentityService::GetDefaultGcsBucketName."""
@@ -176,7 +176,7 @@ class KeyBasedAppIdentityServiceStub(
       self.__default_gcs_bucket_name = (
           app_identity_stub_base.APP_DEFAULT_GCS_BUCKET_NAME)
 
-  def _patch_get_service_account_token(self, scopes, service_account=None):
+  def get_service_account_token(self, scopes, service_account=None):
     """Implementation of AppIdentityService::GetAccessToken.
 
     This API requires internet access.
@@ -244,3 +244,6 @@ class KeyBasedAppIdentityServiceStub(
         self.__access_token_cache[scope] = rv
 
     return rv['access_token'], rv['expires']
+
+  def get_service_account_name(self):
+    return self.__email_address

@@ -39,10 +39,6 @@ import os
 import re
 import time
 
-import six
-from six.moves import urllib
-import six.moves.urllib.parse
-
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import app_identity
 from google.appengine.api import modules
@@ -50,6 +46,9 @@ from google.appengine.api import namespace_manager
 from google.appengine.api import urlfetch
 from google.appengine.api.taskqueue import taskqueue_service_bytes_pb2 as taskqueue_service_pb2
 from google.appengine.runtime import apiproxy_errors
+import six
+from six.moves import urllib
+import six.moves.urllib.parse
 
 
 
@@ -373,15 +372,6 @@ _ERROR_MAPPING = {
         InvalidTagError,
 
 }
-
-
-
-
-
-
-
-_PRESERVE_ENVIRONMENT_HEADERS = (
-    ('X-AppEngine-Default-Namespace', 'HTTP_X_APPENGINE_DEFAULT_NAMESPACE'),)
 
 
 
@@ -839,10 +829,9 @@ class Task(object):
     params = kwargs.get('params', {})
 
 
-    for header_name, environ_name in _PRESERVE_ENVIRONMENT_HEADERS:
-      value = os.environ.get(environ_name)
-      if value is not None:
-        self.__headers.setdefault(header_name, value)
+    apps_namespace = namespace_manager.google_apps_namespace()
+    if apps_namespace is not None:
+      self.__headers.setdefault('X-AppEngine-Default-Namespace', apps_namespace)
 
     self.__headers.setdefault('X-AppEngine-Current-Namespace',
                               namespace_manager.get_namespace())

@@ -403,6 +403,9 @@ STANDARD_TARGET_THROUGHPUT_UTILIZATION = 'target_throughput_utilization'
 
 
 VPC_ACCESS_CONNECTOR_NAME = 'name'
+VPC_ACCESS_CONNECTOR_EGRESS_SETTING = 'egress_setting'
+EGRESS_SETTING_ALL_TRAFFIC = 'all-traffic'
+EGRESS_SETTING_PRIVATE_RANGES_ONLY = 'private-ranges-only'
 
 
 class _VersionedLibrary(object):
@@ -657,7 +660,7 @@ _SUPPORTED_LIBRARIES = [
     _VersionedLibrary(
         'pycrypto',
         'https://www.dlitz.net/software/pycrypto/',
-        'A library of cryptogoogle.appengine._internal.graphy functions such as random number generation.',
+        'A library of cryptography functions such as random number generation.',
         ['2.3', '2.6', '2.6.1'],
         latest_version='2.6',
         deprecated_versions=['2.3'],
@@ -2072,6 +2075,10 @@ class VpcAccessConnector(validation.Validated):
   ATTRIBUTES = {
       VPC_ACCESS_CONNECTOR_NAME:
           validation.Regex(VPC_ACCESS_CONNECTOR_NAME_REGEX),
+      VPC_ACCESS_CONNECTOR_EGRESS_SETTING:
+          validation.Optional(
+              validation.Options(EGRESS_SETTING_PRIVATE_RANGES_ONLY,
+                                 EGRESS_SETTING_ALL_TRAFFIC)),
   }
 
 
@@ -2448,7 +2455,7 @@ class AppInfoExternal(validation.Validated):
           "Legacy auto ids are deprecated. You can continue to allocate\n"
           "legacy ids manually using the allocate_ids() API functions.\n"
           "For more information see:\n"
-          + datastore_auto_ids_url + '\n' + appcfg_auto_ids_url + '\n')
+          "%s\n%s\n" % (datastore_auto_ids_url, appcfg_auto_ids_url))
 
     if (hasattr(self, 'beta_settings') and self.beta_settings
         and self.beta_settings.get('source_reference')):

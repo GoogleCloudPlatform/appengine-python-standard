@@ -23,7 +23,6 @@ correctly, and returns the correct results assuming faked response protos.
 
 import collections
 import hashlib
-import os
 
 import google
 
@@ -37,6 +36,7 @@ from google.appengine.api import memcache
 from google.appengine.api import namespace_manager
 from google.appengine.api.memcache import memcache_service_pb2
 from google.appengine.runtime import apiproxy_errors
+from google.appengine.runtime.context import ctx_test_util
 from google.protobuf import text_format
 from absl.testing import absltest
 
@@ -69,7 +69,6 @@ MemcacheStatsRequest = memcache_service_pb2.MemcacheStatsRequest
 MergedNamespaceStats = memcache_service_pb2.MergedNamespaceStats
 MemcacheStatsResponse = memcache_service_pb2.MemcacheStatsResponse
 
-INITIAL_ENVIRON = dict(os.environ)
 ONE_MEGABYTE = 1024 * 1024
 
 
@@ -95,11 +94,8 @@ def MakeArbitraryGetRequest():
   return text_format.Parse(body, request)
 
 
+@ctx_test_util.isolated_context()
 class MemcacheNamespaceTest(absltest.TestCase):
-
-  def tearDown(self):
-    """Restore environment."""
-    os.environ = dict(INITIAL_ENVIRON)
 
   def testAddNamespacePart(self):
     """Test _add_namespace_part and related methods."""

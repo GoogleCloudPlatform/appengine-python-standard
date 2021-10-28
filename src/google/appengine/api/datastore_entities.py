@@ -180,6 +180,7 @@ class GdKind(datastore.Entity):
     return xml
 
 
+
 class Message(GdKind):
   """A message, such as an email, a discussion group posting, or a comment.
 
@@ -201,10 +202,8 @@ class Message(GdKind):
   `reply-to`      | Contact*      | Intended recipient of replies
   `link`          | Link*         | Attachment
   `category`      | Category*     | Tag or label associated with this message
-  `geoPt`         | GeoPt*        | Geographic location the message was posted
-                  :               : from
-  `rating`        | Rating*       | Message rating, as defined by the
-                  :               : application
+  `geoPt`         | GeoPt*        | Geographic location the message was posted from
+  `rating`        | Rating*       | Message rating, as defined by the application
 
   The asterisk (*) means this property may be repeated.
 
@@ -217,6 +216,7 @@ class Message(GdKind):
   def __init__(self, title, kind='Message'):
     GdKind.__init__(self, kind, title, Message.KIND_PROPERTIES,
                     Message.CONTACT_PROPERTIES)
+
 
 
 class Event(GdKind):
@@ -305,6 +305,7 @@ class Event(GdKind):
     return xml
 
 
+
 class Contact(GdKind):
   """A contact: a person, a venue (e.g., club, restaurant), or an organization.
 
@@ -326,8 +327,7 @@ class Contact(GdKind):
   `phoneNumber`     | Phonenumber*    | Phone number
   `postalAddress`   | PostalAddress*  | Mailing address
   `link`            | Link*           | Link to more information
-  `category`        | Category*       | Tag or label associated with this
-                    :                 : contact
+  `category`        | Category*       | Tag or label associated with this contact
 
   An asterisk (*) means this property may be repeated.
   """
