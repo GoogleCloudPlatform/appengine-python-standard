@@ -20,15 +20,13 @@
 
 
 
-import os
-
 import google
 
 from google.appengine.api import module_testutil
 from google.appengine.api import namespace_manager
+from google.appengine.runtime.context import ctx_test_util
 from absl.testing import absltest
 
-INITIAL_ENVIRON = dict(os.environ)
 
 class ModuleInterfaceTest(module_testutil.ModuleInterfaceTest,
                           absltest.TestCase):
@@ -36,11 +34,8 @@ class ModuleInterfaceTest(module_testutil.ModuleInterfaceTest,
   MODULE = namespace_manager.namespace_manager
 
 
+@ctx_test_util.isolated_context()
 class NamespaceManagerTest(absltest.TestCase):
-
-  def tearDown(self):
-    """Restore environment."""
-    os.environ = dict(INITIAL_ENVIRON)
 
   def testNamespaceNoEnvironment(self):
     """Basic namespace test."""
@@ -49,8 +44,9 @@ class NamespaceManagerTest(absltest.TestCase):
   def testGoogleAppsNamespaceNoEnvironment(self):
     self.assertIsNone(namespace_manager.google_apps_namespace())
 
+  @ctx_test_util.both_context_modes()
   def testGoogleAppsNamespaceFromEnvironment(self):
-    os.environ['HTTP_X_APPENGINE_DEFAULT_NAMESPACE'] = 'apps_ns_from_http'
+    ctx_test_util.set_both('DEFAULT_NAMESPACE', 'apps_ns_from_http')
     self.assertEqual('apps_ns_from_http',
                      namespace_manager.google_apps_namespace())
 

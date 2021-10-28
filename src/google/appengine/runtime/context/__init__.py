@@ -15,9 +15,10 @@
 # limitations under the License.
 #
 """Wrapper for contextvars that can fall back to old os.environ hack."""
-import os
-
 import contextvars
+import os
+from typing import Dict
+
 from google.appengine.runtime.context import gae_headers
 from google.appengine.runtime.context import wsgi
 
@@ -37,6 +38,9 @@ def get(key, default=None):
   return val
 
 
-def init_from_wsgi_environ(wsgi_env):
-  gae_headers.init_from_wsgi_environ(wsgi_env)
-  wsgi.init_from_wsgi_environ(wsgi_env)
+def init_from_wsgi_environ(
+    wsgi_env) -> Dict[contextvars.ContextVar, contextvars.Token]:
+  return {
+      **gae_headers.init_from_wsgi_environ(wsgi_env),
+      **wsgi.init_from_wsgi_environ(wsgi_env),
+  }

@@ -36,12 +36,13 @@ class Error(Exception):
   """
 
 class BadValueError(Error):
-  """Raised by Entity.__setitem__(), Query.__setitem__(), Get(), and others
-  when a property value or filter value is invalid.
+  """Raised by `Entity.__setitem__()`, `Query.__setitem__()`, `Get()`, and others.
+
+  Occurs when a property value or filter value is invalid.
   """
 
 class BadPropertyError(Error):
-  """Raised by Entity.__setitem__() when a property name isn't a string.
+  """Raised by `Entity.__setitem__()` when a property name isn't a string.
   """
 
 class BadRequestError(Error):
@@ -49,40 +50,42 @@ class BadRequestError(Error):
   """
 
 class EntityNotFoundError(Error):
-  """DEPRECATED: Raised by Get() when the requested entity is not found.
+  """DEPRECATED: Raised by `Get()` when the requested entity is not found.
   """
 
 class BadArgumentError(Error):
-  """Raised by Query.Order(), Iterator.Next(), and others when they're
-  passed an invalid argument.
+  """Raised by `Query.Order()`, `Iterator.Next()`, and others when they're passed an invalid argument.
   """
 
 class QueryNotFoundError(Error):
-  """DEPRECATED: Raised by Iterator methods when the Iterator is invalid. This
-  should not happen during normal usage; it protects against malicious users
-  and system errors.
+  """DEPRECATED: Raised by Iterator methods when the Iterator is invalid.
+
+  This should not happen during normal usage; it protects against malicious
+  users and system errors.
   """
 
 class TransactionNotFoundError(Error):
-  """DEPRECATED: Raised by RunInTransaction. This is an internal error; you
-  should not see this.
+  """DEPRECATED: Raised by `RunInTransaction`.
+
+  This is an internal error; you should not see this.
   """
 
 class Rollback(Error):
-  """May be raised by transaction functions when they want to roll back
-  instead of committing. Note that *any* exception raised by a transaction
-  function will cause a rollback. This is purely for convenience. See
-  datastore.RunInTransaction for details.
+  """May be raised by transaction functions when they want to roll back instead of committing.
+
+  Note that *any* exception raised by a transaction function will cause a
+  rollback. This is purely for convenience. See
+  `datastore.RunInTransaction` for details.
   """
 
 class TransactionFailedError(Error):
-  """Raised by RunInTransaction methods when the transaction could not be
-  committed, even after retrying. This is usually due to high contention.
+  """Raised by `RunInTransaction` methods when the transaction could not be committed, even after retrying.
+
+  This is usually due to high contention.
   """
 
 class BadFilterError(Error):
-  """Raised by Query.__setitem__() and Query.Run() when a filter string is
-  invalid.
+  """Raised by `Query.__setitem__()` and `Query.Run()` when a filter string is invalid.
   """
   def __init__(self, filter):
     self.filter = filter
@@ -90,17 +93,19 @@ class BadFilterError(Error):
     super(BadFilterError, self).__init__(message)
 
 class BadQueryError(Error):
-  """Raised by Query when a query or query string is invalid.
+  """Raised by `Query` when a query or query string is invalid.
   """
 
 
 class SnapshotVersionTooOldError(Error):
-  """Raised by Query when a snapshot is too old and no longer exists. Internal.
+  """Raised by `Query` when a snapshot is too old and no longer exists.
+
+  Internal.
   """
 
 
 class BadKeyError(Error):
-  """Raised by Key.__str__ when the key is invalid.
+  """Raised by `Key.__str__` when the key is invalid.
   """
 
 class InternalError(Error):
@@ -108,8 +113,9 @@ class InternalError(Error):
   """
 
 class NeedIndexError(Error):
-  """No matching index was found for a query that requires an index. Check
-  the Indexes page in the Admin Console and your index.yaml file.
+  """No matching index was found for a query that requires an index.
+
+  Check the Indexes page in the Admin Console and your `index.yaml` file.
   """
 
   def __init__(self, error, original_message=None, header=None, yaml_index=None,
@@ -133,19 +139,21 @@ class NeedIndexError(Error):
     return self._xml_index
 
 class ReferencePropertyResolveError(Error):
-  """An error occurred while trying to resolve a ReferenceProperty."""
+  """An error occurred while trying to resolve a `ReferenceProperty`."""
 
 
 class Timeout(Error):
-  """The datastore operation timed out, or the data was temporarily
-  unavailable. This can happen when you attempt to put, get, or delete too
-  many entities or an entity with too many properties, or if the datastore is
-  overloaded or having trouble.
+  """The datastore operation timed out, or the data was temporarily unavailable.
+
+  This can happen when you attempt to put, get, or delete too many entities or
+  an entity with too many properties, or if the datastore is overloaded or
+  having trouble.
   """
 
 class CommittedButStillApplying(Timeout):
-  """The write or transaction was committed, but some entities or index rows
-  may not have been fully updated. Those updates should automatically be
+  """The write or transaction was committed, but some entities or index rows may not have been fully updated.
+
+  Those updates should automatically be
   applied soon. You can roll them forward immediately by reading one of the
   entities inside a transaction.
   """

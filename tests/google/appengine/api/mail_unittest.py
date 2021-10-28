@@ -31,15 +31,18 @@ import base64
 import email
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import re
+import textwrap
 import zlib
 
-import six
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import datastore_types
 from google.appengine.api import mail
 from google.appengine.api import mail_service_pb2
 from google.appengine.api import users
 from google.appengine.runtime import apiproxy_errors
+import six
+
 from absl.testing import absltest
 
 
@@ -242,6 +245,168 @@ Content-Transfer-Encoding: 7bit
 
 This has a body.
 """
+
+
+MIME_MESSAGE = textwrap.dedent("""\
+    MIME-Version: 1.0
+    Date: Mon, 10 Aug 2009 15:41:14 -0700
+    Message-ID: <ac02c96f0908101541h77d104caqc78cfbb53b7b9dee@mail.gmail.com>
+    Subject: A test subject line
+    From: Google tester <nobody@gmail.com>
+    To: nobody@google.com
+    Content-Type: text/plain; charset=ISO-8859-1
+    Content-Transfer-Encoding: 7bit
+    X-System-Of-Record: true
+
+    This has a body.
+    """)
+
+BOUNCE_POST_ORIGINAL_FIELDS_WITH_TO = textwrap.dedent("""\
+    --boundary
+    Content-Type: text/plain; charset=ISO-8859-1
+    Content-Disposition: form-data; name=original-to
+
+    destination@google.com
+    --boundary
+    Content-Type: text/plain; charset=ISO-8859-1
+    Content-Disposition: form-data; name=original-from
+
+    source@google.com
+    --boundary
+    Content-Type: text/plain; charset=ISO-8859-1
+    Content-Disposition: form-data; name=original-subject
+
+    Tests Summary
+    --boundary
+    Content-Type: text/plain; charset=ISO-8859-1
+    Content-Disposition: form-data; name=original-text
+
+    Body Goes Here
+    """)
+
+BOUNCE_POST_ORIGINAL_FIELDS_WITH_CC = textwrap.dedent("""\
+    --boundary
+    Content-Type: text/plain; charset=ISO-8859-1
+    Content-Disposition: form-data; name=original-cc
+
+    destination@google.com
+    --boundary
+    Content-Type: text/plain; charset=ISO-8859-1
+    Content-Disposition: form-data; name=original-bcc
+
+    secret@google.com
+    --boundary
+    Content-Type: text/plain; charset=ISO-8859-1
+    Content-Disposition: form-data; name=original-from
+
+    source@google.com
+    --boundary
+    Content-Type: text/plain; charset=ISO-8859-1
+    Content-Disposition: form-data; name=original-subject
+
+    Tests Summary
+    --boundary
+    Content-Type: text/plain; charset=ISO-8859-1
+    Content-Disposition: form-data; name=original-text
+
+    Body Goes Here
+    """)
+
+BOUNCE_POST_NOTIFICATION_FIELDS = textwrap.dedent("""\
+    --boundary
+    Content-Type: text/plain; charset=ISO-8859-1
+    Content-Disposition: form-data; name=notification-to
+
+    foo@bar.bounces.google.com
+    --boundary
+    Content-Type: text/plain; charset=ISO-8859-1
+    Content-Disposition: form-data; name=notification-from
+
+    destination@google.com
+    --boundary
+    Content-Type: text/plain; charset=ISO-8859-1
+    Content-Disposition: form-data; name=notification-subject
+
+    Bounce
+    --boundary
+    Content-Type: text/plain; charset=ISO-8859-1
+    Content-Disposition: form-data; name=notification-text
+
+    Description
+    """)
+
+BOUNCE_POST_ORIGINAL_RAW_MESSAGE = textwrap.dedent("""\
+    --boundary
+    Content-Type: text/plain; charset=ISO-8859-1
+    Content-Disposition: form-data; name=raw-message
+
+    Date: Wed, 29 Mar 2006 13:28:22 -0800
+    Message-Id: <200603292128.k2TLSMbs026326@google.com>
+    From: "Unit Test" <source@google.com>
+    To: destination@google.com
+    Subject: Tests Summary
+    X-Google-Appengine-App-Id: s~app-name
+    X-Google-Appengine-App-Id-Alias: app-name
+
+    Body Goes Here
+
+    --boundary--
+    """)
+
+
+def GetDefaultEnvironment():
+  """Function for creating a default CGI environment."""
+  return {
+      'LC_NUMERIC': 'C',
+      'wsgi.multiprocess': True,
+      'SERVER_PROTOCOL': 'HTTP/1.0',
+      'SERVER_SOFTWARE': 'Dev AppServer 0.1',
+      'SCRIPT_NAME': '',
+      'LOGNAME': 'nickjohnson',
+      'USER': 'nickjohnson',
+      'QUERY_STRING': 'foo=bar&foo=baz&foo2=123',
+      'PATH': '/usr/local/symlinks:/usr/local/scripts:/usr/local/sbin:'
+              '/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/bin/X11',
+      'LANG': 'en_US',
+      'LANGUAGE': 'en',
+      'REMOTE_ADDR': '127.0.0.1',
+      'LC_MONETARY': 'C',
+      'CONTENT_TYPE': 'application/x-www-form-urlencoded',
+      'wsgi.url_scheme': 'http',
+      'SERVER_PORT': '8080',
+      'PARINIT': 'rTbgqR B=.?_A_a Q=_s>|:',
+      'HOME': '/home/nickjohnson',
+      'USERNAME': 'nickjohnson',
+      'CONTENT_LENGTH': '',
+      'USER_IS_ADMIN': '1',
+      'PYTHONPATH': '/usr/local/buildtools/current/sitecustomize',
+      'LC_TIME': 'C',
+      'HTTP_USER_AGENT': 'Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; '
+                         'rv:1.8.1.6) Gecko/20070725 Firefox/2.0.0.6',
+      'wsgi.multithread': False,
+      'wsgi.version': (1, 0),
+      'GOOGLE_USE_CORP_SSL_AGENT': 'true',
+      'USER_EMAIL': 'test@example.com',
+      'wsgi.input': six.StringIO(),
+      'PATH_TRANSLATED': '/home/build/google/appengine/tools/loadtest/'
+                         'request/app/request.py',
+      'SERVER_NAME': 'localhost',
+      'GATEWAY_INTERFACE': 'CGI/1.1',
+      'wsgi.run_once': True,
+      'LC_COLLATE': 'C',
+      'HOSTNAME': 'b40visitor2.corp.google.com',
+      'CHUNKSVR_PORT': '3840',
+      'wsgi.errors': six.StringIO(),
+      'SHLVL': '2',
+      'PWD': '/home/build/google/appengine/tools/loadtest/request/app/'
+             'request.py',
+      'REQUEST_METHOD': 'GET',
+      'MAIL': '/dev/null',
+      'MAILCHECK': '0',
+      'USER_NICKNAME': 'test',
+      'HTTP_COOKIE': 'dev_appserver_login="test:test@example.com:True"',
+      'PATH_INFO': '/dir/subdir/myhandler'
+  }
 
 
 class InvalidEmailReasonTest(absltest.TestCase):
@@ -1981,6 +2146,130 @@ class AttachmentTest(absltest.TestCase):
 
   def testLen(self):
     self.assertEqual(len(mail.Attachment('foo.jpg', 'data')), 2)
+
+
+class InboundEmailTest(absltest.TestCase):
+  """"Test usage of InboundEmailMessage."""
+
+  def setUp(self):
+    """Set up test."""
+    super().setUp()
+    self.environ = self.GetEnvironment()
+
+  def GetEnvironment(self):
+    """Override parts of CGI environment to support mail message."""
+    environ = GetDefaultEnvironment()
+    environ['REQUEST_METHOD'] = 'POST'
+    environ['CONTENT_TYPE'] = 'text/plain; charset=ISO-8859-1'
+    environ['CONTENT_LENGTH'] = len(MIME_MESSAGE)
+    environ['wsgi.input'] = six.BytesIO(MIME_MESSAGE.encode('utf-8'))
+    return environ
+
+  def testCreation(self):
+    """Test post."""
+    message = mail.InboundEmailMessage.from_environ(self.environ)
+
+    self.assertIsInstance(message, mail.InboundEmailMessage)
+    self.assertEqual(MIME_MESSAGE, message.original.as_string())
+
+  def CompareMailRegex(self, regex, mail_path):
+    """Ensures that the regex matches correctly."""
+    match = re.match(regex, mail_path)
+    if not match:
+      return False
+    self.assertEmpty(match.groups())
+    self.assertEqual(mail_path, match.group(0))
+    return True
+
+  def testMapping(self):
+    """Tests mapping."""
+    regex = mail.INCOMING_MAIL_URL_PATTERN
+
+    self.assertTrue(self.CompareMailRegex(regex, '/_ah/mail/foo@example.com'))
+    self.assertTrue(self.CompareMailRegex(
+        regex, '/_ah/mail/bloo@1.latest.app.appspotmail.com'))
+    self.assertTrue(self.CompareMailRegex(
+        regex, '/_ah/mail/foo@foo.example.com'))
+    self.assertTrue(self.CompareMailRegex(regex, '/_ah/mail/foo'))
+    self.assertTrue(self.CompareMailRegex(regex, '/_ah/mail/foo+goo@moo.com'))
+    self.assertFalse(self.CompareMailRegex(regex, '/'))
+    self.assertFalse(self.CompareMailRegex(regex, 'index.html'))
+    self.assertFalse(self.CompareMailRegex(regex, '/_ah/xmpp/foo@goo.com'))
+    self.assertFalse(self.CompareMailRegex(regex, '/_ah/mail/'))
+
+
+class BounceNotificationTest(absltest.TestCase):
+  """Test basic bounce notification handler."""
+
+  def setUp(self):
+    """Set up test for request handler."""
+    super().setUp()
+    self.environ = self.GetEnvironment()
+
+  def GetEnvironment(self, post_body=None):
+    """Override parts of the CGI environment to support bounce notification."""
+    environ = GetDefaultEnvironment()
+    environ['REQUEST_METHOD'] = 'POST'
+    environ['CONTENT_TYPE'] = 'multipart/form-data; boundary=boundary'
+
+    if not post_body:
+      post_body = '%s%s%s' % (BOUNCE_POST_ORIGINAL_FIELDS_WITH_TO,
+                              BOUNCE_POST_NOTIFICATION_FIELDS,
+                              BOUNCE_POST_ORIGINAL_RAW_MESSAGE)
+    environ['CONTENT_LENGTH'] = len(post_body)
+    environ['wsgi.input'] = six.BytesIO(post_body.encode('utf-8'))
+    return environ
+
+  def testCreation(self):
+    notification = mail.BounceNotification.from_environ(self.environ)
+
+    self.assertIsInstance(notification, mail.BounceNotification)
+    self.assertIsInstance(notification.original_raw_message,
+                          mail.InboundEmailMessage)
+    self.assertEqual('destination@google.com',
+                     notification.original['to'])
+    self.assertEqual('source@google.com',
+                     notification.original['from'])
+    self.assertEqual('Tests Summary',
+                     notification.original['subject'])
+    self.assertEqual('Body Goes Here',
+                     notification.original['text'])
+    self.assertEqual('foo@bar.bounces.google.com',
+                     notification.notification['to'])
+    self.assertEqual('destination@google.com',
+                     notification.notification['from'])
+    self.assertEqual('Bounce',
+                     notification.notification['subject'])
+    self.assertEqual('Description',
+                     notification.notification['text'])
+
+  def testMissingField(self):
+    self.environ = self.GetEnvironment(
+        '%s%s%s' % (BOUNCE_POST_ORIGINAL_FIELDS_WITH_CC,
+                    BOUNCE_POST_NOTIFICATION_FIELDS,
+                    BOUNCE_POST_ORIGINAL_RAW_MESSAGE))
+    notification = mail.BounceNotification.from_environ(self.environ)
+
+    self.assertEqual('', notification.original['to'])
+    self.assertEqual('destination@google.com',
+                     notification.original['cc'])
+    self.assertEqual('secret@google.com',
+                     notification.original['bcc'])
+    self.assertEqual('source@google.com',
+                     notification.original['from'])
+    self.assertEqual('Tests Summary',
+                     notification.original['subject'])
+    self.assertEqual('Body Goes Here',
+                     notification.original['text'])
+    self.assertEqual('foo@bar.bounces.google.com',
+                     notification.notification['to'])
+    self.assertEqual('destination@google.com',
+                     notification.notification['from'])
+    self.assertEqual('Bounce',
+                     notification.notification['subject'])
+    self.assertEqual('Description',
+                     notification.notification['text'])
+
 
 if __name__ == '__main__':
   absltest.main()

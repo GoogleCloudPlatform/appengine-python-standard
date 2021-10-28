@@ -29,8 +29,11 @@ specified using this module.
 
 
 
+import contextvars
 import os
 import re
+
+from google.appengine.runtime import context
 
 __all__ = ['BadValueError',
            'set_namespace',
@@ -42,8 +45,8 @@ __all__ = ['BadValueError',
 
 
 
-_DEFAULT_NAMESPACE_HEADER = 'HTTP_X_APPENGINE_DEFAULT_NAMESPACE'
-_ENV_CURRENT_NAMESPACE = '_CURRENT_NAMESPACE'
+_CURRENT_NAMESPACE = contextvars.ContextVar('_CURRENT_NAMESPACE')
+_TESTBED_RESET_TOKEN = None
 
 
 
@@ -66,16 +69,22 @@ def set_namespace(namespace):
     validate_namespace(namespace)
   else:
     namespace = ''
-  os.environ[_ENV_CURRENT_NAMESPACE] = namespace
+  token = _CURRENT_NAMESPACE.set(namespace)
+  global _TESTBED_RESET_TOKEN
+  if _TESTBED_RESET_TOKEN is None:
+    _TESTBED_RESET_TOKEN = token
 
 
 def get_namespace():
   """Get the current default namespace or (`''`) namespace if unset."""
-  return os.environ.get(_ENV_CURRENT_NAMESPACE, '')
+  return _CURRENT_NAMESPACE.get('')
 
 
 def google_apps_namespace():
-  return os.environ.get(_DEFAULT_NAMESPACE_HEADER, None)
+  if context.READ_FROM_OS_ENVIRON:
+    return os.environ.get('HTTP_X_APPENGINE_DEFAULT_NAMESPACE')
+  else:
+    return context.gae_headers.DEFAULT_NAMESPACE.get()
 
 
 class BadValueError(Exception):
@@ -94,11 +103,6 @@ def validate_namespace(value, exception=BadValueError):
   Raises:
     BadValueError: If value is not a valid namespace string.
   """
-
-
-  if isinstance(value, bytes):
-    value = value.decode()
-
   if not isinstance(value, str):
     raise exception(
         'value should be a string; received %r (a %s):' % (value, type(value)))

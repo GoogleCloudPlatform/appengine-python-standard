@@ -104,6 +104,7 @@ but you can change those values with `self.setup_env()`.
 
 
 
+import contextvars
 import os
 import re
 import sys
@@ -127,11 +128,13 @@ from google.appengine.api.capabilities import capability_stub
 from google.appengine.api.images import images_stub
 from google.appengine.api.memcache import memcache_stub
 from google.appengine.api.modules import modules_stub
+from google.appengine.api.namespace_manager import namespace_manager
 from google.appengine.api.taskqueue import taskqueue_stub
 from google.appengine.datastore import cloud_datastore_v1_stub
 from google.appengine.datastore import datastore_pbs
 from google.appengine.datastore import datastore_stub_util
 from google.appengine.datastore import datastore_v4_stub
+from google.appengine.runtime import context
 import six
 
 
@@ -168,12 +171,6 @@ try:
   from google.appengine.ext.testbed import apiserver_util
 except ImportError:
   apiserver_util = None
-
-
-gae_runtime = os.environ.get('GAE_RUNTIME', '')
-if not gae_runtime.startswith('python3'):
-  from cloudstorage import common as gcs_common
-  from cloudstorage import stub_dispatcher as gcs_dispatcher
 
 
 DEFAULT_ENVIRONMENT = {
@@ -236,41 +233,11 @@ INIT_STUB_METHOD_NAMES = {
 SUPPORTED_SERVICES = sorted(INIT_STUB_METHOD_NAMES)
 
 
+URLMATCHERS_TO_FETCH_FUNCTIONS = []
+
+
 AUTO_ID_POLICY_SEQUENTIAL = datastore_stub_util.SEQUENTIAL
 AUTO_ID_POLICY_SCATTERED = datastore_stub_util.SCATTERED
-
-
-
-def urlfetch_to_gcs_stub(url, payload, method, headers, request, response,
-                         follow_redirects=False, deadline=None,
-                         validate_certificate=None, http_proxy=None):
-
-  """Forwards Google Cloud Storage `urlfetch` requests to `gcs_dispatcher`."""
-  headers_map = dict(
-      (header.Key.lower(), header.Value) for header in headers)
-  result = gcs_dispatcher.dispatch(method, headers_map, url, payload)
-  response.StatusCode = result.status_code
-  response.Content = six.ensure_binary(
-      result.content[:urlfetch_stub.MAX_RESPONSE_SIZE])
-  for k, v in result.headers.items():
-    if k.lower() == 'content-length' and method != 'HEAD':
-      v = len(response.Content)
-    header_proto = response.header.add()
-    header_proto.Key = k
-    header_proto.Value = str(v)
-  if len(result.content) > urlfetch_stub.MAX_RESPONSE_SIZE:
-    response.contentwastruncated = True
-
-
-def urlmatcher_for_gcs_stub(url):
-  """Determines whether a URL should be handled by the Cloud Storage stub."""
-  return url.startswith(gcs_common.local_api_url())
-
-
-
-GCS_URLMATCHERS_TO_FETCH_FUNCTIONS = [
-    (urlmatcher_for_gcs_stub, urlfetch_to_gcs_stub),
-]
 
 
 class Error(Exception):
@@ -380,6 +347,7 @@ class Testbed(object):
     self._enabled_stubs = {}
 
     self._blob_storage = None
+    self._context_reset_tokens = {}
 
   def activate(self, use_datastore_emulator=False):
     """Activates the testbed.
@@ -392,6 +360,8 @@ class Testbed(object):
       use_datastore_emulator: `True` if user specifies testbed to use the Cloud
         Datastore Emulator.
     """
+    namespace_manager._TESTBED_RESET_TOKEN = None
+    self._context_reset_tokens = {}
     self._orig_env = dict(os.environ)
     self.setup_env()
 
@@ -448,6 +418,28 @@ class Testbed(object):
 
     os.environ.clear()
     os.environ.update(self._orig_env)
+
+    all_reset_tokens = {
+        **self._context_reset_tokens,
+        namespace_manager._CURRENT_NAMESPACE:
+            namespace_manager._TESTBED_RESET_TOKEN,
+
+    }
+
+    for ctxvar, token in all_reset_tokens.items():
+      if token:
+        try:
+          ctxvar.reset(token)
+        except ValueError:
+
+
+
+
+          pass
+
+    namespace_manager._TESTBED_RESET_TOKEN = None
+
+
     self._blob_storage = None
     self._activated = False
 
@@ -462,7 +454,7 @@ class Testbed(object):
 
         # All defaults
         testbed_instance.setup_env()
-        # All defaults, overriding AUTH_DOMAIN
+        # All defaults, overriding AUTH_DOMAIN in both context modes
         testbed_instance.setup_env(auth_domain='custom')
         # All defaults; adds a custom os.environ['CUSTOM'] = 'foo'
         testbed_instance.setup_env(custom='foo')
@@ -470,6 +462,10 @@ class Testbed(object):
 
     To overwrite the values set by a previous invocation, pass `overwrite=True`.
     Passing this value will not result in an `OVERWRITE` entry in `os.environ`.
+
+    If the variable corresponds to a WSGI environ variable, it will be set in
+    the gen2 request context as contextvars as well as `os.environ`. To only set
+    the gen2 context, switch to `setup_wsgi_env()`.
 
     Args:
       overwrite: Boolean. Specifies whether to overwrite items with
@@ -504,6 +500,12 @@ class Testbed(object):
       for key, value in six.iteritems(DEFAULT_ENVIRONMENT):
         if key not in merged_vars:
           merged_vars[key] = value
+
+    ctx = contextvars.copy_context()
+    gae_vars = {k: v for k, v in vars(context.gae_headers).items()
+                if isinstance(v, contextvars.ContextVar)}
+    wsgi_vars = {k: v for k, v in vars(context.wsgi).items()
+                 if isinstance(v, contextvars.ContextVar)}
     for key, value in six.iteritems(merged_vars):
       if key == 'GAE_APPLICATION':
         if overwrite or not full_app_id.get():
@@ -512,6 +514,48 @@ class Testbed(object):
         if key == 'GOOGLE_CLOUD_PROJECT':
           validate_project_id(value)
         os.environ[key] = value
+        if key.startswith(context.gae_headers.PREFIX):
+
+          key = key[len(context.gae_headers.PREFIX):]
+        ctxvar = gae_vars.get(key, wsgi_vars.get(key))
+        if ctxvar is not None and (overwrite or ctxvar not in ctx):
+          wsgi_key = (context.gae_headers.PREFIX + key
+                      if key in gae_vars
+                      else key)
+          self.setup_wsgi_env(**{wsgi_key: value})
+
+
+
+
+  def setup_wsgi_env(self, **kwargs):
+    """Sets the gen2 request context with the WSGI vars provided in kwargs.
+
+    Valid values can be found in `google.appengine.runtime.context.gae_headers`
+    and `google.appengine.runtime.context.wsgi`.
+
+    setup_wsgi_env does not also set the "legacy context mode" aka `os.environ`.
+    If you still rely on the legacy context, use setup_env instead.
+
+    Example:
+      # Sets context.gae_headers.AUTH_DOMAIN
+      # Note that all as per PEP 3333, all headers have the HTTP_ prefix.
+      # GAE headers headers share an additional x_appengine_ prefix.
+      testbed_instance.setup_wsgi_env(http_x_appengine_auth_domain='custom')
+      # Sets context.wsgi.SERVER_NAME
+      testbed_instance.setup_wsgi_env(server_name='custom')
+
+    Args:
+      **kwargs: WSGI variables to set in the SDK's request context.
+    """
+    wsgi_env = {key.upper(): value for key, value in kwargs.items()}
+    new_reset_tokens = context.init_from_wsgi_environ(wsgi_env).items()
+
+
+
+
+    for key, value in new_reset_tokens:
+      if key not in self._context_reset_tokens:
+        self._context_reset_tokens[key] = value
 
   def _register_stub(self, service_name, stub, deactivate_callback=None):
     """Registers a service stub.
@@ -840,8 +884,7 @@ class Testbed(object):
     urlmatchers_to_fetch_functions = []
     if urlmatchers:
       urlmatchers_to_fetch_functions.extend(urlmatchers)
-    urlmatchers_to_fetch_functions.extend(
-        GCS_URLMATCHERS_TO_FETCH_FUNCTIONS)
+    urlmatchers_to_fetch_functions.extend(URLMATCHERS_TO_FETCH_FUNCTIONS)
     stub = urlfetch_stub.URLFetchServiceStub(
         urlmatchers_to_fetch_functions=urlmatchers_to_fetch_functions)
     self._register_stub(URLFETCH_SERVICE_NAME, stub)
@@ -967,4 +1010,3 @@ def validate_project_id(project_id):
 
   if project_id[-1] == '-':
     err('must not end with a hyphen')
-

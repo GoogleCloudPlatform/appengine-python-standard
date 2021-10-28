@@ -1734,14 +1734,16 @@ class _QueryKeyFilter(_BaseComponent):
             'ancestor argument should match app ("%r" != "%r")' %
             (ancestor.app, app))
 
-      ancestor_namespace = six.ensure_binary(ancestor.name_space)
+      ancestor_namespace = six.ensure_text(ancestor.name_space)
 
       if namespace is None:
         namespace = ancestor_namespace
-      elif six.ensure_binary(namespace) != ancestor_namespace:
+      else:
+        namespace = six.ensure_text(namespace)
+      if namespace != ancestor_namespace:
         raise datastore_errors.BadArgumentError(
             'ancestor argument should match namespace ("%r" != "%r")' %
-            (six.ensure_binary(namespace), ancestor_namespace))
+            (namespace, ancestor_namespace))
 
 
       pb = entity_pb2.Reference()
@@ -1755,8 +1757,7 @@ class _QueryKeyFilter(_BaseComponent):
 
     super(_QueryKeyFilter, self).__init__()
     self.__app = six.ensure_text(datastore_types.ResolveAppId(app), 'utf-8')
-    self.__namespace = (
-        six.ensure_text(datastore_types.ResolveNamespace(namespace), 'utf-8'))
+    self.__namespace = datastore_types.ResolveNamespace(namespace)
     self.__kind = kind
 
   @property

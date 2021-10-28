@@ -33,8 +33,10 @@ services for their applications. The module also provides a few utility methods.
 
 
 
-
+import binascii
+import cgi
 import codecs
+from collections.abc import MutableMapping
 import email
 from email import parser
 import email.header
@@ -44,8 +46,6 @@ from email.mime.text import MIMEText
 import functools
 import logging
 import typing
-import six
-from six.moves import map
 
 from google.appengine.api import api_base_pb2
 from google.appengine.api import apiproxy_stub_map
@@ -53,6 +53,8 @@ from google.appengine.api import mail_service_pb2
 from google.appengine.api import users
 from google.appengine.api.mail_errors import *
 from google.appengine.runtime import apiproxy_errors
+import six
+from six.moves import map
 
 
 
@@ -195,6 +197,9 @@ HEADER_WHITELIST = frozenset([
     'Resent-From',
     'Resent-To',
 ])
+
+INCOMING_MAIL_URL_PATTERN = '/_ah/mail/.+'
+BOUNCE_NOTIFICATION_URL_PATH = '/_ah/bounce'
 
 
 def invalid_email_reason(email_address, field):
@@ -1427,6 +1432,20 @@ class EmailMessage(_EmailMessageBase):
   _API_CALL = 'Send'
   PROPERTIES = set(_EmailMessageBase.PROPERTIES | set(('headers',)))
 
+
+  def __init__(
+      self,
+      mime_message: typing.Optional[typing.Union[typing.Text, bytes,
+                                                 typing.TextIO,
+                                                 email.message.Message]] = None,
+      **kw):
+    """
+    """
+
+
+    super().__init__(mime_message, **kw)
+
+
   def check_initialized(self):
     """Provides additional checks to ensure that recipients have been specified.
 
@@ -1571,6 +1590,38 @@ class InboundEmailMessage(EmailMessage):
 
   ALLOW_BLANK_EMAIL = True
 
+  @classmethod
+  def from_environ(cls, environ):
+    """Creates an email message by parsing the HTTP request body in `environ`.
+
+    Example (WSGI)::
+
+      def app(environ, start_response):
+        mail_message = mail.InboundEmailMessage.from_environ(request.environ)
+
+        # Do something with the message
+        logging.info('Received greeting from %s: %s' % (mail_message.sender,
+                                                          mail_message.body))
+        start_response("200 OK", [])
+        return “Success”
+
+    Note: Flask (other web frameworks) can directly use
+          `new InboundEmailMessage(request_bytes)` to create the email message
+          if they have the request bytes of an HTTP request.
+
+    Args:
+      environ: a WSGI dict describing the HTTP request (See PEP 333).
+    Returns:
+      An InboundEmailMessage object.
+    """
+    try:
+      req_size = int(environ.get('CONTENT_LENGTH', 0))
+    except ValueError:
+      req_size = 0
+
+    request_bytes = environ['wsgi.input'].read(req_size)
+    return InboundEmailMessage(request_bytes)
+
   def update_from_mime_message(self, mime_message):
     """Updates the values of a MIME message.
 
@@ -1685,3 +1736,220 @@ class InboundEmailMessage(EmailMessage):
 
 parser.Parser
 
+
+
+class _MultiDict(MutableMapping):
+  """A slim version of the WebOb.MultiDict class.
+
+  This only includes functionality needed for accessing POST form vars
+  needed for for parsing a BounceNotification object.
+  Original WebOb class:
+  https://github.com/Pylons/webob/blob/master/src/webob/multidict.py
+  """
+
+  def __init__(self):
+    self._items = []
+
+  def __len__(self):
+    return len(self._items)
+
+  def __getitem__(self, key):
+    for k, v in reversed(self._items):
+      if k == key:
+        return v
+    raise KeyError(key)
+
+  def __setitem__(self, key, value):
+    try:
+      del self[key]
+    except KeyError:
+      pass
+    self._items.append((key, value))
+
+  def __delitem__(self, key):
+    items = self._items
+    found = False
+
+    for i in range(len(items) - 1, -1, -1):
+      if items[i][0] == key:
+        del items[i]
+        found = True
+
+    if not found:
+      raise KeyError(key)
+
+  def add(self, key, value):
+    """Add the key and value, not overwriting any previous value."""
+    self._items.append((key, value))
+
+  def keys(self):
+    for k, _ in self._items:
+      yield k
+
+  __iter__ = keys
+
+  @classmethod
+  def from_fieldstorage(cls, fs):
+    """Create a MultiDict from a cgi.FieldStorage instance.
+
+    This mimics functionality in webob.MultiDict without taking a dependency
+    on the WebOb package -
+    https://github.com/Pylons/webob/blob/259230aa2b8b9cf675c996e157c5cf021c256059/src/webob/multidict.py#L57
+
+    Args:
+      fs: cgi.FieldStorage object correspoinding to a POST request
+    Returns:
+      MultiDict that contains form variables from the POST request
+    """
+    obj = cls()
+
+
+    for field in fs.list or ():
+      charset = field.type_options.get('charset', 'utf8')
+      transfer_encoding = field.headers.get('Content-Transfer-Encoding', None)
+      supported_transfer_encoding = {
+          'base64': binascii.a2b_base64,
+          'quoted-printable': binascii.a2b_qp,
+      }
+
+      if charset == 'utf8':
+        def decode(b):
+          return b
+      else:
+        def decode(b):
+          return b.encode('utf8').decode(charset)
+
+      if field.filename:
+        field.filename = decode(field.filename)
+        obj.add(field.name, field)
+      else:
+        value = field.value
+
+        if transfer_encoding in supported_transfer_encoding:
+
+          value = value.encode('utf8')
+          value = supported_transfer_encoding[transfer_encoding](value)
+
+
+          value = value.decode('utf8')
+        obj.add(field.name, decode(value))
+
+    return obj
+
+
+class BounceNotification(object):
+  """Encapsulates a bounce notification received by the application."""
+
+  def __init__(self, post_vars: typing.Mapping[str, typing.Any]):
+    """Constructs a new BounceNotification from an HTTP request.
+
+    Properties:
+      original: a dict describing the message that caused the bounce.
+      notification: a dict describing the bounce itself.
+      original_raw_message: the raw message that caused the bounce.
+
+    The 'original' and 'notification' dicts contain the following keys:
+      to, cc, bcc, from, subject, text
+
+    Args:
+      post_vars: a dictionary with keys as strings. This should
+        contain bounce information, and the following keys are handled:
+          original-from
+          original-to
+          original-cc
+          original-bcc
+          original-subject
+          original-text
+          notification-from
+          notification-to
+          notification-cc
+          notification-bcc
+          notification-subject
+          notification-text
+          raw-message
+        For all keys except 'raw-message', the value can be anything.
+        The Bounce Notification object just assigns these values to the
+        `original` and `notification` properties of this instance,
+        which are dictionaries.
+        For example, original["to"] = post_vars.get("original-to")
+
+        The `raw-message` value is used to create an `InboundEmailMessage`
+        object. This value should be a valid input to the `EmailMessage`
+        constructor (inherited by 'InboundEmailMessage').
+
+        Flask- This is typically the `flask.request.form` field (if
+        the user wants to pass single (non-list) values for each key), or
+        'dict(flask.request.form.lists())' if the user wants to store a list for
+        each key (example use case is multiple `to` and `cc` recipients).
+
+        Webob- `webob.Request.POST` can be used for single values, and
+        `webob.Request.POST.dict_of_lists()` for multiple values.
+
+        Django- `request.POST` can be used for single values, and
+        `dict(request.POST.lists())` can be used for multiple values.
+    """
+    self.__original = {}
+    self.__notification = {}
+    for field in ['to', 'cc', 'bcc', 'from', 'subject', 'text']:
+      self.__original[field] = post_vars.get('original-' + field, '')
+      self.__notification[field] = post_vars.get('notification-' + field, '')
+
+    raw_message = post_vars.get('raw-message', '')
+
+    if isinstance(raw_message, list):
+      if not raw_message:
+
+        raw_message = ''
+      elif len(raw_message) > 1:
+        raise ValueError('Multiple values found for "raw-message" in post_vars.'
+                         ' Expected single value.')
+      else:
+        raw_message = raw_message[0]
+
+      raw_message = raw_message[0] if raw_message else ''
+    self.__original_raw_message = InboundEmailMessage(raw_message)
+
+  @classmethod
+  def from_environ(cls, environ):
+    """Transforms the HTTP request body to a bounce notification object.
+
+    Example(WSGI)::
+
+      def BounceReceiver(environ, start_response):
+        bounce_msg = mail.BounceNotification.from_environ(environ)
+
+        # Add logic for what to do with the bounce notification
+        print('Bounce original: %s', bounce_msg.original)
+        print('Bounce notification: %s', bounce_msg.notification)
+
+        # Return suitable response
+        response = http.HTTPStatus.OK
+        start_response(f'{response.value} {response.phrase}', [])
+        return ['success'.encode('utf-8')]
+
+    Args:
+      environ: a WSGI dict describing the HTTP request (See PEP 333).
+    Returns:
+      A BounceNotification object.
+    """
+    fs = cgi.FieldStorage(
+        fp=environ['wsgi.input'],
+        environ=environ,
+        keep_blank_values=True,
+        encoding='utf8',
+    )
+
+    post_vars = _MultiDict.from_fieldstorage(fs)
+    return BounceNotification(post_vars)
+
+  @property
+  def original(self):
+    return self.__original
+
+  @property
+  def notification(self):
+    return self.__notification
+
+  @property
+  def original_raw_message(self):
+    return self.__original_raw_message

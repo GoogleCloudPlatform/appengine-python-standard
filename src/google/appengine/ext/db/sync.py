@@ -18,13 +18,11 @@
 
 """Synchronization primitives backed by the datastore.
 
-The Mutex class's interface matches the Python standard library's
-threading.Lock class.
+The `Mutex` class's interface matches the Python standard library's
+`threading.Lock` class.
 
-TODO: more here
-
-TODO: use datastore caching, once we have a reusable library for it
 """
+
 
 
 
@@ -53,13 +51,13 @@ class Mutex(db.Model):
     """Acquire this mutex. Fails if it's already held.
 
     Args:
-      blocking: boolean. If True, blocks until the mutex can be acquired. If
-      False, returns immediately.
+      blocking: boolean. If `True`, blocks until the mutex can be acquired. If
+      `False`, returns immediately.
       retry_delay_ms: integer. The desired delay between acquisition retries.
       Each actually delay is a random amount between half and twice this.
 
     Returns:
-      True if the mutex was acquired, False otherwise.
+      `True` if the mutex was acquired, `False` otherwise.
     """
     if not self.is_saved():
       self.put()
@@ -78,7 +76,7 @@ class Mutex(db.Model):
         time.sleep(random.uniform(retry_delay_s / 2, retry_delay_s * 2))
 
   def release(self):
-    """Releases the mutex. Raises db.BadRequestError if not currently held."""
+    """Releases the mutex. Raises `db.BadRequestError` if not currently held."""
     if not self.is_saved():
       raise db.BadRequestError("Can't release mutex that's not saved.")
 
@@ -88,7 +86,7 @@ class Mutex(db.Model):
     self._held = False
 
   def is_held(self):
-    """Returns true if the mutex is held, false otherwise.
+    """Returns `True` if the mutex is held, `False` otherwise.
 
     This takes expiration into account.
     """
@@ -101,7 +99,7 @@ class Mutex(db.Model):
     Intended to be run in a transaction.
 
     Returns:
-      The mutex if it was acquired, otherwise None.
+      The mutex if it was acquired, otherwise `None`.
     """
     mutex = Mutex.get(self.key())
     if not mutex.is_held():
@@ -112,7 +110,9 @@ class Mutex(db.Model):
       return None
 
   def _release_or_fail(self):
-    """Releases the given mutex. Raises db.BadRequestError if it's held.
+    """Releases the given mutex.
+
+    Raises `db.BadRequestError` if it's held.
 
     Intended to be run in a transaction.
 
@@ -135,12 +135,12 @@ def acquire(mutexes, blocking=True):
   defined by their keys.
 
   Args:
-    mutexes: sequence of Mutex objects or keys
-    blocking: boolean. If True, blocks until all mutexes can be acquired. If
-      False, returns immediately.
+    mutexes: Sequence of Mutex objects or keys
+    blocking: Boolean. If `True`, blocks until all mutexes can be acquired. If
+      `False`, returns immediately.
 
   Returns:
-    True if all mutexes were acquired, False otherwise.
+    `True` if all mutexes were acquired, `False` otherwise.
   """
 
   mutexes = _to_mutexes(mutexes)

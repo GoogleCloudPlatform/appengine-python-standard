@@ -26,13 +26,6 @@ import threading
 import time
 import typing
 
-from pyasn1.codec.der import decoder
-from pyasn1_modules.rfc2459 import Certificate
-import rsa
-import six
-from six.moves import range
-from six.moves import urllib
-
 from google.appengine.api import urlfetch
 from google.appengine.api.app_identity import app_identity_service_pb2
 from google.appengine.api.app_identity import app_identity_stub_base
@@ -44,6 +37,13 @@ from google.auth import credentials as ga_credentials
 from google.auth import exceptions
 from google.auth.transport import requests as transport
 from google.oauth2 import service_account as oauth2_service_account
+
+from pyasn1.codec.der import decoder
+from pyasn1_modules.rfc2459 import Certificate
+import rsa
+import six
+from six.moves import range
+from six.moves import urllib
 
 
 def BitStringToByteString(bs):
@@ -162,12 +162,7 @@ class DefaultCredentialsBasedAppIdentityServiceStub(
 
   def _Dynamic_GetServiceAccountName(self, request, response):
     """Implementation of AppIdentityService::GetServiceAccountName."""
-    if self._non_service_account_credentials:
-
-
-      response.service_account_name = ''
-    else:
-      response.service_account_name = self._credentials.service_account_email
+    response.service_account_name = self.get_service_account_name()
 
   def _Dynamic_GetDefaultGcsBucketName(self, unused_request, response):
     """Implementation of AppIdentityService::GetDefaultGcsBucketName."""
@@ -180,7 +175,7 @@ class DefaultCredentialsBasedAppIdentityServiceStub(
       self._default_gcs_bucket_name = (
           app_identity_stub_base.APP_DEFAULT_GCS_BUCKET_NAME)
 
-  def _patch_get_service_account_token(self, scopes, service_account=None):
+  def get_service_account_token(self, scopes, service_account=None):
     """Implementation of AppIdentityService::GetAccessToken.
 
     This API requires internet access.
@@ -218,6 +213,13 @@ class DefaultCredentialsBasedAppIdentityServiceStub(
         self._access_token_cache[scope] = rv
 
     return rv['access_token'], rv['expires']
+
+  def get_service_account_name(self):
+    if self._non_service_account_credentials:
+
+
+      return ''
+    return self._credentials.service_account_email
 
 
 def TimestampFromNaiveUtcDatetime(dt):

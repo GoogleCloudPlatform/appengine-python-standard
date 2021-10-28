@@ -595,7 +595,7 @@ class PostFilterNode(Node):
 
 
 class ConjunctionNode(Node):
-  """Tree node representing a Boolean AND operator on two or more nodes."""
+  """Tree node representing a Boolean `AND` operator on two or more nodes."""
 
   def __new__(cls, *nodes):
     if not nodes:

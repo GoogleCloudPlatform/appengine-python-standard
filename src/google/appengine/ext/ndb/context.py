@@ -146,32 +146,38 @@ def _make_ctx_options(ctx_options, config_cls=ContextOptions):
 
 
 class AutoBatcher(object):
-  """Batches multiple async calls if they share the same rpc options.
+  """Batches multiple async calls if they share the same RPC options.
 
   Here is an example to explain what this class does.
 
-  Life of a key.get_async(options) API call:
-  *) Key gets the singleton Context instance and invokes Context.get.
-  *) Context.get calls Context._get_batcher.add(key, options). This
-     returns a future "fut" as the return value of key.get_async.
-     At this moment, key.get_async returns.
+  Life of a `key.get_async(options)` API call:
 
-  *) When more than "limit" number of _get_batcher.add() was called,
-     _get_batcher invokes its self._todo_tasklet, Context._get_tasklet,
+  * `Key` gets the singleton `Context` instance and invokes `Context.get`.
+
+  * `Context.get` calls `Context._get_batcher.add(key, options)`. This
+     returns a future `fut` as the return value of `key.get_async`.
+     At this moment, `key.get_async` returns.
+
+  * When more than "limit" number of `_get_batcher.add()` was called,
+     `_get_batcher` invokes its `self._todo_tasklet`, `Context._get_tasklet`,
      with the list of keys seen so far.
-  *) Context._get_tasklet fires a MultiRPC and waits on it.
-  *) Upon MultiRPC completion, Context._get_tasklet passes on the results
-     to the respective "fut" from key.get_async.
 
-  *) If user calls "fut".get_result() before "limit" number of add() was called,
-     "fut".get_result() will repeatedly call eventloop.run1().
-  *) After processing immediate callbacks, eventloop will run idlers.
-     AutoBatcher._on_idle is an idler.
-  *) _on_idle will run the "todo_tasklet" before the batch is full.
+  * `Context._get_tasklet` fires a MultiRPC and waits on it.
 
-  So the engine is todo_tasklet, which is a proxy tasklet that can combine
+  * Upon MultiRPC completion, `Context._get_tasklet` passes on the results
+     to the respective `fut` from `key.get_async`.
+
+  * If user calls `fut.get_result()` before "limit" number of `add()` was
+     called, `fut.get_result()` will repeatedly call `eventloop.run1()`.
+
+  * After processing immediate callbacks, `eventloop` will run idlers.
+     `AutoBatcher._on_idle` is an idler.
+
+  * `_on_idle` will run the `todo_tasklet` before the batch is full.
+
+  So the engine is `todo_tasklet`, which is a proxy tasklet that can combine
   arguments into batches and passes along results back to respective futures.
-  This class is mainly a helper that invokes todo_tasklet with the right
+  This class is mainly a helper that invokes `todo_tasklet` with the right
   arguments at the right time.
   """
 
@@ -179,10 +185,10 @@ class AutoBatcher(object):
     """Init.
 
     Args:
-      todo_tasklet: the tasklet that actually fires RPC and waits on a MultiRPC.
+      todo_tasklet: The tasklet that actually fires RPC and waits on a MultiRPC.
         It should take a list of (future, arg) pairs and an "options" as
         arguments. "options" are rpc options.
-      limit: max number of items to batch for each distinct value of "options".
+      limit: Max number of items to batch for each distinct value of "options".
     """
     self._todo_tasklet = todo_tasklet
     self._limit = limit
@@ -196,7 +202,7 @@ class AutoBatcher(object):
     return '%s(%s)' % (self.__class__.__name__, self._todo_tasklet.__name__)
 
   def run_queue(self, options, todo):
-    """Actually run the _todo_tasklet."""
+    """Actually run the `_todo_tasklet`."""
     utils.logging_debug('AutoBatcher(%s): %d items',
                         self._todo_tasklet.__name__, len(todo))
     batch_fut = self._todo_tasklet(todo, options)
@@ -214,16 +220,17 @@ class AutoBatcher(object):
       return None
     return True
 
+
   def add(self, arg, options=None):
-    """Adds an arg and gets back a future.
+    """Returns back an instance of future after adding an arg.
 
     Args:
-      arg: one argument for _todo_tasklet.
-      options: rpc options.
+      arg: One argument for `_todo_tasklet`.
+      options: RPC options.
 
     Return:
       An instance of future, representing the result of running
-        _todo_tasklet without batching.
+        `_todo_tasklet` without batching.
     """
     fut = tasklets.Future('%s.add(%s, %s)' % (self, arg, options))
     todo = self._queues.get(options)
@@ -413,13 +420,13 @@ class Context(object):
   def default_cache_policy(key):
     """Default cache policy.
 
-    This defers to _use_cache on the Model class.
+    This defers to `_use_cache` on the `Model` class.
 
     Args:
       key: Key instance.
 
     Returns:
-      A bool or None.
+      A bool or `None`.
     """
     flag = None
     if key is not None:
@@ -439,8 +446,8 @@ class Context(object):
     """Return the current context cache policy function.
 
     Returns:
-      A function that accepts a Key instance as argument and returns
-      a bool indicating if it should be cached.  May be None.
+      A function that accepts a `Key` instance as argument and returns
+      a bool indicating if it should be cached.  May be `None`.
     """
     return self._cache_policy
 
@@ -448,8 +455,8 @@ class Context(object):
     """Set the context cache policy function.
 
     Args:
-      func: A function that accepts a Key instance as argument and returns
-        a bool indicating if it should be cached.  May be None.
+      func: A function that accepts a `Key` instance as argument and returns
+        a bool indicating if it should be cached. May be `None`.
     """
     if func is None:
       func = self.default_cache_policy
@@ -478,15 +485,15 @@ class Context(object):
 
   @staticmethod
   def default_memcache_policy(key):
-    """Default memcache policy.
+    """Default Memcache policy.
 
-    This defers to _use_memcache on the Model class.
+    This defers to `_use_memcache` on the `Model` class.
 
     Args:
       key: Key instance.
 
     Returns:
-      A bool or None.
+      A bool or `None`.
     """
     flag = None
     if key is not None:
@@ -506,8 +513,8 @@ class Context(object):
     """Return the current memcache policy function.
 
     Returns:
-      A function that accepts a Key instance as argument and returns
-      a bool indicating if it should be cached.  May be None.
+      A function that accepts a `Key` instance as argument and returns
+      a bool indicating if it should be cached. May be `None`.
     """
     return self._memcache_policy
 
@@ -545,15 +552,15 @@ class Context(object):
 
   @staticmethod
   def default_datastore_policy(key):
-    """Default datastore policy.
+    """Default Datastore policy.
 
-    This defers to _use_datastore on the Model class.
+    This defers to `_use_datastore` on the `Model` class.
 
     Args:
       key: Key instance.
 
     Returns:
-      A bool or None.
+      A bool or `None`.
     """
     flag = None
     if key is not None:
@@ -573,8 +580,8 @@ class Context(object):
     """Return the current context datastore policy function.
 
     Returns:
-      A function that accepts a Key instance as argument and returns
-      a bool indicating if it should use the datastore.  May be None.
+      A function that accepts a `Key` instance as argument and returns
+      a bool indicating if it should use the datastore. May be `None`.
     """
     return self._datastore_policy
 
@@ -582,8 +589,8 @@ class Context(object):
     """Set the context datastore policy function.
 
     Args:
-      func: A function that accepts a Key instance as argument and returns
-        a bool indicating if it should use the datastore.  May be None.
+      func: A function that accepts a `Key` instance as argument and returns
+        a bool indicating if it should use the datastore. May be `None`.
     """
     if func is None:
       func = self.default_datastore_policy
@@ -612,15 +619,15 @@ class Context(object):
 
   @staticmethod
   def default_memcache_timeout_policy(key):
-    """Default memcache timeout policy.
+    """Default Memcache timeout policy.
 
-    This defers to _memcache_timeout on the Model class.
+    This defers to `_memcache_timeout` on the `Model` class.
 
     Args:
       key: Key instance.
 
     Returns:
-      Memcache timeout to use (integer), or None.
+      Memcache timeout to use (integer), or `None`.
     """
     timeout = None
     if key is not None and isinstance(key, model.Key):
@@ -639,11 +646,11 @@ class Context(object):
   def set_memcache_timeout_policy(self, func):
     """Set the policy function for memcache timeout (expiration).
 
+    If the function returns `0`, it implies the default timeout.
+
     Args:
       func: A function that accepts a key instance as argument and returns
-        an integer indicating the desired memcache timeout.  May be None.
-
-    If the function returns 0 it implies the default timeout.
+        an integer indicating the desired memcache timeout. May be `None`.
     """
     if func is None:
       func = self.default_memcache_timeout_policy
@@ -704,9 +711,10 @@ class Context(object):
 
 
 
+
   @tasklets.tasklet
   def get(self, key, **ctx_options):
-    """Return a Model instance given the entity key.
+    """Returns a `Model` instance given the entity key.
 
     It will use the context cache if the cache policy for the given
     key is enabled.
@@ -716,7 +724,7 @@ class Context(object):
       **ctx_options: Context options.
 
     Returns:
-      A Model instance if the key exists in the datastore; None otherwise.
+      A `Model` instance if the key exists in the datastore; `None` otherwise.
     """
     options = _make_ctx_options(ctx_options)
     use_cache = self._use_cache(key, options)
@@ -1096,11 +1104,14 @@ class Context(object):
     be called.
 
     If the callback raises an exception, it bubbles up normally.  This
-    means: If the callback is called immediately, any exception it
-    raises will bubble up immediately.  If the call is postponed until
+    means:
+
+    - If the callback is called immediately, any exception it
+    raises will bubble up immediately.
+    - If the call is postponed until
     commit, remaining callbacks will be skipped and the exception will
-    bubble up through the transaction() call.  (However, the
-    transaction is already committed at that point.)
+    bubble up through the `transaction()` call. However, the
+    transaction is already committed at that point.
     """
     if not self.in_transaction():
       callback()
@@ -1195,17 +1206,17 @@ class Context(object):
 
   def memcache_get(self, key, for_cas=False, namespace=None, use_cache=False,
                    deadline=None):
-    """An auto-batching wrapper for memcache.get() or .get_multi().
+    """An auto-batching wrapper for `memcache.get()` or `.get_multi()`.
 
     Args:
-      key: Key to set.  This must be a string; no prefix is applied.
-      for_cas: If True, request and store CAS ids on the Context.
+      key: Key to set. This must be a string; no prefix is applied.
+      for_cas: If `True`, request and store CAS ids on the Context.
       namespace: Optional namespace.
       deadline: Optional deadline for the RPC.
 
     Returns:
       A Future (!) whose return value is the value retrieved from
-      memcache, or None.
+      memcache, or `None`.
     """
     if not isinstance(key, (six.text_type, six.binary_type)):
       raise TypeError('key must be a string; received %r' % key)

@@ -127,7 +127,7 @@ class AppIdentityServiceStubBase(apiproxy_stub.APIProxyStub):
         mock.patch(
             'google.appengine.api.app_identity._metadata_server.'
             'get_service_account_token',
-            side_effect=self._patch_get_service_account_token)])
+            side_effect=self.get_service_account_token)])
 
   def _Dynamic_SignForApp(self, request, response):
     """Implementation of AppIdentityService::SignForApp."""
@@ -147,7 +147,7 @@ class AppIdentityServiceStubBase(apiproxy_stub.APIProxyStub):
 
   def _Dynamic_GetServiceAccountName(self, request, response):
     """Implementation of AppIdentityService::GetServiceAccountName."""
-    response.service_account_name = APP_SERVICE_ACCOUNT_NAME
+    response.service_account_name = self.get_service_account_name()
 
   def _Dynamic_GetDefaultGcsBucketName(self, unused_request, response):
     """Implementation of AppIdentityService::GetDefaultGcsBucketName."""
@@ -163,7 +163,7 @@ class AppIdentityServiceStubBase(apiproxy_stub.APIProxyStub):
     else:
       self.__default_gcs_bucket_name = APP_DEFAULT_GCS_BUCKET_NAME
 
-  def _patch_get_service_account_token(self, scopes, service_account=None):
+  def get_service_account_token(self, scopes, service_account=None):
     """test implementation for _metadata_server.get_service_account_token.
 
     This API returns an invalid token, as the `dev_appserver` does not have
@@ -184,6 +184,9 @@ class AppIdentityServiceStubBase(apiproxy_stub.APIProxyStub):
 
     expiration_time = int(time.time()) + 1800
     return access_token, expiration_time
+
+  def get_service_account_name(self):
+    return APP_SERVICE_ACCOUNT_NAME
 
   @staticmethod
   def Create(email_address=None, private_key_path=None, oauth_url=None):

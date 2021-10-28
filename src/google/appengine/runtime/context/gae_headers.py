@@ -16,6 +16,9 @@
 #
 """Save X-Appengine-* headers into request context."""
 import contextvars
+from typing import Dict
+
+PREFIX = 'HTTP_X_APPENGINE_'
 
 AUTH_DOMAIN = contextvars.ContextVar('AUTH_DOMAIN')
 DEFAULT_VERSION_HOSTNAME = contextvars.ContextVar('DEFAULT_VERSION_HOSTNAME')
@@ -23,16 +26,21 @@ USER_EMAIL = contextvars.ContextVar('USER_EMAIL')
 USER_ID = contextvars.ContextVar('USER_ID')
 USER_IS_ADMIN = contextvars.ContextVar('USER_IS_ADMIN')
 USER_NICKNAME = contextvars.ContextVar('USER_NICKNAME')
+DEFAULT_NAMESPACE = contextvars.ContextVar('DEFAULT_NAMESPACE')
 
 
-def init_from_wsgi_environ(wsgi_env):
+def init_from_wsgi_environ(
+    wsgi_env) -> Dict[contextvars.ContextVar, contextvars.Token]:
   """Init contextvars from matching X_APPENGINE_ headers if found."""
 
+  reset_tokens: Dict[contextvars.ContextVar, contextvars.Token] = {}
   for ctxvar in [v for _, v in globals().items()
                  if isinstance(v, contextvars.ContextVar)]:
-    value = wsgi_env.get('HTTP_X_APPENGINE_' + ctxvar.name)
+    value = wsgi_env.get(PREFIX + ctxvar.name)
     if value is not None:
       if ctxvar.name == 'USER_IS_ADMIN':
 
         value = (value == '1')
-      ctxvar.set(value)
+      token = ctxvar.set(value)
+      reset_tokens[ctxvar] = token
+  return reset_tokens
