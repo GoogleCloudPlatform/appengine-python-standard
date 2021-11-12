@@ -2095,7 +2095,7 @@ class TimeBasedHRConsistencyPolicy(BaseHighReplicationConsistencyPolicy):
 class PseudoRandomHRConsistencyPolicy(BaseHighReplicationConsistencyPolicy):
   """A policy that always gives the same sequence of consistency decisions."""
 
-  def __init__(self, probability=.5, seed=0):
+  def __init__(self, probability=None, seed=0):
     """Constructor.
 
     Args:
@@ -2104,6 +2104,8 @@ class PseudoRandomHRConsistencyPolicy(BaseHighReplicationConsistencyPolicy):
       seed: A hashable object to use as a seed. Use None to use the current
         timestamp.
     """
+    if probability is None:
+      probability = 0.5
     self.is_using_cloud_datastore_emulator = False
     self.emulator_port = None
 

@@ -136,7 +136,7 @@ class IndexesXmlParser(object):
       self.errors.append(
           'Value for ancestor should be true or false, not "%s"' % ancestor)
     properties = []
-    property_nodes = [n for n in node.getchildren() if n.tag == 'property']
+    property_nodes = [n for n in node if n.tag == 'property']
 
 
     has_geospatial = any(

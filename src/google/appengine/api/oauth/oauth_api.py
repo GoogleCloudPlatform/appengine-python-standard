@@ -30,6 +30,7 @@ Classes defined here:
 - `OAuthServiceFailureError`: OAuthService exception
 """
 
+import contextvars
 import json
 import os
 import six
@@ -49,6 +50,18 @@ from google.appengine.runtime import apiproxy_errors
 
 
 
+
+_OAUTH_AUTH_DOMAIN = contextvars.ContextVar('OAUTH_AUTH_DOMAIN')
+_OAUTH_EMAIL = contextvars.ContextVar('OAUTH_EMAIL')
+_OAUTH_USER_ID = contextvars.ContextVar('OAUTH_USER_ID')
+_OAUTH_CLIENT_ID = contextvars.ContextVar('OAUTH_CLIENT_ID')
+_OAUTH_IS_ADMIN = contextvars.ContextVar('OAUTH_IS_ADMIN')
+_OAUTH_ERROR_CODE = contextvars.ContextVar('OAUTH_ERROR_CODE')
+_OAUTH_ERROR_DETAIL = contextvars.ContextVar('OAUTH_ERROR_DETAIL')
+_OAUTH_LAST_SCOPE = contextvars.ContextVar('OAUTH_LAST_SCOPE')
+_OAUTH_AUTHORIZED_SCOPES = contextvars.ContextVar('OAUTH_AUTHORIZED_SCOPES')
+
+_TESTBED_RESET_TOKENS = dict()
 
 
 class Error(Exception):
@@ -117,7 +130,7 @@ def is_current_user_admin(_scope=None):
   """
 
   _maybe_call_get_oauth_user(_scope)
-  return os.environ.get('OAUTH_IS_ADMIN', '0') == '1'
+  return _OAUTH_IS_ADMIN.get(None)
 
 
 def get_oauth_consumer_key():
@@ -165,14 +178,14 @@ def get_authorized_scopes(scope):
 
 
 def _maybe_call_get_oauth_user(scope):
-  """Makes an GetOAuthUser RPC and stores the results in os.environ.
+  """Makes an GetOAuthUser RPC and stores the results in context.
 
   This method will only make the RPC if 'OAUTH_ERROR_CODE' has not already
   been set or 'OAUTH_LAST_SCOPE' is different to str(_scopes).
 
   Args:
-    scope: The custom OAuth scope or an iterable of scopes at least one of
-      which is accepted.
+    scope: The custom OAuth scope or an iterable of scopes at least one of which
+      is accepted.
   """
 
   if not scope:
@@ -181,8 +194,8 @@ def _maybe_call_get_oauth_user(scope):
     scope_str = scope
   else:
     scope_str = str(sorted(scope))
-  if ('OAUTH_ERROR_CODE' not in os.environ or
-      os.environ.get('OAUTH_LAST_SCOPE', None) != scope_str or
+  if (_OAUTH_ERROR_CODE.get(None) is None or
+      _OAUTH_LAST_SCOPE.get(None) != scope_str or
       os.environ.get('TESTONLY_OAUTH_SKIP_CACHE')):
     req = user_service_pb2.GetOAuthUserRequest()
     if scope:
@@ -194,35 +207,39 @@ def _maybe_call_get_oauth_user(scope):
     resp = user_service_pb2.GetOAuthUserResponse()
     try:
       apiproxy_stub_map.MakeSyncCall('user', 'GetOAuthUser', req, resp)
-      os.environ['OAUTH_EMAIL'] = resp.email
-      os.environ['OAUTH_AUTH_DOMAIN'] = resp.auth_domain
-      os.environ['OAUTH_USER_ID'] = resp.user_id
-      os.environ['OAUTH_CLIENT_ID'] = resp.client_id
-
-      os.environ['OAUTH_AUTHORIZED_SCOPES'] = json.dumps(list(resp.scopes))
-      if resp.is_admin:
-        os.environ['OAUTH_IS_ADMIN'] = '1'
-      else:
-        os.environ['OAUTH_IS_ADMIN'] = '0'
-      os.environ['OAUTH_ERROR_CODE'] = ''
+      token = _OAUTH_EMAIL.set(resp.email)
+      _TESTBED_RESET_TOKENS[_OAUTH_EMAIL] = token
+      token = _OAUTH_AUTH_DOMAIN.set(resp.auth_domain)
+      _TESTBED_RESET_TOKENS[_OAUTH_AUTH_DOMAIN] = token
+      token = _OAUTH_USER_ID.set(resp.user_id)
+      _TESTBED_RESET_TOKENS[_OAUTH_USER_ID] = token
+      token = _OAUTH_CLIENT_ID.set(resp.client_id)
+      _TESTBED_RESET_TOKENS[_OAUTH_CLIENT_ID] = token
+      token = _OAUTH_AUTHORIZED_SCOPES.set(json.dumps(list(resp.scopes)))
+      _TESTBED_RESET_TOKENS[_OAUTH_AUTHORIZED_SCOPES] = token
+      token = _OAUTH_IS_ADMIN.set(resp.is_admin)
+      _TESTBED_RESET_TOKENS[_OAUTH_IS_ADMIN] = token
+      token = _OAUTH_ERROR_CODE.set('')
+      _TESTBED_RESET_TOKENS[_OAUTH_ERROR_CODE] = token
     except apiproxy_errors.ApplicationError as e:
-      os.environ['OAUTH_ERROR_CODE'] = str(e.application_error)
-      os.environ['OAUTH_ERROR_DETAIL'] = e.error_detail
-    os.environ['OAUTH_LAST_SCOPE'] = scope_str
+      token = _OAUTH_ERROR_CODE.set(str(e.application_error))
+      _TESTBED_RESET_TOKENS[_OAUTH_ERROR_CODE] = token
+      token = _OAUTH_ERROR_DETAIL.set(e.error_detail)
+      _TESTBED_RESET_TOKENS[_OAUTH_ERROR_DETAIL] = token
+    token = _OAUTH_LAST_SCOPE.set(scope_str)
+    _TESTBED_RESET_TOKENS[_OAUTH_LAST_SCOPE] = token
   _maybe_raise_exception()
 
 
 def _maybe_raise_exception():
-  """Raises an error if one has been stored in os.environ.
+  """Raises an error if one has been stored in context.
 
   This method requires that 'OAUTH_ERROR_CODE' has already been set (an empty
   string indicates that there is no actual error).
   """
-  assert 'OAUTH_ERROR_CODE' in os.environ
-  error = os.environ['OAUTH_ERROR_CODE']
+  error = _OAUTH_ERROR_CODE.get()
   if error:
-    assert 'OAUTH_ERROR_DETAIL' in os.environ
-    error_detail = os.environ['OAUTH_ERROR_DETAIL']
+    error_detail = _OAUTH_ERROR_DETAIL.get()
     if error == str(user_service_pb2.UserServiceError.NOT_ALLOWED):
       raise NotAllowedError(error_detail)
     elif error == str(user_service_pb2.UserServiceError.OAUTH_INVALID_REQUEST):
@@ -236,7 +253,7 @@ def _maybe_raise_exception():
 
 
 def _get_user_from_environ():
-  """Returns a User based on values stored in os.environ.
+  """Returns a User based on values stored in context.
 
   This method requires that 'OAUTH_EMAIL', 'OAUTH_AUTH_DOMAIN', and
   'OAUTH_USER_ID' have already been set.
@@ -244,34 +261,30 @@ def _get_user_from_environ():
   Returns:
     User
   """
-  assert 'OAUTH_EMAIL' in os.environ
-  assert 'OAUTH_AUTH_DOMAIN' in os.environ
-  assert 'OAUTH_USER_ID' in os.environ
-  return users.User(email=os.environ['OAUTH_EMAIL'],
-                    _auth_domain=os.environ['OAUTH_AUTH_DOMAIN'],
-                    _user_id=os.environ['OAUTH_USER_ID'])
+  return users.User(
+      email=_OAUTH_EMAIL.get(),
+      _auth_domain=_OAUTH_AUTH_DOMAIN.get(),
+      _user_id=_OAUTH_USER_ID.get())
 
 
 def _get_client_id_from_environ():
-  """Returns Client ID based on values stored in os.environ.
+  """Returns Client ID based on values stored in context.
 
   This method requires that 'OAUTH_CLIENT_ID' has already been set.
 
   Returns:
     string: the value of Client ID.
   """
-  assert 'OAUTH_CLIENT_ID' in os.environ
-  return os.environ['OAUTH_CLIENT_ID']
+  return _OAUTH_CLIENT_ID.get()
 
 
 def _get_authorized_scopes_from_environ():
-  """Returns authorized scopes based on values stored in os.environ.
+  """Returns authorized scopes based on values stored in context.
 
   This method requires that 'OAUTH_AUTHORIZED_SCOPES' has already been set.
 
   Returns:
     list: the list of OAuth scopes.
   """
-  assert 'OAUTH_AUTHORIZED_SCOPES' in os.environ
 
-  return json.loads(os.environ['OAUTH_AUTHORIZED_SCOPES'])
+  return json.loads(_OAUTH_AUTHORIZED_SCOPES.get())

@@ -192,23 +192,6 @@ class BlobstoreServiceStub(apiproxy_stub.APIProxyStub):
     """
     return self.__storage
 
-  def _GetEnviron(self, name):
-    """Helper method ensures environment configured as expected.
-
-    Args:
-      name: Name of environment variable to get.
-
-    Returns:
-      Environment variable associated with name.
-
-    Raises:
-      ConfigurationError if required environment variable is not found.
-    """
-    try:
-      return os.environ[name]
-    except KeyError:
-      raise ConfigurationError('%s is not set in environment.' % name)
-
   def _CreateSession(self,
                      success_path,
                      user,

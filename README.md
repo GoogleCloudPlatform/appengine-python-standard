@@ -13,7 +13,7 @@ We are working to support more App Engine bundled service APIs for Python 3. To 
 
 In your `requirements.txt` file, add the following:
 
-`appengine-python-standard>=0.2.4`
+`appengine-python-standard>=0.3.0`
 
 In your app's `app.yaml`, add the following:
 
