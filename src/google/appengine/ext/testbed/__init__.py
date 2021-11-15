@@ -132,6 +132,7 @@ from google.appengine.api.images import images_stub
 from google.appengine.api.memcache import memcache_stub
 from google.appengine.api.modules import modules_stub
 from google.appengine.api.namespace_manager import namespace_manager
+from google.appengine.api.oauth import oauth_api
 from google.appengine.api.taskqueue import taskqueue_stub
 from google.appengine.datastore import cloud_datastore_v1_stub
 from google.appengine.datastore import datastore_pbs
@@ -364,6 +365,7 @@ class Testbed(object):
         Datastore Emulator.
     """
     namespace_manager._TESTBED_RESET_TOKEN = None
+    oauth_api._TESTBED_RESET_TOKENS.clear()
     self._context_reset_tokens = {}
     self._orig_env = dict(os.environ)
     self.setup_env()
@@ -424,9 +426,9 @@ class Testbed(object):
 
     all_reset_tokens = {
         **self._context_reset_tokens,
+        **oauth_api._TESTBED_RESET_TOKENS,
         namespace_manager._CURRENT_NAMESPACE:
             namespace_manager._TESTBED_RESET_TOKEN,
-
     }
 
     for ctxvar, token in all_reset_tokens.items():
@@ -441,7 +443,7 @@ class Testbed(object):
           pass
 
     namespace_manager._TESTBED_RESET_TOKEN = None
-
+    oauth_api._TESTBED_RESET_TOKENS.clear()
 
     self._blob_storage = None
     self._activated = False
@@ -509,10 +511,22 @@ class Testbed(object):
                 if isinstance(v, contextvars.ContextVar)}
     wsgi_vars = {k: v for k, v in vars(context.wsgi).items()
                  if isinstance(v, contextvars.ContextVar)}
+    oauth_vars = {
+        v.name: v
+        for k, v in vars(oauth_api).items()
+        if isinstance(v, contextvars.ContextVar)
+    }
     for key, value in six.iteritems(merged_vars):
       if key == 'GAE_APPLICATION':
         if overwrite or not full_app_id.get():
           full_app_id.put(value)
+      elif oauth_vars.get(key):
+        ctxvar = oauth_vars.get(key)
+        if ctxvar.get(None) and overwrite:
+          ctxvar.set(value)
+        elif ctxvar.get(None) is None:
+          token = ctxvar.set(value)
+          oauth_api._TESTBED_RESET_TOKENS[ctxvar] = token
       elif overwrite or key not in os.environ:
         if key == 'GOOGLE_CLOUD_PROJECT':
           validate_project_id(value)

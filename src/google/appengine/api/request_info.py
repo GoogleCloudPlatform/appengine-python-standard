@@ -29,8 +29,8 @@ capabilities.
 
 import collections
 import logging
-import os
 
+from google.appengine.runtime import context
 from six.moves import urllib
 
 
@@ -636,22 +636,17 @@ class _LocalRequestInfo(RequestInfo):
     Returns:
       The URL of the request as a string.
     """
-    try:
-      host = os.environ['HTTP_HOST']
-    except KeyError:
-      host = os.environ['SERVER_NAME']
-      port = os.environ['SERVER_PORT']
+    host = context.get('HTTP_HOST')
+    if not host:
+      host = context.get('SERVER_NAME')
+      port = context.get('SERVER_PORT')
       if port != '80':
         host += ':' + port
     url = 'http://' + host
-    url += urllib.parse.quote(os.environ.get('PATH_INFO', '/'))
-    if os.environ.get('QUERY_STRING'):
-      url += '?' + os.environ['QUERY_STRING']
+    url += urllib.parse.quote(context.get('PATH_INFO', '/'))
+    if context.get('QUERY_STRING'):
+      url += '?' + context.get('QUERY_STRING')
     return url
-
-  def get_request_environ(self, request_id):
-    """Returns a dict containing the WSGI environ for the request."""
-    return os.environ
 
   def get_module(self, request_id):
     """Returns the name of the module serving this request.

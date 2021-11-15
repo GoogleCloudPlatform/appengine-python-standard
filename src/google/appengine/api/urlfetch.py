@@ -19,7 +19,6 @@
 """URL downloading API."""
 
 import email
-import os
 import threading
 
 import six
@@ -32,6 +31,7 @@ from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import urlfetch_service_pb2
 from google.appengine.api.urlfetch_errors import *
 from google.appengine.runtime import apiproxy_errors
+from google.appengine.runtime import context
 
 
 
@@ -195,16 +195,15 @@ def _is_fetching_self(url, method):
     Boolean indicating whether or not it seems that the app is trying to fetch
         itself.
   """
-  if (method != GET or
-      "HTTP_HOST" not in os.environ or
-      "PATH_INFO" not in os.environ):
+  if (method != GET or context.get('HTTP_HOST', None) is None or
+      context.get('PATH_INFO', None) is None):
     return False
 
   _, host_port, path, _, _ = six.moves.urllib.parse.urlsplit(url)
 
-  if host_port == os.environ['HTTP_HOST']:
+  if host_port == context.get('HTTP_HOST'):
 
-    current_path = urllib.parse.unquote(os.environ['PATH_INFO'])
+    current_path = urllib.parse.unquote(context.get('PATH_INFO'))
     desired_path = urllib.parse.unquote(path)
 
     if (current_path == desired_path or

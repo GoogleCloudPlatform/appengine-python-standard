@@ -33,6 +33,7 @@ import six
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import user_service_pb2
 from google.appengine.runtime import apiproxy_errors
+from google.appengine.runtime import context
 
 
 
@@ -102,12 +103,12 @@ class User(object):
 
 
     if _auth_domain is None:
-      _auth_domain = os.environ.get('AUTH_DOMAIN')
+      _auth_domain = context.get('AUTH_DOMAIN')
     assert _auth_domain
 
     if email is None and federated_identity is None:
-      email = os.environ.get('USER_EMAIL', email)
-      _user_id = os.environ.get('USER_ID', _user_id)
+      email = context.get('USER_EMAIL', email)
+      _user_id = context.get('USER_ID', _user_id)
       federated_identity = os.environ.get('FEDERATED_IDENTITY',
                                           federated_identity)
       federated_provider = os.environ.get('FEDERATED_PROVIDER',
@@ -345,7 +346,7 @@ def is_current_user_admin():
   Returns:
     `True` if the user is an administrator; all other user types return `False`.
   """
-  return (os.environ.get('USER_IS_ADMIN', '0')) == '1'
+  return (context.get('USER_IS_ADMIN', '0')) == '1'
 
 
 IsCurrentUserAdmin = is_current_user_admin

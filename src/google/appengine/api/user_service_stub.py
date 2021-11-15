@@ -24,12 +24,13 @@
 
 
 import logging
-import os
 from six.moves import urllib
 import six.moves.urllib.parse
 from google.appengine.api import apiproxy_stub
+from google.appengine.api.oauth import oauth_api
 from google.appengine.api import user_service_pb2
 from google.appengine.runtime import apiproxy_errors
+from google.appengine.runtime.context import ctx_test_util
 
 _DEFAULT_LOGIN_URL = 'https://www.google.com/accounts/Login?continue=%s'
 _DEFAULT_LOGOUT_URL = 'https://www.google.com/accounts/Logout?continue=%s'
@@ -84,12 +85,12 @@ class UserServiceStub(apiproxy_stub.APIProxyStub):
     self._logout_url = logout_url
     self.__scopes = None
 
-    self.SetOAuthUser(is_admin=(os.environ.get('OAUTH_IS_ADMIN', '0') == '1'))
+    self.SetOAuthUser(is_admin=oauth_api._OAUTH_IS_ADMIN.get(False))
 
 
 
 
-    os.environ['AUTH_DOMAIN'] = auth_domain
+    ctx_test_util.set_both('AUTH_DOMAIN', auth_domain)
 
   def SetOAuthUser(self,
                    email=_OAUTH_EMAIL,

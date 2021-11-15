@@ -35,13 +35,13 @@ import six
 from absl.testing import absltest
 
 
-@ctx_test_util.isolated_context()
+@ctx_test_util.both_context_modes()
 class UserTest(absltest.TestCase):
   def setUp(self):
 
-    os.environ['USER_EMAIL'] = ''
-    os.environ['USER_ID'] = ''
-    os.environ['USER_IS_ADMIN'] = '0'
+    ctx_test_util.set_both('USER_EMAIL', '')
+    ctx_test_util.set_both('USER_ID', '')
+    ctx_test_util.set_both('USER_IS_ADMIN', '0')
 
 
 
@@ -181,9 +181,9 @@ class UserTest(absltest.TestCase):
       login_url)
 
   def testCreateLoginURL(self):
-    os.environ['HTTP_HOST'] = 'giggit.prom.corp.google.com'
-    os.environ['SERVER_NAME'] = 'badserver.prom.corp.google.com'
-    os.environ['SERVER_PORT'] = '666'
+    ctx_test_util.set_both('HTTP_HOST', 'giggit.prom.corp.google.com')
+    ctx_test_util.set_both('SERVER_NAME', 'badserver.prom.corp.google.com')
+    ctx_test_util.set_both('SERVER_PORT', '666')
 
 
     self._TestSimpleLogin('http://giggit.prom.corp.google.com',
@@ -215,20 +215,20 @@ class UserTest(absltest.TestCase):
                           auth_domain='bar.com')
 
 
-    del os.environ['HTTP_HOST']
-    os.environ['SERVER_NAME'] = 'giggit.prom.corp.google.com'
-    os.environ['SERVER_PORT'] = '80'
+    ctx_test_util.set_both('HTTP_HOST', '')
+    ctx_test_util.set_both('SERVER_NAME', 'giggit.prom.corp.google.com')
+    ctx_test_util.set_both('SERVER_PORT', '80')
     self._TestSimpleLogin('',
                           'http://giggit.prom.corp.google.com/')
 
 
 
-    os.environ['SERVER_PORT'] = '9999'
+    ctx_test_util.set_both('SERVER_PORT', '9999')
     self._TestSimpleLogin('',
                           'http://giggit.prom.corp.google.com:9999/')
 
 
-    os.environ['SERVER_PORT'] = '80'
+    ctx_test_util.set_both('SERVER_PORT', '80')
     login_url = users.CreateLoginURL('')
     self.assertEqual(
       (user_service_stub._DEFAULT_LOGIN_URL %
@@ -252,9 +252,9 @@ class UserTest(absltest.TestCase):
       logout_url)
 
   def testCreateLogoutURL(self):
-    os.environ['HTTP_HOST'] = 'giggit.prom.corp.google.com'
-    os.environ['SERVER_NAME'] = 'badserver.prom.corp.google.com'
-    os.environ['SERVER_PORT'] = '666'
+    ctx_test_util.set_both('HTTP_HOST', 'giggit.prom.corp.google.com')
+    ctx_test_util.set_both('SERVER_NAME', 'badserver.prom.corp.google.com')
+    ctx_test_util.set_both('SERVER_PORT', '666')
 
 
     self._TestSimpleLogout('http://giggit.prom.corp.google.com',
@@ -286,20 +286,20 @@ class UserTest(absltest.TestCase):
                            auth_domain='bar.com')
 
 
-    del os.environ['HTTP_HOST']
-    os.environ['SERVER_NAME'] = 'giggit.prom.corp.google.com'
-    os.environ['SERVER_PORT'] = '80'
+    ctx_test_util.set_both('HTTP_HOST', '')
+    ctx_test_util.set_both('SERVER_NAME', 'giggit.prom.corp.google.com')
+    ctx_test_util.set_both('SERVER_PORT', '80')
     self._TestSimpleLogout('',
                            'http://giggit.prom.corp.google.com/')
 
 
 
-    os.environ['SERVER_PORT'] = '9999'
+    ctx_test_util.set_both('SERVER_PORT', '9999')
     self._TestSimpleLogout('',
                            'http://giggit.prom.corp.google.com:9999/')
 
 
-    os.environ['SERVER_PORT'] = '80'
+    ctx_test_util.set_both('SERVER_PORT', '80')
     logout_url = users.CreateLogoutURL('')
     self.assertEqual(
       (user_service_stub._DEFAULT_LOGOUT_URL %
@@ -317,11 +317,11 @@ class UserTest(absltest.TestCase):
         users.User(_auth_domain='gmail.com', _strict_mode=False), None)
 
   def testDefaultUsers(self):
-    os.environ['USER_EMAIL'] = 'jonmac@google.com'
+    ctx_test_util.set_both('USER_EMAIL', 'jonmac@google.com')
     jon = users.User()
     self.assertEqual('jonmac@google.com', jon.email())
 
-    del os.environ['USER_EMAIL']
+    ctx_test_util.set_both('USER_EMAIL', '')
     os.environ['FEDERATED_IDENTITY'] = 'http://www.google.com/jcai'
     jcai = users.User()
     self.assertEqual('http://www.google.com/jcai', jcai.federated_identity())
@@ -329,8 +329,8 @@ class UserTest(absltest.TestCase):
   def testCustomEnviron(self):
 
 
-    os.environ['USER_EMAIL'] = 'jonmac@google.com'
-    del os.environ['USER_ID']
+    ctx_test_util.set_both('USER_EMAIL', 'jonmac@google.com')
+    ctx_test_util.set_both('USER_ID', '')
     jon = users.User()
     self.assertEqual('jonmac@google.com', jon.email())
 
@@ -367,9 +367,9 @@ class UserTest(absltest.TestCase):
     user = users.User('jonmac@google.com', _user_id='123')
     self.assertEqual('123', user.user_id())
 
-    os.environ['USER_EMAIL'] = 'jonmac@google.com'
+    ctx_test_util.set_both('USER_EMAIL', 'jonmac@google.com')
     user = users.User()
-    del os.environ['USER_EMAIL']
+    ctx_test_util.set_both('USER_EMAIL', '')
     self.assertEqual('jonmac@google.com', user.email())
     self.assertEqual(None, user.user_id())
 
@@ -396,13 +396,15 @@ class UserTest(absltest.TestCase):
     self.assertFalse(users.is_current_user_admin())
     self.assertFalse(users.IsCurrentUserAdmin())
 
-    os.environ['USER_IS_ADMIN'] = '0'
+    ctx_test_util.set_both('USER_IS_ADMIN', '0')
     self.assertFalse(users.is_current_user_admin())
     self.assertFalse(users.IsCurrentUserAdmin())
 
-    os.environ['USER_IS_ADMIN'] = '1'
+    ctx_test_util.set_both('USER_IS_ADMIN', '1')
     self.assertTrue(users.is_current_user_admin())
     self.assertTrue(users.IsCurrentUserAdmin())
+
+    ctx_test_util.set_both('USER_IS_ADMIN', '0')
 
   def testSortUsers(self):
     ryan = users.User('ryanb@gmail.com')

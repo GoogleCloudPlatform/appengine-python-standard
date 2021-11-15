@@ -117,7 +117,7 @@ class RequestLocalStream(object):
     return False
 
 
-class RequestLocalEnviron(collections.MutableMapping):
+class RequestLocalEnviron(collections.abc.MutableMapping):
   """A MutableMapping that delegates to a RequestEnvironment environ."""
 
   def __init__(self, request):
