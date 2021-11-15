@@ -265,7 +265,7 @@ def serialize(obj, *args, **kwargs):
     A serialized representation of the callable.
   """
   curried = _curry_callable(obj, *args, **kwargs)
-  if os.environ.get('NDB_USE_CROSS_COMPATIBLE_PICKLE_PROTOCOL', False):
+  if os.environ.get('DEFERRED_USE_CROSS_COMPATIBLE_PICKLE_PROTOCOL', False):
     protocol = 2
   else:
     protocol = pickle.HIGHEST_PROTOCOL
