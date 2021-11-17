@@ -159,7 +159,10 @@ def run(data):
     PermanentTaskFailure if an error occurred during unpickling the task.
   """
   try:
-    func, args, kwds = pickle.loads(data)
+    if os.environ.get('DEFERRED_USE_CROSS_COMPATIBLE_PICKLE_PROTOCOL', False):
+      func, args, kwds = pickle.loads(data, encoding='bytes')
+    else:
+      func, args, kwds = pickle.loads(data)
   except Exception as e:
     raise PermanentTaskFailure(e)
   else:
