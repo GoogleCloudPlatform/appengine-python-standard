@@ -304,6 +304,7 @@ def defer(obj, *args, **kwargs):
   queue = kwargs.pop("_queue", _DEFAULT_QUEUE)
   pickled = serialize(obj, *args, **kwargs)
   try:
+    print(pickled)
     task = taskqueue.Task(payload=pickled, **taskargs)
     return task.add(queue, transactional=transactional)
   except taskqueue.TaskTooLargeError:
@@ -368,6 +369,7 @@ class Handler():
       request_body_size = 0
 
     request_body = environ["wsgi.input"].read(request_body_size)
+    print(request_body)
     run(request_body)
     return "Success", http.HTTPStatus.OK, [_TASKQUEUE_RESPONSE_HEADERS]
 
