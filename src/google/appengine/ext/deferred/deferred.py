@@ -269,7 +269,7 @@ def serialize(obj, *args, **kwargs):
   """
   curried = _curry_callable(obj, *args, **kwargs)
   if os.environ.get('DEFERRED_USE_CROSS_COMPATIBLE_PICKLE_PROTOCOL', False):
-    protocol = 2
+    protocol = 0
   else:
     protocol = pickle.HIGHEST_PROTOCOL
   return pickle.dumps(curried, protocol)
