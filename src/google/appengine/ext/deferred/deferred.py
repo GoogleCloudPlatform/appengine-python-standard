@@ -390,6 +390,7 @@ class Handler():
       headers: a dict containing response headers
     """
     try:
+      print(environ)
       response, status, headers = self.run_from_request(environ)
     except SingularTaskFailure:
 
