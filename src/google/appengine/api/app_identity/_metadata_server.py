@@ -21,8 +21,6 @@ http://google/third_party/py/google/auth/compute_engine/_metadata.py
 and enhanced to support explicit oauth2 scopes.
 """
 
-
-
 import os
 import time
 from typing import List, Optional, Text, Tuple

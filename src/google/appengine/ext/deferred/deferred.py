@@ -110,6 +110,7 @@ app.wsgi_app = wrap_wsgi_app(app.wsgi_app, use_deferred=True)
 
 import http
 import logging
+import os
 import pickle
 import types
 from google.appengine.api import taskqueue
@@ -264,7 +265,11 @@ def serialize(obj, *args, **kwargs):
     A serialized representation of the callable.
   """
   curried = _curry_callable(obj, *args, **kwargs)
-  return pickle.dumps(curried, protocol=pickle.HIGHEST_PROTOCOL)
+  if os.environ.get("DEFERRED_USE_CROSS_COMPATIBLE_PICKLE_PROTOCOL", False):
+    protocol = 0
+  else:
+    protocol = pickle.HIGHEST_PROTOCOL
+  return pickle.dumps(curried, protocol)
 
 
 def defer(obj, *args, **kwargs):
