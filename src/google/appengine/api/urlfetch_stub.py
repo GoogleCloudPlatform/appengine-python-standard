@@ -323,7 +323,7 @@ class URLFetchServiceStub(apiproxy_stub.APIProxyStub):
         protocol = last_protocol
 
 
-      if port == '0':
+      if port == 0:
         host = host.replace(':0', '')
 
 

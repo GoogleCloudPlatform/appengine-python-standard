@@ -84,7 +84,7 @@ def google_apps_namespace():
   if context.READ_FROM_OS_ENVIRON:
     return os.environ.get('HTTP_X_APPENGINE_DEFAULT_NAMESPACE')
   else:
-    return context.gae_headers.DEFAULT_NAMESPACE.get()
+    return context.gae_headers.DEFAULT_NAMESPACE.get(None)
 
 
 class BadValueError(Exception):

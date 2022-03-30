@@ -20,6 +20,7 @@ Thread_hooks module enables adding user provided hooks into threading module.
 """
 
 import abc
+import concurrent.futures.thread
 import importlib
 import multiprocessing.dummy
 import threading
@@ -86,6 +87,8 @@ def PatchStartNewThread(
   importlib.reload(threading_module)
 
   importlib.reload(multiprocessing.dummy)
+
+  importlib.reload(concurrent.futures.thread)
 
 
 def _MakeStartNewThread(base_start_new_thread, hooks):

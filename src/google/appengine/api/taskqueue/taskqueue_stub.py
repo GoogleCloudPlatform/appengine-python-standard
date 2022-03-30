@@ -2046,8 +2046,8 @@ class _Queue(object):
       self._InsertTask(RandomTask())
 
 
-def _ParseHostHeader(dispatcher, default_version_hostname, host_header):
-  """Parse the Host header.
+def _GetTargetFromHostHeader(default_version_hostname, host_header):
+  """Parse the target from the Host header.
 
   The taskqueue clients have an odd behavior of attaching information about the
   desired target instance, version, and module onto the Host header... and this
@@ -2056,35 +2056,48 @@ def _ParseHostHeader(dispatcher, default_version_hostname, host_header):
   To make that work we have to parse the fields back out again.
 
   Args:
-    dispatcher: An instance of request_info.Dispatcher.
     default_version_hostname: Hostname of "default" version.
     host_header: Host header from taskqueue client.
 
   Returns:
-    A tuple of (module, version, instance), any of which could be None.
+    A taskqueue target string. See _ParseTarget for more info.
+    If parsing fails, return None.
   """
 
 
 
 
-  for module in dispatcher.get_module_names():
-    if dispatcher.get_hostname(module, None) == host_header:
-      return module, None, None
-
-
-
-
   default_address_offset = host_header.find(default_version_hostname)
-  if default_address_offset >= 0:
-    target = host_header[:default_address_offset - 1]
-    return _ParseTarget(target)
+  if default_address_offset <= 0:
+    return None
+  prefix = host_header[:default_address_offset - 1]
 
-  return None, None, None
+
+
+
+
+  if '.' in prefix:
+    logging.warning(
+        'Ignoring instance/version in %s; multiple versions '
+        'are not supported in local emulation.', prefix)
+    return prefix.split('.')[-1]
+  return prefix
 
 
 def _ParseTarget(target):
+  """Parse a taskqueue target string.
 
+  Args:
+    target: From
+      http://google/googledata/devsite/site-cloud/en/appengine/docs/standard/_shared/_taskqueue/_push/_creating-tasks.md;l=119-129;rcl=369520046
+      The target prefix may be
+       - module
+       - version.service
+       - instance.version.service
 
+  Returns:
+    A tuple of (module, version, instance), any of which could be None.
+  """
   ret = list(reversed(target.split('.')))
   return ret + [None] * (3 - len(ret))
 
@@ -2121,8 +2134,6 @@ class _TaskExecutor(object):
     """
     method = task.RequestMethod.Name(task.method)
 
-    dispatcher = self._request_data.get_dispatcher()
-
     headers = []
 
     host_header = None
@@ -2155,29 +2166,25 @@ class _TaskExecutor(object):
       headers.append(
           ('X-AppEngine-TaskPreviousResponse', str(task.runlog.response_code)))
 
-    if queue.target is not None:
-
-
-      target_module, target_version, target_instance = _ParseTarget(
-          queue.target)
-    elif host_header:
-      target_module, target_version, target_instance = _ParseHostHeader(
-          dispatcher, self._default_host, host_header)
-    else:
-      target_module = None
-      target_version = None
-      target_instance = None
+    target = queue.target or _GetTargetFromHostHeader(self._default_host,
+                                                      host_header)
 
     try:
-      response = dispatcher.add_request(
+      if target:
+        module, version, instance = _ParseTarget(target)
+      else:
+
+        headers.append(('host', host_header))
+        module, version, instance = None, None, None
+      response = self._request_data.get_dispatcher().add_request(
           method=method,
           relative_url=six.ensure_str(task.url),
           headers=headers,
           body=task.body if task.HasField('body') else '',
           source_ip='0.1.0.2',
-          module_name=target_module,
-          version=target_version,
-          instance_id=target_instance)
+          module_name=module,
+          version=version,
+          instance_id=instance)
     except request_info.Error:
       logging.exception('Failed to dispatch task %s', task)
       return 0
@@ -2321,6 +2328,8 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
 
 
   THREADSAFE = False
+
+  _ACCEPTS_REQUEST_ID = True
 
   def __init__(self,
                service_name='taskqueue',
@@ -2476,7 +2485,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
           gettime=self.gettime)
     return self._queues[app_id]
 
-  def _Dynamic_Add(self, request, response):
+  def _Dynamic_Add(self, request, response, request_id):
     """Add a single task to a queue.
 
     This method is a wrapper around the BulkAdd RPC request.
@@ -2489,12 +2498,13 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
         taskqueue_service.proto.
       response: The taskqueue_service_pb2.TaskQueueAddResponse. See
         taskqueue_service.proto.
+      request_id: The id of the request.
     """
     bulk_request = taskqueue_service_pb2.TaskQueueBulkAddRequest()
     bulk_response = taskqueue_service_pb2.TaskQueueBulkAddResponse()
 
     bulk_request.add_request.add().CopyFrom(request)
-    self._Dynamic_BulkAdd(bulk_request, bulk_response)
+    self._Dynamic_BulkAdd(bulk_request, bulk_response, request_id)
 
     assert len(bulk_response.taskresult) == 1
     result = bulk_response.taskresult[0].result
@@ -2504,7 +2514,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
     elif bulk_response.taskresult[0].HasField('chosen_task_name'):
       response.chosen_task_name = (bulk_response.taskresult[0].chosen_task_name)
 
-  def _Dynamic_BulkAdd(self, request, response):
+  def _Dynamic_BulkAdd(self, request, response, request_id):
     """Add many tasks to a queue using a single request.
 
     Must adhere to the '_Dynamic_' naming convention for stubbing to work.
@@ -2515,6 +2525,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
         taskqueue_service.proto.
       response: The taskqueue_service_pb2.TaskQueueBulkAddResponse. See
         taskqueue_service.proto.
+      request_id: The id of the request.
     """
 
 
@@ -2540,7 +2551,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
 
 
 
-    originating_module = self.request_data.get_module(None)
+    originating_module = self.request_data.get_module(request_id)
 
 
     host_header = '.'.join((originating_module, self._default_http_server),)
@@ -2626,7 +2637,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
       self._GetGroup().GetQueue(queue_name).PurgeQueue()
       self._GetGroup().GetQueue(queue_name).task_name_archive.clear()
 
-  def _Dynamic_UpdateQueue(self, request, unused_response):
+  def _Dynamic_UpdateQueue(self, request, unused_response, unused_request_id):
     """Local implementation of the UpdateQueue RPC in TaskQueueService.
 
     Must adhere to the '_Dynamic_' naming convention for stubbing to work.
@@ -2639,7 +2650,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
     """
     self._GetGroup(_GetAppId(request)).UpdateQueue_Rpc(request, unused_response)
 
-  def _Dynamic_FetchQueues(self, request, response):
+  def _Dynamic_FetchQueues(self, request, response, unused_request_id):
     """Local implementation of the FetchQueues RPC in TaskQueueService.
 
     Must adhere to the '_Dynamic_' naming convention for stubbing to work.
@@ -2651,7 +2662,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
     """
     self._GetGroup(_GetAppId(request)).FetchQueues_Rpc(request, response)
 
-  def _Dynamic_FetchQueueStats(self, request, response):
+  def _Dynamic_FetchQueueStats(self, request, response, unused_request_id):
     """Local 'random' implementation of the TaskQueueService.FetchQueueStats.
 
     This implementation loads some stats from the task store, the rest with
@@ -2666,7 +2677,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
     """
     self._GetGroup(_GetAppId(request)).FetchQueueStats_Rpc(request, response)
 
-  def _Dynamic_QueryTasks(self, request, response):
+  def _Dynamic_QueryTasks(self, request, response, unused_request_id):
     """Local implementation of the TaskQueueService.QueryTasks RPC.
 
     Must adhere to the '_Dynamic_' naming convention for stubbing to work.
@@ -2678,7 +2689,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
     """
     self._GetGroup(_GetAppId(request)).QueryTasks_Rpc(request, response)
 
-  def _Dynamic_FetchTask(self, request, response):
+  def _Dynamic_FetchTask(self, request, response, unused_request_id):
     """Local implementation of the TaskQueueService.FetchTask RPC.
 
     Must adhere to the '_Dynamic_' naming convention for stubbing to work.
@@ -2690,7 +2701,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
     """
     self._GetGroup(_GetAppId(request)).FetchTask_Rpc(request, response)
 
-  def _Dynamic_Delete(self, request, response):
+  def _Dynamic_Delete(self, request, response, unused_request_id):
     """Local delete implementation of TaskQueueService.Delete.
 
     Deletes tasks from the task store. A 1/20 chance of a transient error.
@@ -2704,7 +2715,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
     """
     self._GetGroup(_GetAppId(request)).Delete_Rpc(request, response)
 
-  def _Dynamic_ForceRun(self, request, response):
+  def _Dynamic_ForceRun(self, request, response, unused_request_id):
     """Local force run implementation of TaskQueueService.ForceRun.
 
     Forces running of a task in a queue. This will fail randomly for testing if
@@ -2743,7 +2754,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
       self._UpdateNextEventTime(0)
       response.result = taskqueue_service_pb2.TaskQueueServiceError.OK
 
-  def _Dynamic_DeleteQueue(self, request, response):
+  def _Dynamic_DeleteQueue(self, request, response, unused_request_id):
     """Local delete implementation of TaskQueueService.DeleteQueue.
 
     Must adhere to the '_Dynamic_' naming convention for stubbing to work.
@@ -2759,7 +2770,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
           taskqueue_service_pb2.TaskQueueServiceError.PERMISSION_DENIED)
     self._GetGroup(app_id).DeleteQueue_Rpc(request, response)
 
-  def _Dynamic_PauseQueue(self, request, response):
+  def _Dynamic_PauseQueue(self, request, response, unused_request_id):
     """Local pause implementation of TaskQueueService.PauseQueue.
 
     Must adhere to the '_Dynamic_' naming convention for stubbing to work.
@@ -2775,7 +2786,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
           taskqueue_service_pb2.TaskQueueServiceError.PERMISSION_DENIED)
     self._GetGroup(app_id).PauseQueue_Rpc(request, response)
 
-  def _Dynamic_PurgeQueue(self, request, response):
+  def _Dynamic_PurgeQueue(self, request, response, unused_request_id):
     """Local purge implementation of TaskQueueService.PurgeQueue.
 
     Must adhere to the '_Dynamic_' naming convention for stubbing to work.
@@ -2788,7 +2799,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
 
     self._GetGroup(_GetAppId(request)).PurgeQueue_Rpc(request, response)
 
-  def _Dynamic_DeleteGroup(self, request, response):
+  def _Dynamic_DeleteGroup(self, request, response, unused_request_id):
     """Local delete implementation of TaskQueueService.DeleteGroup.
 
     Must adhere to the '_Dynamic_' naming convention for stubbing to work.
@@ -2810,7 +2821,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
       raise apiproxy_errors.ApplicationError(
           taskqueue_service_pb2.TaskQueueServiceError.UNKNOWN_QUEUE)
 
-  def _Dynamic_UpdateStorageLimit(self, request, response):
+  def _Dynamic_UpdateStorageLimit(self, request, response, unused_request_id):
     """Local implementation of TaskQueueService.UpdateStorageLimit.
 
     Must adhere to the '_Dynamic_' naming convention for stubbing to work.
@@ -2830,7 +2841,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
 
     response.new_limit = request.limit
 
-  def _Dynamic_QueryAndOwnTasks(self, request, response):
+  def _Dynamic_QueryAndOwnTasks(self, request, response, unused_request_id):
     """Local implementation of TaskQueueService.QueryAndOwnTasks.
 
     Must adhere to the '_Dynamic_' naming convention for stubbing to work.
@@ -2850,7 +2861,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
 
     self._GetGroup().QueryAndOwnTasks_Rpc(request, response)
 
-  def _Dynamic_ModifyTaskLease(self, request, response):
+  def _Dynamic_ModifyTaskLease(self, request, response, unused_request_id):
     """Local implementation of TaskQueueService.ModifyTaskLease.
 
     Args:
@@ -2863,7 +2874,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
 
     self._GetGroup().ModifyTaskLease_Rpc(request, response)
 
-  def _Dynamic_SetUpStub(self, request, response):
+  def _Dynamic_SetUpStub(self, request, response, unused_request_id):
     """Local implementation of TaskQueueStubService.SetUpStub.
 
     Args:
@@ -2883,7 +2894,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
 
 
 
-  def _Dynamic_GetQueues(self, request, response):
+  def _Dynamic_GetQueues(self, request, response, unused_request_id):
     """Local implementation of TaskQueueStubService.GetQueues.
 
     Args:
@@ -2906,7 +2917,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
     group.FetchQueueStats_Rpc(stats_request,
                               response.fetch_queue_stats_response)
 
-  def _Dynamic_DeleteTask(self, request, response):
+  def _Dynamic_DeleteTask(self, request, response, unused_request_id):
     """Local implementation of TaskQueueStubService.DeleteTask.
 
     This guarantees task deletion, while _Dynamic_Delete intentionally
@@ -2918,7 +2929,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
     """
     self.DeleteTask(request.queue_name, request.task_name[0])
 
-  def _Dynamic_FlushQueue(self, request, response):
+  def _Dynamic_FlushQueue(self, request, response, unused_request_id):
     """Local implementation of TaskQueueStubService.FlushQueue.
 
     Args:
@@ -2927,7 +2938,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
     """
     self.FlushQueue(request.queue_name)
 
-  def _Dynamic_GetQueueStateInfo(self, request, response):
+  def _Dynamic_GetQueueStateInfo(self, request, response, unused_request_id):
     """Local implementation of TaskQueueStubService.GetQueueStateInfo.
 
     Args:
@@ -2964,7 +2975,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
         task_info.eta_millis = queue_task.get('eta_usec', 0.0) / 1000
         task_info.add_request.CopyFrom(queue_task['add_request_pb'])
 
-  def _Dynamic_LoadQueueXml(self, request, response):
+  def _Dynamic_LoadQueueXml(self, request, response, unused_request_id):
     """Local implementation of TaskQueueStubService.LoadQueueXml.
 
     Args:
@@ -2995,7 +3006,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
         retry_seconds=self._task_retry_seconds)
     self.StartBackgroundExecution()
 
-  def _Dynamic_SetTaskQueueClock(self, request, response):
+  def _Dynamic_SetTaskQueueClock(self, request, response, unused_request_id):
     """Local implementation of TaskQueueStubService.SetTaskQueueClock.
 
     Args:
@@ -3015,7 +3026,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
         if queue:
           queue.gettime = new_gettime
 
-  def _Dynamic_GetFilteredTasks(self, request, response):
+  def _Dynamic_GetFilteredTasks(self, request, response, unused_request_id):
     """Local implementation of TaskQueueStubService.GetFilteredTasks.
 
     Args:
@@ -3028,7 +3039,7 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
     for task_dict in filtered_dicts:
       _AddDictToQueryTasksResponse(task_dict, response)
 
-  def _Dynamic_PatchQueueYamlParser(self, request, response):
+  def _Dynamic_PatchQueueYamlParser(self, request, response, unused_request_id):
     """Local implementation of TaskQueueStubService.PatchQueueYamlParser.
 
     NOTE, this is ONLY for backward-supporting some existing python tests. DO

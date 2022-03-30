@@ -29,7 +29,6 @@ https://cloud.google.com/appengine/docs/python/appidentity/
 
 
 
-import os
 import time
 
 from google.appengine.api import apiproxy_stub_map
@@ -37,6 +36,7 @@ from google.appengine.api import full_app_id
 from google.appengine.api.app_identity import _metadata_server
 from google.appengine.api.app_identity import app_identity_service_pb2
 from google.appengine.runtime import apiproxy_errors
+from google.appengine.runtime import context
 import six
 
 __all__ = ['BackendDeadlineExceeded',
@@ -432,7 +432,7 @@ def get_default_version_hostname():
 
 
 
-  return os.getenv('DEFAULT_VERSION_HOSTNAME')
+  return context.get('DEFAULT_VERSION_HOSTNAME', None)
 
 
 

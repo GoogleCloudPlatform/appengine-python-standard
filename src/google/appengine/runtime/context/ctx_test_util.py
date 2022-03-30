@@ -152,12 +152,15 @@ def _both_context_modes_callable():
 def set_both(key, value):
   """Write to both legacy context (os.environ) and new contextvars."""
 
+  os_env_key = key
 
-  if key == 'DEFAULT_NAMESPACE' or key == 'HTTP_X_APPENGINE_DEFAULT_NAMESPACE':
-    key = 'DEFAULT_NAMESPACE'
-    os_env_key = 'HTTP_X_APPENGINE_DEFAULT_NAMESPACE'
-  else:
-    os_env_key = key
+
+  prefix = 'HTTP_X_APPENGINE_'
+  for shortname in ['DEFAULT_NAMESPACE', 'API_TICKET', 'DEV_REQUEST_ID']:
+    longname = prefix + shortname
+    if key == shortname or key == longname:
+      key = shortname
+      os_env_key = longname
 
 
 

@@ -47,6 +47,7 @@ from google.appengine.api import namespace_manager
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import gql
+from google.appengine.runtime.context import ctx_test_util
 from six.moves import range
 from six.moves import zip
 
@@ -62,6 +63,7 @@ def setUpModule():
 
 
 
+@ctx_test_util.both_context_modes()
 class GqlTest(absltest.TestCase):
   """Test the SQL interface to the Python datastore.
 
@@ -82,7 +84,7 @@ class GqlTest(absltest.TestCase):
 
 
     os.environ['TZ'] = 'UTC'
-    os.environ['AUTH_DOMAIN'] = 'google.com'
+    ctx_test_util.set_both('AUTH_DOMAIN', 'google.com')
     time.tzset()
 
 
@@ -1151,10 +1153,13 @@ class GqlTest(absltest.TestCase):
     guido['address.street'] = 'Spear'
     guido['address.city'] = 'SF'
     guido['address.zip'] = 94105
-    datastore.Put(guido)
-    select = gql.GQL("SELECT * FROM Person WHERE address.street = 'Spear'")
-    results = [a for a in select.Run()]
-    self.assertEqual([guido], results)
+    try:
+      datastore.Put(guido)
+      select = gql.GQL("SELECT * FROM Person WHERE address.street = 'Spear'")
+      results = [a for a in select.Run()]
+      self.assertEqual([guido], results)
+    finally:
+      datastore.Delete(guido)
 
   def AssertRaisesBadQuery(self, substr, callable_obj, *args):
     """Asserts that callable_obj(*args) raises a matching BadQueryError."""
@@ -1753,4 +1758,3 @@ class GqlMultiQueryTest(absltest.TestCase):
 
 if __name__ == '__main__':
   absltest.main()
-

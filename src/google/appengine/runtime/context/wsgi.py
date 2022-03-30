@@ -25,6 +25,9 @@ HTTP_USER_AGENT = contextvars.ContextVar('HTTP_USER_AGENT')
 HTTP_X_CLOUD_TRACE_CONTEXT = contextvars.ContextVar(
     'HTTP_X_CLOUD_TRACE_CONTEXT')
 
+HTTP_X_GOOGLE_DAPPERTRACEINFO = contextvars.ContextVar(
+    'HTTP_X_GOOGLE_DAPPERTRACEINFO')
+
 
 PATH_INFO = contextvars.ContextVar('PATH_INFO')
 PATH_TRANSLATED = contextvars.ContextVar('PATH_TRANSLATED')

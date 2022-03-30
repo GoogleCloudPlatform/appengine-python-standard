@@ -246,8 +246,7 @@ def _curry_callable(obj, *args, **kwargs):
         return (invoke_member, (obj.__self__, obj.__name__) + args, kwargs)
   elif isinstance(obj, object) and hasattr(obj, "__call__"):
     return (obj, args, kwargs)
-  elif isinstance(obj, (types.FunctionType, types.BuiltinFunctionType, type,
-                        types.UnboundMethodType)):
+  elif isinstance(obj, (types.FunctionType, types.BuiltinFunctionType, type)):
     return (obj, args, kwargs)
   else:
     raise ValueError("obj must be callable")
