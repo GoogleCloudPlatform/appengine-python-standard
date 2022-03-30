@@ -1,6 +1,6 @@
-# Google App Engine services SDK for Python 3 (preview)
+# Google App Engine services SDK for Python 3
 
-This is a preview release of the App Engine services SDK for Python 3.  It provides access
+This is a release of the App Engine services SDK for Python 3.  It provides access
 to various API endpoints that were previously only available on the Python 2.7
 runtime.
 
@@ -13,7 +13,7 @@ We are working to support more App Engine bundled service APIs for Python 3. To 
 
 In your `requirements.txt` file, add the following:
 
-`appengine-python-standard>=0.3.1`
+`appengine-python-standard>=1.0.0`
 
 In your app's `app.yaml`, add the following:
 
