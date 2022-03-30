@@ -45,7 +45,6 @@ import base64
 import binascii
 import calendar
 import datetime
-import os
 import re
 import struct
 import time
@@ -59,6 +58,7 @@ from google.appengine.api import users
 from google.appengine.datastore import datastore_pbs
 from google.appengine.datastore import entity_v4_pb2
 from google.appengine.datastore import sortable_pb_encoder
+from google.appengine.runtime import context
 import six
 from six.moves import range
 from six.moves import urllib
@@ -644,7 +644,7 @@ class Key(object):
     return u'tag:%s.%s,%s:%s[%s]' % (
 
         saxutils.escape(EncodeAppIdNamespace(self.app(), self.namespace())),
-        os.environ['AUTH_DOMAIN'],
+        context.get('AUTH_DOMAIN'),
         datetime.date.today().isoformat(),
         saxutils.escape(self.kind()),
         saxutils.escape(str(self)))

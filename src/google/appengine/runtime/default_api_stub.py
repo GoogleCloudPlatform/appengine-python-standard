@@ -30,6 +30,7 @@ from google.appengine.api import apiproxy_rpc
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.ext.remote_api import remote_api_bytes_pb2 as remote_api_pb2
 from google.appengine.runtime import apiproxy_errors
+from google.appengine.runtime import context
 import six.moves.urllib.parse
 import urllib3
 
@@ -167,7 +168,15 @@ class DefaultApiRPC(apiproxy_rpc.RPC):
     if DefaultApiStub.ShouldUseRequestSecurityTicketForThread():
 
 
-      ticket = os.environ.get(TICKET_HEADER, os.environ.get(DEV_TICKET_HEADER))
+      if context.READ_FROM_OS_ENVIRON:
+        ticket = os.environ.get(TICKET_HEADER,
+                                os.environ.get(DEV_TICKET_HEADER))
+      else:
+
+
+
+        ticket = context.gae_headers.API_TICKET.get(
+            context.gae_headers.DEV_REQUEST_ID.get(None))
 
     if not ticket:
       raise apiproxy_errors.RPCFailedError(
@@ -190,7 +199,7 @@ class DefaultApiRPC(apiproxy_rpc.RPC):
     }
 
 
-    dapper_header_value = os.environ.get(DAPPER_ENV_KEY)
+    dapper_header_value = context.get(DAPPER_ENV_KEY)
     if dapper_header_value:
       headers[DAPPER_HEADER] = dapper_header_value
 
@@ -302,7 +311,7 @@ class DefaultApiStub(object):
   def SetUseRequestSecurityTicketForThread(cls, value):
     """Sets if the in environment security ticket should be used.
 
-    Security tickets are set in the os.environ, which gets inherited by a
+    Security tickets are set in the context, which gets inherited by a
     child thread.  Child threads should not use the security ticket of their
     parent by default, because once the parent thread returns and the request
     is complete, the security ticket is no longer valid.

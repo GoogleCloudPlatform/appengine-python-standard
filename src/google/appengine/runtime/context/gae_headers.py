@@ -27,6 +27,9 @@ USER_ID = contextvars.ContextVar('USER_ID')
 USER_IS_ADMIN = contextvars.ContextVar('USER_IS_ADMIN')
 USER_NICKNAME = contextvars.ContextVar('USER_NICKNAME')
 DEFAULT_NAMESPACE = contextvars.ContextVar('DEFAULT_NAMESPACE')
+API_TICKET = contextvars.ContextVar('API_TICKET')
+DEV_REQUEST_ID = contextvars.ContextVar('DEV_REQUEST_ID')
+REQUEST_LOG_ID = contextvars.ContextVar('REQUEST_LOG_ID')
 
 
 def init_from_wsgi_environ(

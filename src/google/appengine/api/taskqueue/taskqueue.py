@@ -46,6 +46,7 @@ from google.appengine.api import namespace_manager
 from google.appengine.api import urlfetch
 from google.appengine.api.taskqueue import taskqueue_service_bytes_pb2 as taskqueue_service_pb2
 from google.appengine.runtime import apiproxy_errors
+from google.appengine.runtime import context
 import six
 from six.moves import urllib
 import six.moves.urllib.parse
@@ -933,7 +934,7 @@ class Task(object):
 
 
 
-    if 'HTTP_HOST' not in os.environ:
+    if context.get('HTTP_HOST', None) is None:
       logging.warning(
           'The HTTP_HOST environment variable was not set, but is required '
           'to determine the correct value for the `Task.target\' property. '
@@ -952,8 +953,8 @@ class Task(object):
     elif 'Host' in self.__headers:
       self.__target = self.__target_from_host(self.__headers['Host'])
     else:
-      if 'HTTP_HOST' in os.environ:
-        self.__headers['Host'] = os.environ['HTTP_HOST']
+      if context.get('HTTP_HOST', None):
+        self.__headers['Host'] = context.get('HTTP_HOST')
         self.__target = self.__target_from_host(self.__headers['Host'])
       else:
 

@@ -213,8 +213,8 @@ class HttpEnvironTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
-    os.environ['DEFAULT_VERSION_HOSTNAME'] = DEFAULT_HOSTNAME
-    os.environ['HTTP_HOST'] = DEFAULT_HOSTNAME
+    ctx_test_util.set_both('DEFAULT_VERSION_HOSTNAME', DEFAULT_HOSTNAME)
+    ctx_test_util.set_both('HTTP_HOST', DEFAULT_HOSTNAME)
 
 
 class HelpersTest(absltest.TestCase):
@@ -414,6 +414,7 @@ class TaskRetryOptionsTest(absltest.TestCase):
                       task_age_limit=-1)
 
 
+@ctx_test_util.both_context_modes()
 class TaskTest(HttpEnvironTest):
   """Tests for the Task class."""
 
@@ -786,7 +787,7 @@ class TaskTest(HttpEnvironTest):
   def testTargetFromCurrentHostnameNonDefaultVersion(self):
     """."""
     host_header = '%s.%s' % ('2', DEFAULT_HOSTNAME)
-    os.environ['HTTP_HOST'] = host_header
+    ctx_test_util.set_both('HTTP_HOST', host_header)
     expected = _base_headers.copy()
     expected['content-type'] = 'text/plain; charset=utf-8'
     expected['Host'] = host_header
@@ -846,6 +847,9 @@ class TaskTest(HttpEnvironTest):
 
   def testEta(self):
     """Tests specifying an explicit ETA for a Task."""
+    self.now_timestamp = time.time()
+    self.now_time = datetime.datetime.fromtimestamp(self.now_timestamp)
+    self.now_utctime = self.now_time.replace(tzinfo=taskqueue._UTC)
     self.now_timestamp += 15
     self.now_time += datetime.timedelta(seconds=15)
     t = Task(eta=self.now_time)
@@ -2208,6 +2212,7 @@ class QueuePurgeTest(absltest.TestCase):
     self.mox.VerifyAll()
 
 
+@ctx_test_util.both_context_modes()
 class QueueAddTest(HttpEnvironTest):
   """Tests for the Queue class and anything that puts Tasks in a queue."""
 
@@ -2222,6 +2227,7 @@ class QueueAddTest(HttpEnvironTest):
 
     apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()
 
+  def SetupMox(self):
     self.mox = mox.Mox()
     self.mox.StubOutWithMock(apiproxy_stub_map.apiproxy,
                              'MakeSyncCall')
@@ -2284,6 +2290,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testWithNameAndUrl(self):
     """Tests adding a Task, which has a name and URL specified, to a Queue."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result = response.taskresult.add()
@@ -2310,6 +2317,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testWithRelativeUrl(self):
     """Tests adding a Task, which only has a URL specified, to a Queue."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result = response.taskresult.add()
@@ -2337,6 +2345,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testWithName(self):
     """Tests adding a Task to a queue that only specifies a name."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result = response.taskresult.add()
@@ -2362,6 +2371,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testWithDispatchDeadline(self):
     """Tests adding a Task to a queue that specifies a dispatch deadline."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result = response.taskresult.add()
@@ -2387,6 +2397,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testWithNameAndParams(self):
     """Tests adding a Task, which has a name and GET arguments, to a Queue."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result = response.taskresult.add()
@@ -2415,6 +2426,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testNoNameAndNoUrl(self):
     """Tests adding a Task that has no assigned name or URL."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result = response.taskresult.add()
@@ -2441,6 +2453,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testNoNameAndNoUrlAndParams(self):
     """Tests adding a Task that has no assigned name or URL."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result = response.taskresult.add()
@@ -2467,6 +2480,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testBackoffOnlyTaskRetryOptions(self):
     """Tests adding a Task with only the backoff times set on RetryOptions."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result = response.taskresult.add()
@@ -2498,6 +2512,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testMinimalTaskRetryOptions(self):
     """Tests adding a Task with no optional parameters set on RetryOptions."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result = response.taskresult.add()
@@ -2524,6 +2539,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testFullAssignment(self):
     """Tests all fields of the Task together."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result = response.taskresult.add()
@@ -2574,6 +2590,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testFullAssignmentWithAdd(self):
     """Tests all fields of the Task together."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result = response.taskresult.add()
@@ -2625,6 +2642,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testTransactionalAddOutsideOfTransaction(self):
     """Tests adding a Task with transactional set outside of a transaction."""
+    self.SetupMox()
 
     self.assertRaises(taskqueue.BadTransactionStateError,
                       self.TaskAdd,
@@ -2638,6 +2656,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testConvenienceMethod(self):
     """Tests the module-level 'add' convenience method."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result = response.taskresult.add()
@@ -2664,6 +2683,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testAddTaskInstanceTwice(self):
     """Tests that enqueueing a Task instance twice will error."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result = response.taskresult.add()
@@ -2695,6 +2715,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testMultipleResults(self):
     """Tests that the a results is returned with many Task arguments."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result1 = response.taskresult.add()
@@ -2739,6 +2760,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testAddExistingTask(self):
     """Tests partial success (some tasks added, others not)."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result1 = response.taskresult.add()
@@ -2793,6 +2815,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testAddMixedErrors(self):
     """Tests TaskAlreadyExists and TombstonedTask never hide other errors."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result1 = response.taskresult.add()
@@ -2831,16 +2854,19 @@ class QueueAddTest(HttpEnvironTest):
 
   def testNoTasks(self):
     """Tests adding an empty list of tasks to a Queue."""
+    self.SetupMox()
 
     self.assertEqual([], Queue().add([]))
 
   def testTooManyTasks(self):
     """Tests adding a list containing too many tasks to a Queue."""
+    self.SetupMox()
     tasks = [Task() for _ in range(taskqueue.MAX_TASKS_PER_ADD + 1)]
     self.assertRaises(taskqueue.TooManyTasksError, self.Add, Queue(), tasks)
 
   def testDuplicateTaskNames(self):
     """Tests adding Tasks with duplicate names to a Queue."""
+    self.SetupMox()
     self.assertRaises(taskqueue.DuplicateTaskNameError,
                       self.Add,
                       Queue(),
@@ -2848,6 +2874,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def RunBulkAddApplicationError(self, error_code, error_class):
     """Tests BulkAdd() raising an ApplicationError error with the given code."""
+    self.SetupMox()
     self.mox.ResetAll()
 
     expected_request = taskqueue_service_pb2.TaskQueueBulkAddRequest()
@@ -2870,6 +2897,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testBulkAddApplicationErrors(self):
     """Tests that BulkAdd() ApplicationErrors are mapped to exceptions."""
+    self.SetupMox()
     self.RunBulkAddApplicationError(TaskQueueServiceError.UNKNOWN_QUEUE,
                                     taskqueue.UnknownQueueError)
     self.RunBulkAddApplicationError(TaskQueueServiceError.TRANSIENT_ERROR,
@@ -2916,6 +2944,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def RunBulkAddTaskResultError(self, error_code, error_class):
     """Tests BulkAdd() returning error_code in a TaskResult."""
+    self.SetupMox()
     self.mox.ResetAll()
 
     def SetResponse(service, method, request, response):
@@ -2965,6 +2994,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testBulkAddTaskResultErrors(self):
     """Tests that BulkAdd() TaskResult errors are mapped to exceptions."""
+    self.SetupMox()
     self.RunBulkAddTaskResultError(TaskQueueServiceError.UNKNOWN_QUEUE,
                                    taskqueue.UnknownQueueError)
     self.RunBulkAddTaskResultError(TaskQueueServiceError.TRANSIENT_ERROR,
@@ -3012,6 +3042,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testAddPullTasksMultipleResults(self):
     """Tests adding multiple tasks in a call."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result1 = response.taskresult.add()
@@ -3060,6 +3091,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testPullTaskSingleTaskWithPayload(self):
     """Tests adding a pull task with payload data."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result = response.taskresult.add()
@@ -3085,6 +3117,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testPullTaskWithoutPayload(self):
     """Tests adding a pull task that without payload data."""
+    self.SetupMox()
 
     self.assertRaises(InvalidTaskError,
                       Task,
@@ -3093,6 +3126,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testPullTaskWithUrl(self):
     """Tests adding pull task with url."""
+    self.SetupMox()
     self.assertRaises(InvalidTaskError, Task,
                       payload=self.payload,
                       eta=self.now,
@@ -3101,6 +3135,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testPullTaskWithPayloadAndParams(self):
     """Tests adding pull task with both payload and params."""
+    self.SetupMox()
     self.assertRaises(InvalidTaskError, Task,
                       payload=self.payload,
                       eta=self.now,
@@ -3110,6 +3145,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testPullTaskWithHeaders(self):
     """Tests adding pull task with headers."""
+    self.SetupMox()
     self.assertRaises(InvalidTaskError, Task,
                       payload=self.payload,
                       eta=self.now,
@@ -3119,6 +3155,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testPullTaskNoName(self):
     """Tests adding task that doesn't have task name."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result1 = response.taskresult.add()
@@ -3157,6 +3194,7 @@ class QueueAddTest(HttpEnvironTest):
     self.assertEqual(t[1].name, 'NAME')
 
   def testPullTasksWithTag(self):
+    self.SetupMox()
     tags = [
         None, '', 'My test Tag', u'\u30cb\u30e3\u30f3', '\x00\x01\x02\x03']
 
@@ -3201,12 +3239,14 @@ class QueueAddTest(HttpEnvironTest):
       self.assertTrue(task.was_enqueued)
 
   def testPullTasksWithOversizedTag(self):
+    self.SetupMox()
     self.assertRaises(
         taskqueue.InvalidTagError,
         Task, payload=self.payload, method='PULL', tag='a'*501)
 
   def testTaskAddCallsAsync(self):
     """Test Task's add method calls add_async."""
+    self.SetupMox()
     dummy_result = object()
 
     rpc = self.mox.CreateMockAnything()
@@ -3228,6 +3268,7 @@ class QueueAddTest(HttpEnvironTest):
 
   def testAddCallsAsync(self):
     """Test Queue's add method calls add_async."""
+    self.SetupMox()
     dummy_task = object()
     dummy_result = object()
 
@@ -3249,6 +3290,7 @@ class QueueAddTest(HttpEnvironTest):
     self.assertIs(result, dummy_result)
 
 
+@ctx_test_util.both_context_modes()
 class AsyncQueueAddTest(QueueAddTest):
   """Tests for Queue.add_async method.
 
@@ -3267,6 +3309,7 @@ class AsyncQueueAddTest(QueueAddTest):
 
   def testAddAsyncUsesRpc(self):
     """Test add_async returns supplied rpc."""
+    self.SetupMox()
 
     rpc = self.mox.CreateMockAnything()
     rpc.service = 'taskqueue'
@@ -3286,6 +3329,7 @@ class AsyncQueueAddTest(QueueAddTest):
 
   def testTaskAddAsyncUsesRpc(self):
     """Test Task add_async returns supplied rpc."""
+    self.SetupMox()
 
     rpc = self.mox.CreateMockAnything()
     rpc.service = 'taskqueue'
@@ -3303,6 +3347,7 @@ class AsyncQueueAddTest(QueueAddTest):
     self.assertIs(returned_rpc, rpc)
 
 
+@ctx_test_util.both_context_modes()
 class QueueTransactionalAddTest(HttpEnvironTest):
   """Tests for the Queue class and anything that puts Tasks in a queue."""
   APP_ID = 'app'
@@ -3318,6 +3363,8 @@ class QueueTransactionalAddTest(HttpEnvironTest):
     self.payload = 'some-data'
 
     full_app_id.put(self.APP_ID)
+
+  def SetupMox(self):
     self.mox = mox.Mox()
     self.mox.StubOutWithMock(apiproxy_stub_map, 'CreateRPC')
 
@@ -3338,6 +3385,7 @@ class QueueTransactionalAddTest(HttpEnvironTest):
 
   def testInTransaction(self):
     """Tests adding a Task in a transaction."""
+    self.SetupMox()
 
     def SetDatastoreResponse(service, method, request, response):
       response.app = 'app'
@@ -3384,6 +3432,7 @@ class QueueTransactionalAddTest(HttpEnvironTest):
 
   def testInTransactionWithTaskName(self):
     """Tests adding a named Task in a transaction."""
+    self.SetupMox()
 
     def transaction():
       q = Queue()
@@ -3403,6 +3452,7 @@ class QueueTransactionalAddTest(HttpEnvironTest):
 
   def testInTransactionWithNonTransactionalAdd(self):
     """Tests adding a Task in a transaction with transactional set to False."""
+    self.SetupMox()
 
     def SetResponse(service, method, request, response):
       task_result = response.taskresult.add()
@@ -3440,6 +3490,7 @@ class QueueTransactionalAddTest(HttpEnvironTest):
 
   def testInTransactionRequestTooLarge(self):
     """Tests adding too many large Tasks in a transaction."""
+    self.SetupMox()
     longstring = 'a' * (taskqueue.MAX_PULL_TASK_SIZE_BYTES - 1024)
 
     def transaction():
@@ -3459,6 +3510,7 @@ class QueueTransactionalAddTest(HttpEnvironTest):
     self.mox.VerifyAll()
 
 
+@ctx_test_util.both_context_modes()
 class AsyncQueueTransactionalAddTest(QueueTransactionalAddTest):
   """Tests for Queue.add_async method with transactions.
 
@@ -3845,6 +3897,7 @@ class AsyncQueueStatisticsTest(QueueStatisticsTest):
     self.assertIs(returned_rpc, rpc)
 
 
+@ctx_test_util.both_context_modes()
 class TestNamespace(HttpEnvironTest):
   """Taskqueue namespace tests."""
 
@@ -3909,15 +3962,18 @@ class TestNamespace(HttpEnvironTest):
     self.assertExpectedTaskHeaders(testheaders, t.headers)
 
 
+@ctx_test_util.both_context_modes()
 class ModifyTaskLeaseTest(absltest.TestCase):
   """Tests for Queue.modify_task_lease method."""
 
   def setUp(self):
     """Sets up the test harness."""
+    self.now_timestamp = time.time()
     apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()
+
+  def SetupMox(self):
     self.mox = mox.Mox()
     self.mox.StubOutWithMock(apiproxy_stub_map.apiproxy, 'MakeSyncCall')
-    self.now_timestamp = time.time()
 
   def tearDown(self):
     """Tears down the test harness."""
@@ -3926,6 +3982,7 @@ class ModifyTaskLeaseTest(absltest.TestCase):
 
   def testEtaAccuracy(self):
     """Tests that a task's eta_usec can be recovered exactly from eta_posix."""
+    self.SetupMox()
     task = Task(payload='bar', method='PULL', name='foo')
 
 
@@ -3936,6 +3993,7 @@ class ModifyTaskLeaseTest(absltest.TestCase):
 
   def testModifyLease(self):
     """Tests successfully modifying the lease on a task."""
+    self.SetupMox()
 
     current_eta_seconds = 1
     lease_seconds = 10
@@ -3966,6 +4024,7 @@ class ModifyTaskLeaseTest(absltest.TestCase):
 
   def testModifyTaskLeaseOnPushQueue(self):
     """Tests modifying a task from a push queue."""
+    self.SetupMox()
 
     expected_request = taskqueue_service_pb2.TaskQueueModifyTaskLeaseRequest()
     expected_request.queue_name = b'default'
@@ -3992,6 +4051,7 @@ class ModifyTaskLeaseTest(absltest.TestCase):
 
   def testModifyTaskLeaseExpiredLease(self):
     """Tests modifying the lease of the task with an expired lease."""
+    self.SetupMox()
 
     expected_request = taskqueue_service_pb2.TaskQueueModifyTaskLeaseRequest()
     expected_request.queue_name = b'default'
@@ -4018,6 +4078,7 @@ class ModifyTaskLeaseTest(absltest.TestCase):
 
   def testModifyTaskLeaseQueuePaused(self):
     """Tests modifing task lease from a paused queue."""
+    self.SetupMox()
 
     expected_request = taskqueue_service_pb2.TaskQueueModifyTaskLeaseRequest()
     expected_request.queue_name = b'default'
@@ -4044,6 +4105,7 @@ class ModifyTaskLeaseTest(absltest.TestCase):
 
   def testModifyTaskLeaseNegativeLeaseTime(self):
     """Tests modify_task_lease with a negative lease time value."""
+    self.SetupMox()
     q = Queue('default')
     task = Task(payload='bar', method='PULL', name='foo')
     task._Task__queue_name = 'default'
@@ -4053,6 +4115,7 @@ class ModifyTaskLeaseTest(absltest.TestCase):
 
   def testModifyTaskLeaseTooLargeLeaseTime(self):
     """Tests modify_task_lease with too large lease time value."""
+    self.SetupMox()
     q = Queue('default')
     task = Task(payload='bar', method='PULL', name='foo')
     task._Task__queue_name = 'default'
@@ -4062,6 +4125,7 @@ class ModifyTaskLeaseTest(absltest.TestCase):
 
   def testModifyTaskLeaseInvalidLeaseTime(self):
     """Tests modify_task_lease with lease_seconds of incorrect type."""
+    self.SetupMox()
     q = Queue('default')
     task = Task(payload='bar', method='PULL', name='foo')
     task._Task__queue_name = 'default'
@@ -4092,4 +4156,3 @@ def main(argv):
 
 if __name__ == '__main__':
   absltest.main(main)
-

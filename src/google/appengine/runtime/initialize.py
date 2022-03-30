@@ -123,7 +123,7 @@ class JsonFormatter(logging.Formatter):
     return json.dumps(data)
 
 
-class SplitFileHandler(logging.FileHandler):
+class SplitLogHandler(logging.StreamHandler):
   """Class for splitting large logs into chunks."""
 
   def emit(self, record):
@@ -141,7 +141,7 @@ class SplitFileHandler(logging.FileHandler):
 
     max_message_size = 256000
     if len(message) <= max_message_size or six.PY2:
-      super(SplitFileHandler, self).emit(record)
+      super(SplitLogHandler, self).emit(record)
     else:
       chunks = [
           message[i:i + max_message_size]
@@ -153,8 +153,7 @@ class SplitFileHandler(logging.FileHandler):
         super().emit(record)
 
 
-def InitializeFileLogging(log_path, clear_logging_handlers,
-                          custom_json_formatter=None):
+def InitializeLogging(custom_json_formatter=None):
   """Helper called from CreateAndRunService() to set up syslog logging."""
 
 
@@ -163,27 +162,21 @@ def InitializeFileLogging(log_path, clear_logging_handlers,
   logging.basicConfig()
 
   logger = logging.getLogger()
+  logger.setLevel(logging.DEBUG)
 
-  if clear_logging_handlers:
-
-
-
+  not_clear_logging_handlers = os.environ.get(
+      'TITANOBOA_CLEAR_LOGGING_HANDLERS', '1') == '0'
+  if not not_clear_logging_handlers:
     if len(logger.handlers) > 1:
       logger.warning(
           'Removing more than one logging handler. '
           'This implies that a user-added logging handler is being removed!')
-    logger.handlers[:] = []
+    logger.handlers.clear()
 
-
-
-
-
-  file_handler = SplitFileHandler(log_path)
+  logging_handler = SplitLogHandler()
   json_formatter = custom_json_formatter or JsonFormatter()
-  file_handler.setFormatter(json_formatter)
-  logger.addHandler(file_handler)
-
-  logger.setLevel(logging.DEBUG)
+  logging_handler.setFormatter(json_formatter)
+  logger.addHandler(logging_handler)
 
 
 class SecurityTicketThreadHook(thread_hooks.ThreadHook):
