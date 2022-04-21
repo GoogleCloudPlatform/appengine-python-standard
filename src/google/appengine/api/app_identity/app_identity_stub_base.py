@@ -38,7 +38,6 @@ Classes:
 
 import time
 
-import mock
 import rsa
 
 from google.appengine.api import apiproxy_stub
@@ -121,6 +120,7 @@ class AppIdentityServiceStubBase(apiproxy_stub.APIProxyStub):
 
   def __init__(self, service_name='app_identity_service'):
     """Constructor."""
+    import mock
     super(AppIdentityServiceStubBase, self).__init__(service_name)
     self.__default_gcs_bucket_name = APP_DEFAULT_GCS_BUCKET_NAME
     self.patchers = stublib.Patchers([

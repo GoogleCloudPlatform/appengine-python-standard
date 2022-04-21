@@ -18,7 +18,6 @@ setuptools.setup(
         "attrs>=21.2.0",
         "frozendict>=1.2",
         "google-auth>=1.31.0",
-        "mock>=4.0.3",
         "Pillow>=8.3.1",
         "protobuf>=3.19.0",
         "pytz>=2021.1",
@@ -26,6 +25,9 @@ setuptools.setup(
         "ruamel.yaml>=0.17.7",
         "six>=1.15.0",
         "urllib3>=1.26.2,<2",
+    ],
+    tests_require=[
+        "mock>=4.0.3",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
