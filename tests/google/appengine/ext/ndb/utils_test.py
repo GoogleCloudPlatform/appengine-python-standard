@@ -69,7 +69,7 @@ class UtilsTest(absltest.TestCase):
 
   def testDecoratorPicklingUnpickling(self):
     tup = (sum_func, 3, 3)
-    s = pickle.dumps(tup, protocol=pickle.HIGHEST_PROTOCOL)
+    s = pickle.dumps(tup, protocol=pickle.DEFAULT_PROTOCOL)
     f, x, y = pickle.loads(s)
     actual = f(x, y)
     self.assertEqual(36, actual)

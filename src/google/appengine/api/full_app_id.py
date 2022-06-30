@@ -21,10 +21,6 @@ which gets a "display" app ID.
 """
 
 
-
-
-
-
 import os
 from typing import MutableMapping, Text, Optional
 
@@ -41,14 +37,12 @@ def get(environ: OsEnvironLike = None) -> str:
   Returns:
     Default application ID as a string.
 
-  We read from the environment APPLICATION_ID (deprecated) or else
-  GAE_APPLICATION.
+  We read from the environment GAE_APPLICATION.
   """
 
   if environ is None:
     environ = os.environ
-
-  return environ.get('APPLICATION_ID', environ.get('GAE_APPLICATION', ''))
+  return environ.get('GAE_APPLICATION', '')
 
 
 def put(app_id: str, environ: OsEnvironLike = None):
@@ -62,14 +56,7 @@ def put(app_id: str, environ: OsEnvironLike = None):
   if environ is None:
     environ = os.environ
 
-  environ['APPLICATION_ID'] = app_id
   environ['GAE_APPLICATION'] = app_id
-
-
-def normalize(environ: OsEnvironLike = None):
-  """Normalize the environment variables which set the app ID."""
-
-  put(get(environ=environ), environ=environ)
 
 
 def clear(environ: OsEnvironLike = None):
@@ -82,7 +69,6 @@ def clear(environ: OsEnvironLike = None):
   if environ is None:
     environ = os.environ
 
-  environ.pop('APPLICATION_ID', None)
   environ.pop('GAE_APPLICATION', None)
 
 

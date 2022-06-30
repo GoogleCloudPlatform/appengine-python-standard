@@ -44,13 +44,13 @@ class ModulesTest(absltest.TestCase):
 
   def testGetCurrentModuleName_DefaultModule(self):
     """Test get_current_module_name for default engine."""
-    os.environ['CURRENT_MODULE_ID'] = 'default'
+    os.environ['GAE_SERVICE'] = 'default'
     os.environ['CURRENT_VERSION_ID'] = 'v1.123'
     self.assertEqual('default', modules.get_current_module_name())
 
   def testGetCurrentModuleName_NonDefaultModule(self):
     """Test get_current_module_name for a non default engine."""
-    os.environ['CURRENT_MODULE_ID'] = 'module1'
+    os.environ['GAE_SERVICE'] = 'module1'
     os.environ['CURRENT_VERSION_ID'] = 'v1.123'
     self.assertEqual('module1', modules.get_current_module_name())
 
@@ -67,13 +67,13 @@ class ModulesTest(absltest.TestCase):
 
   def testGetCurrentVersionName_NonDefaultModule(self):
     """Test get_current_version_name for a non default engine."""
-    os.environ['CURRENT_MODULE_ID'] = 'module1'
+    os.environ['GAE_SERVICE'] = 'module1'
     os.environ['CURRENT_VERSION_ID'] = 'v1.123'
     self.assertEqual('v1', modules.get_current_version_name())
 
   def testGetCurrentVersionName_VersionIdContainsNone(self):
     """Test get_current_version_name when 'None' is in version id."""
-    os.environ['CURRENT_MODULE_ID'] = 'module1'
+    os.environ['GAE_SERVICE'] = 'module1'
     os.environ['CURRENT_VERSION_ID'] = 'None.123'
     self.assertEqual(None, modules.get_current_version_name())
 
