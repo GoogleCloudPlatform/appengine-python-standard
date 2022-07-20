@@ -33,7 +33,6 @@ from google.appengine.base import capabilities_pb2 as google_dot_appengine_dot_b
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n:google/appengine/api/capabilities/capability_service.proto\x12\x10google.appengine\x1a(google/appengine/base/capabilities.proto\"E\n\x10IsEnabledRequest\x12\x0f\n\x07package\x18\x01 \x02(\t\x12\x12\n\ncapability\x18\x02 \x03(\t\x12\x0c\n\x04\x63\x61ll\x18\x03 \x03(\t\"\x9f\x02\n\x11IsEnabledResponse\x12I\n\x0esummary_status\x18\x01 \x01(\x0e\x32\x31.google.appengine.IsEnabledResponse.SummaryStatus\x12\x1c\n\x14time_until_scheduled\x18\x02 \x01(\x03\x12\x32\n\x06\x63onfig\x18\x03 \x03(\x0b\x32\".google.appengine.CapabilityConfig\"m\n\rSummaryStatus\x12\x0b\n\x07\x44\x45\x46\x41ULT\x10\x00\x12\x0b\n\x07\x45NABLED\x10\x01\x12\x14\n\x10SCHEDULED_FUTURE\x10\x02\x12\x11\n\rSCHEDULED_NOW\x10\x03\x12\x0c\n\x08\x44ISABLED\x10\x04\x12\x0b\n\x07UNKNOWN\x10\x05\x42?\n%com.google.appengine.api.capabilitiesB\x13\x43\x61pabilityServicePb\x88\x01\x01')
 
-
 _ISENABLEDREQUEST = DESCRIPTOR.message_types_by_name['IsEnabledRequest']
 _ISENABLEDRESPONSE = DESCRIPTOR.message_types_by_name['IsEnabledResponse']
 _ISENABLEDRESPONSE_SUMMARYSTATUS = _ISENABLEDRESPONSE.enum_types_by_name['SummaryStatus']
