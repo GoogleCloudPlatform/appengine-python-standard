@@ -18,10 +18,9 @@
 
 
 """Generated protocol buffer code."""
+from google.protobuf.internal import builder as _builder
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
 
 
@@ -32,17 +31,8 @@ _sym_db = _symbol_database.Default()
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n)google/appengine/datastore/snapshot.proto\x12\x13storage_onestore_v3\":\n\x08Snapshot\x12\n\n\x02ts\x18\x01 \x02(\x03\"\"\n\x06Status\x12\x0c\n\x08INACTIVE\x10\x00\x12\n\n\x06\x41\x43TIVE\x10\x01\x42G\n\x1e\x63om.google.storage.onestore.v3B\x10OnestoreSnapshotZ\x13storage_onestore_v3')
 
-
-
-_SNAPSHOT = DESCRIPTOR.message_types_by_name['Snapshot']
-_SNAPSHOT_STATUS = _SNAPSHOT.enum_types_by_name['Status']
-Snapshot = _reflection.GeneratedProtocolMessageType('Snapshot', (_message.Message,), {
-  'DESCRIPTOR' : _SNAPSHOT,
-  '__module__' : 'google.appengine.datastore.snapshot_pb2'
-
-  })
-_sym_db.RegisterMessage(Snapshot)
-
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'google.appengine.datastore.snapshot_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None

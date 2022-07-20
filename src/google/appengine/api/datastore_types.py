@@ -1629,7 +1629,7 @@ def PackString(name, value, pbvalue):
     value.decode('ascii')
     pbvalue.stringValue = value
   else:
-    pbvalue.stringValue = six.text_type(value).encode('utf-8')
+    pbvalue.stringValue = six.text_type(value).encode('utf-8', 'surrogatepass')
 
 
 def PackDatetime(name, value, pbvalue):
@@ -1917,7 +1917,7 @@ def FromPropertyPb(pb):
     value = pbval.stringValue
     if not pb.HasField('meaning') or meaning not in _NON_UTF8_MEANINGS:
 
-      value = value.decode('utf-8')
+      value = value.decode('utf-8', 'surrogatepass')
   elif pbval.HasField('int64Value'):
 
 

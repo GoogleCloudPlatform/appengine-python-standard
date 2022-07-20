@@ -86,7 +86,7 @@ def get_current_module_name():
   If this is version "v1" of module "module5" for app "my-app", this function
   will return "module5".
   """
-  return os.environ.get('GAE_SERVICE') or os.environ.get('CURRENT_MODULE_ID')
+  return os.environ.get('GAE_SERVICE')
 
 
 def get_current_version_name():

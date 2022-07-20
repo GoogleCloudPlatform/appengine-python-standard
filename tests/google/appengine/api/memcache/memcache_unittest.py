@@ -23,6 +23,8 @@ correctly, and returns the correct results assuming faked response protos.
 
 import collections
 import hashlib
+import os
+import pickle
 
 import google
 
@@ -425,6 +427,29 @@ class MemcacheTest(absltest.TestCase):
         six.moves.cPickle.dumps(my_value), memcache.TYPE_PICKLED,
         six.moves.cPickle.loads)
     self.assertEqual(my_value, value)
+
+  def testPickleCrossCompatibleProtocol(self):
+    old_proto = pickle.HIGHEST_PROTOCOL - 1
+    original_value = {'foo': 'some text', 'bar': ['list', b'of', 3]}
+    with mock.patch.object(
+        os,
+        'environ',
+        new={'MEMCACHE_USE_CROSS_COMPATIBLE_PROTOCOL': str(old_proto)}):
+      client = memcache.Client()
+    data = client._do_pickle(original_value)
+    self.assertStartsWith(data, b'\x80' + chr(old_proto).encode())
+    value = client._do_unpickle(data)
+    self.assertEqual(value, original_value)
+
+  def testPickleCrossCompatibleProtocolOldBehavior(self):
+    original_value = {'foo': 'some text', 'bar': ['list', b'of', 3]}
+    with mock.patch.object(
+        os, 'environ', new={'MEMCACHE_USE_CROSS_COMPATIBLE_PROTOCOL': 'true'}):
+      client = memcache.Client()
+    data = client._do_pickle(original_value)
+    self.assertStartsWith(data, b'\x80\x02')
+    value = client._do_unpickle(data)
+    self.assertEqual(value, original_value)
 
   def testDecodeValueHelperIntValue(self):
     """Tests encoding the server value when it's an int."""
@@ -1770,7 +1795,7 @@ class MemcacheTest(absltest.TestCase):
     client = memcache.Client(pickler=six.moves.cPickle.Pickler)
     stored_value = client._do_pickle(my_value)
     expected_value = six.moves.cPickle.dumps(
-        my_value, protocol=six.moves.cPickle.HIGHEST_PROTOCOL)
+        my_value, protocol=pickle.DEFAULT_PROTOCOL)
 
     self.assertEqual(expected_value, stored_value)
 
@@ -1786,7 +1811,7 @@ class MemcacheTest(absltest.TestCase):
     stored_value = client._do_pickle(my_value)
     pickle_value = six.BytesIO()
     pickler = six.moves.cPickle.Pickler(
-        pickle_value, protocol=six.moves.cPickle.HIGHEST_PROTOCOL)
+        pickle_value, protocol=pickle.DEFAULT_PROTOCOL)
     pickler.persistent_id = self.PersistentId
     pickler.dump(my_value)
     expected_value = pickle_value.getvalue()
@@ -1801,7 +1826,7 @@ class MemcacheTest(absltest.TestCase):
         'bar': 1.0,
     }
     my_value = six.moves.cPickle.dumps(
-        expected_value, protocol=six.moves.cPickle.HIGHEST_PROTOCOL)
+        expected_value, protocol=pickle.DEFAULT_PROTOCOL)
     client = memcache.Client()
     retrieved_value = client._do_unpickle(my_value)
 
@@ -1817,7 +1842,7 @@ class MemcacheTest(absltest.TestCase):
     expected_value = {str(my_value): 2}
     pickle_value = six.BytesIO()
     pickler = six.moves.cPickle.Pickler(
-        pickle_value, protocol=six.moves.cPickle.HIGHEST_PROTOCOL)
+        pickle_value, protocol=pickle.DEFAULT_PROTOCOL)
     pickler.persistent_id = self.PersistentId
     pickler.dump(my_value)
     pickled_value = pickle_value.getvalue()
