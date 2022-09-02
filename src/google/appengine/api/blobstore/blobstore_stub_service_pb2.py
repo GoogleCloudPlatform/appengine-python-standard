@@ -18,10 +18,9 @@
 
 
 """Generated protocol buffer code."""
+from google.protobuf.internal import builder as _builder
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
 
 
@@ -33,25 +32,8 @@ from google.appengine.api import api_base_pb2 as google_dot_appengine_dot_api_do
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n;google/appengine/api/blobstore/blobstore_stub_service.proto\x12\x10google.appengine\x1a#google/appengine/api/api_base.proto\"5\n\x10StoreBlobRequest\x12\x10\n\x08\x62lob_key\x18\x01 \x02(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\x0c\"\x8f\x01\n\x19SetBlobStorageTypeRequest\x12M\n\x0cstorage_type\x18\x01 \x02(\x0e\x32\x37.google.appengine.SetBlobStorageTypeRequest.StorageType\"#\n\x0bStorageType\x12\n\n\x06MEMORY\x10\x00\x12\x08\n\x04\x46ILE\x10\x01\x42<\n\"com.google.appengine.api.blobstoreB\x16\x42lobstoreStubServicePb')
 
-
-
-_STOREBLOBREQUEST = DESCRIPTOR.message_types_by_name['StoreBlobRequest']
-_SETBLOBSTORAGETYPEREQUEST = DESCRIPTOR.message_types_by_name['SetBlobStorageTypeRequest']
-_SETBLOBSTORAGETYPEREQUEST_STORAGETYPE = _SETBLOBSTORAGETYPEREQUEST.enum_types_by_name['StorageType']
-StoreBlobRequest = _reflection.GeneratedProtocolMessageType('StoreBlobRequest', (_message.Message,), {
-  'DESCRIPTOR' : _STOREBLOBREQUEST,
-  '__module__' : 'google.appengine.api.blobstore.blobstore_stub_service_pb2'
-
-  })
-_sym_db.RegisterMessage(StoreBlobRequest)
-
-SetBlobStorageTypeRequest = _reflection.GeneratedProtocolMessageType('SetBlobStorageTypeRequest', (_message.Message,), {
-  'DESCRIPTOR' : _SETBLOBSTORAGETYPEREQUEST,
-  '__module__' : 'google.appengine.api.blobstore.blobstore_stub_service_pb2'
-
-  })
-_sym_db.RegisterMessage(SetBlobStorageTypeRequest)
-
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'google.appengine.api.blobstore.blobstore_stub_service_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None

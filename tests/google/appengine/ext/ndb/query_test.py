@@ -2036,7 +2036,7 @@ class BaseQueryTestMixin(object):
     self.hugeOffsetTestHelper(fetch_from_queue)
 
   def testQueryPickleFilter(self):
-    for protocol in (0, pickle.HIGHEST_PROTOCOL):
+    for protocol in (0, pickle.DEFAULT_PROTOCOL):
       q = query.Query(kind='Foo').filter(Foo.rate == 1)
       new_q = pickle.loads(pickle.dumps(q, protocol=protocol))
 
@@ -2045,7 +2045,7 @@ class BaseQueryTestMixin(object):
       self.assertIsInstance(new_q.filters, query.FilterNode)
 
   def testQueryPickleParameterAndConjunction(self):
-    for protocol in (0, pickle.HIGHEST_PROTOCOL):
+    for protocol in (0, pickle.DEFAULT_PROTOCOL):
       q = query.gql('SELECT * FROM Foo WHERE name = :1 AND rate = :foo')
       new_q = pickle.loads(pickle.dumps(q, protocol=protocol))
 
@@ -2062,7 +2062,7 @@ class BaseQueryTestMixin(object):
     class Bar(model.Model):
       prop = model.StructuredProperty(Struct, repeated=True)
 
-    for protocol in (0, pickle.HIGHEST_PROTOCOL):
+    for protocol in (0, pickle.DEFAULT_PROTOCOL):
       q = query.Query(kind='Bar').filter(
           Bar.prop == Struct(other_prop='foo', other_other_prop=1))
       new_q = pickle.loads(pickle.dumps(q, protocol=protocol))
