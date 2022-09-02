@@ -13,6 +13,8 @@ In your `requirements.txt` file, add the following:
 
 `appengine-python-standard>=1.0.0`
 
+Currently, `1.0.0` is the latest released stable version. To use a pre-release version (Eg. `1.0.1-rc1`), modify the above line to `appengine-python-standard>=[insert_version]` (Eg. `appengine-python-standard>=1.0.1-rc1`).
+
 In your app's `app.yaml`, add the following:
 
 `app_engine_apis: true`
@@ -38,7 +40,7 @@ Example for a Flask app:
     app = Flask(__name__)
     app.wsgi_app = google.appengine.api.wrap_wsgi_app(app.wsgi_app)
 
-Then deploy your app as usual, with `gcloud beta app deploy` (currently only the Beta version has the capability to enable these APIs). The following modules are available:
+Then deploy your app as usual, with `gcloud app deploy`. The following modules are available:
 
 - `google.appengine.api.app_identity`
 - `google.appengine.api.background_thread`
