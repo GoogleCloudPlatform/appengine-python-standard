@@ -4,9 +4,9 @@ name: Python Unit CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ 1.0.1-rc1 ]
   pull_request:
-    branches: [ main ]
+    branches: [ 1.0.1-rc1 ]
 
 jobs:
   test:
