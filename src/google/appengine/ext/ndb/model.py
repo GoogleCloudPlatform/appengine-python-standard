@@ -1819,7 +1819,7 @@ class TextProperty(BlobProperty):
         raise datastore_errors.BadValueError('Expected valid UTF-8, got %r' %
                                              (value,))
     elif isinstance(value, six.text_type):
-      length = len(value.encode('utf-8'))
+      length = len(value.encode('utf-8', 'surrogatepass'))
     else:
       raise datastore_errors.BadValueError('Expected string, got %r' %
                                            (value,))
@@ -1830,12 +1830,12 @@ class TextProperty(BlobProperty):
 
   def _to_base_type(self, value):
     if isinstance(value, six.text_type):
-      return value.encode('utf-8')
+      return value.encode('utf-8', 'surrogatepass')
 
   def _from_base_type(self, value):
     if isinstance(value, six.binary_type):
       try:
-        return six.text_type(value, 'utf-8')
+        return six.text_type(value, 'utf-8', 'surrogatepass')
       except UnicodeDecodeError:
 
 
