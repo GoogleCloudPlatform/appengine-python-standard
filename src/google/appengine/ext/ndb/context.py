@@ -342,7 +342,7 @@ class Context(object):
 
 
 
-  _memcache_prefix = b'NDB9:'
+  _memcache_prefix = 'NDB9:'
 
   @tasklets.tasklet
   def flush(self):
