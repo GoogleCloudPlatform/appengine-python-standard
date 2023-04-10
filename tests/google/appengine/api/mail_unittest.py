@@ -54,8 +54,8 @@ Return-Path: <nobody@google.com>
 Received: from mail-receiver.google.com (mail-receiver.google.com [192.168.1.100])
         by gmr-mx.google.com with ESMTP id 15si1006235ewy.0.2009.08.10.15.41.17;
         Mon, 10 Aug 2009 15:41:17 -0700 (PDT)
-Received-SPF: softfail (google.com: domain of transitioning rafek@google.com does not designate 192.168.1.100 as permitted sender) client-ip=192.168.1.100;
-Authentication-Results: gmr-mx.google.com; spf=softfail (google.com: domain of transitioning rafek@google.com does not designate 192.168.1.100 as permitted sender) smtp.mail=rafek@google.com
+Received-SPF: softfail (google.com: domain of transitioning user@google.com does not designate 192.168.1.100 as permitted sender) client-ip=192.168.1.100;
+Authentication-Results: gmr-mx.google.com; spf=softfail (google.com: domain of transitioning user@google.com does not designate 192.168.1.100 as permitted sender) smtp.mail=user@google.com
 Received: from qw-out-2122.google.com (qwe3.prod.google.com [192.168.1.101])
 	by mail-receiver.google.com with ESMTP id n7AMfEPK027033
 	for <nobody@hello-mail-nobody.appspot.com>; Mon, 10 Aug 2009 15:41:15 -0700
@@ -362,8 +362,8 @@ def GetDefaultEnvironment():
       'SERVER_PROTOCOL': 'HTTP/1.0',
       'SERVER_SOFTWARE': 'Dev AppServer 0.1',
       'SCRIPT_NAME': '',
-      'LOGNAME': 'nickjohnson',
-      'USER': 'nickjohnson',
+      'LOGNAME': 'user',
+      'USER': 'user',
       'QUERY_STRING': 'foo=bar&foo=baz&foo2=123',
       'PATH': '/usr/local/symlinks:/usr/local/scripts:/usr/local/sbin:'
               '/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/bin/X11',
@@ -375,8 +375,8 @@ def GetDefaultEnvironment():
       'wsgi.url_scheme': 'http',
       'SERVER_PORT': '8080',
       'PARINIT': 'rTbgqR B=.?_A_a Q=_s>|:',
-      'HOME': '/home/nickjohnson',
-      'USERNAME': 'nickjohnson',
+      'HOME': '/home/user',
+      'USERNAME': 'user',
       'CONTENT_LENGTH': '',
       'USER_IS_ADMIN': '1',
       'PYTHONPATH': '/usr/local/buildtools/current/sitecustomize',

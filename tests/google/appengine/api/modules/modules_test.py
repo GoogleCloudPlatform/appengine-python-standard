@@ -25,6 +25,7 @@ from google.appengine.api.modules import modules
 from google.appengine.api.modules import modules_service_pb2
 from google.appengine.runtime import apiproxy_errors
 from google.appengine.runtime.context import ctx_test_util
+import mock
 import mox
 
 from absl.testing import absltest
@@ -42,59 +43,94 @@ class ModulesTest(absltest.TestCase):
     self.mox.VerifyAll()
     self.mox.UnsetStubs()
 
+  @mock.patch.dict(
+      os.environ,
+      {
+          'GAE_SERVICE': 'default',
+          'CURRENT_VERSION_ID': 'v1.123',
+      },
+      clear=True,
+  )
   def testGetCurrentModuleName_DefaultModule(self):
     """Test get_current_module_name for default engine."""
-    os.environ['GAE_SERVICE'] = 'default'
-    os.environ['CURRENT_VERSION_ID'] = 'v1.123'
     self.assertEqual('default', modules.get_current_module_name())
 
+  @mock.patch.dict(
+      os.environ,
+      {
+          'GAE_SERVICE': 'module1',
+          'CURRENT_VERSION_ID': 'v1.123',
+      },
+      clear=True,
+  )
   def testGetCurrentModuleName_NonDefaultModule(self):
     """Test get_current_module_name for a non default engine."""
-    os.environ['GAE_SERVICE'] = 'module1'
-    os.environ['CURRENT_VERSION_ID'] = 'v1.123'
     self.assertEqual('module1', modules.get_current_module_name())
 
+  @mock.patch.dict(
+      os.environ,
+      {
+          'GAE_SERVICE': 'module1',
+          'GAE_VERSION': 'v1',
+      },
+      clear=True,
+  )
   def testGetCurrentModuleName_GaeService(self):
     """Test get_current_module_name from GAE_SERVICE."""
-    os.environ['GAE_SERVICE'] = 'module1'
-    os.environ['GAE_VERSION'] = 'v1'
     self.assertEqual('module1', modules.get_current_module_name())
 
-  def testGetCurrentVersionName_DefaultModule(self):
-    """Test get_current_version_name for default engine."""
-    os.environ['CURRENT_VERSION_ID'] = 'v1.123'
+  @mock.patch.dict(
+      os.environ, {
+          'GAE_VERSION': 'v1',
+      }, clear=True)
+  def testGetCurrentVersionName(self):
+    """Test get_current_version_name."""
     self.assertEqual('v1', modules.get_current_version_name())
 
-  def testGetCurrentVersionName_NonDefaultModule(self):
-    """Test get_current_version_name for a non default engine."""
-    os.environ['GAE_SERVICE'] = 'module1'
-    os.environ['CURRENT_VERSION_ID'] = 'v1.123'
+  @mock.patch.dict(
+      os.environ, {
+          'CURRENT_VERSION_ID': 'abc.123',
+          'GAE_VERSION': 'v1',
+      },
+      clear=True)
+  def testGetCurrentVersionName_CurrentVersionIdSet(self):
+    """Test get_current_version_name and CURRENT_VERSION_ID is set."""
     self.assertEqual('v1', modules.get_current_version_name())
 
-  def testGetCurrentVersionName_VersionIdContainsNone(self):
-    """Test get_current_version_name when 'None' is in version id."""
-    os.environ['GAE_SERVICE'] = 'module1'
-    os.environ['CURRENT_VERSION_ID'] = 'None.123'
-    self.assertEqual(None, modules.get_current_version_name())
-
-  def testGetCurrentVersionName_GaeVersion(self):
-    """Test get_current_module_name from GAE_SERVICE."""
-    os.environ['GAE_SERVICE'] = 'module1'
-    os.environ['GAE_VERSION'] = 'v1'
-    self.assertEqual('v1', modules.get_current_version_name())
+  @mock.patch.dict(
+      os.environ, {
+          'CURRENT_VERSION_ID': 'abc.123',
+      }, clear=True)
+  def testGetCurrentVersionName_GaeServiceNotSet(self):
+    """Test get_current_version_name when GAE_SERVICE is not set."""
+    self.assertIsNone(modules.get_current_version_name())
 
   def testGetCurrentInstanceId_Empty(self):
     """Test get_current_instance_id when none has been set in the environ."""
     self.assertEqual(None, modules.get_current_instance_id())
 
+  @mock.patch.object(modules, 'LEGACY_COMPAT', new=True)
+  @mock.patch.dict(
+      os.environ,
+      {
+          'INSTANCE_ID': '123',
+      },
+      clear=True,
+  )
   def testGetCurrentInstanceId(self):
     """Test get_current_instance_id."""
-    os.environ['INSTANCE_ID'] = '123'
     self.assertEqual('123', modules.get_current_instance_id())
 
+  @mock.patch.dict(
+      os.environ,
+      {
+          'GAE_INSTANCE': '123',
+          'INSTANCE_ID': 'something else',
+      },
+      clear=True,
+  )
   def testGetCurrentInstanceId_GaeInstance(self):
     """Test get_current_instance_id."""
-    os.environ['GAE_INSTANCE'] = '123'
     self.assertEqual('123', modules.get_current_instance_id())
 
   def SetSuccessExpectations(self, method, expected_request, service_response):
@@ -558,6 +594,50 @@ class ModulesTest(absltest.TestCase):
                            'v1')
 
 
+@mock.patch.object(modules, 'LEGACY_COMPAT', new=True)
+class CompatModeTest(absltest.TestCase):
+
+  @mock.patch.dict(os.environ, {'CURRENT_VERSION_ID': 'v1.123'}, clear=True)
+  def testGetCurrentVersionName_DefaultModule(self):
+    """Test get_current_version_name for default engine."""
+    self.assertEqual('v1', modules.get_current_version_name())
+
+  @mock.patch.dict(
+      os.environ, {
+          'GAE_SERVICE': 'module1',
+          'CURRENT_VERSION_ID': 'v1.123'
+      },
+      clear=True)
+  def testGetCurrentVersionName_NonDefaultModule(self):
+    """Test get_current_version_name for a non default engine."""
+    self.assertEqual('v1', modules.get_current_version_name())
+
+  @mock.patch.dict(
+      os.environ, {
+          'GAE_SERVICE': 'module1',
+          'CURRENT_VERSION_ID': 'None.123'
+      },
+      clear=True)
+  def testGetCurrentVersionName_VersionIdContainsNone(self):
+    """Test get_current_version_name when 'None' is in version id."""
+    self.assertIsNone(modules.get_current_version_name())
+
+  @mock.patch.dict(
+      os.environ, {
+          'GAE_SERVICE': 'module1',
+          'GAE_VERSION': 'v1'
+      }, clear=True)
+  def testGetCurrentVersionName_GaeVersion(self):
+    """Test get_current_module_name from GAE_SERVICE."""
+    self.assertEqual('v1', modules.get_current_version_name())
+
+  @mock.patch.dict(os.environ, {}, clear=True)
+  def testGetCurrentVersionName_CurrentVersionIdNotSet(self):
+    """Test get_current_version_name when CURRENT_VERSION_ID and GAE_SERVICE is not set.
+    """
+    self.assertIsNone(modules.get_current_version_name())
+
+
 class MockRpc(object):
   """Mock UserRPC class."""
 
@@ -598,4 +678,3 @@ class MockRpc(object):
 
 if __name__ == '__main__':
   absltest.main()
-

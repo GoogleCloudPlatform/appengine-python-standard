@@ -27,6 +27,12 @@ from typing import MutableMapping, Text, Optional
 
 OsEnvironLike = Optional[MutableMapping[Text, Text]]
 
+LEGACY_COMPAT = True
+
+
+
+
+
 
 def get(environ: OsEnvironLike = None) -> str:
   """Get the application ID from the environment.
@@ -42,7 +48,10 @@ def get(environ: OsEnvironLike = None) -> str:
 
   if environ is None:
     environ = os.environ
-  return environ.get('GAE_APPLICATION', '')
+  app_id = environ.get('GAE_APPLICATION', '')
+  if LEGACY_COMPAT and 'APPLICATION_ID' in environ:
+    app_id = environ['APPLICATION_ID']
+  return app_id
 
 
 def put(app_id: str, environ: OsEnvironLike = None):
@@ -57,6 +66,14 @@ def put(app_id: str, environ: OsEnvironLike = None):
     environ = os.environ
 
   environ['GAE_APPLICATION'] = app_id
+  if LEGACY_COMPAT:
+    environ['APPLICATION_ID'] = app_id
+
+
+def normalize(environ: OsEnvironLike = None):
+  """Normalize the environment variables which set the app ID."""
+
+  put(get(environ=environ), environ=environ)
 
 
 def clear(environ: OsEnvironLike = None):
@@ -70,6 +87,8 @@ def clear(environ: OsEnvironLike = None):
     environ = os.environ
 
   environ.pop('GAE_APPLICATION', None)
+  if LEGACY_COMPAT:
+    environ.pop('APPLICATION_ID', None)
 
 
 _PARTITION_SEPARATOR = '~'

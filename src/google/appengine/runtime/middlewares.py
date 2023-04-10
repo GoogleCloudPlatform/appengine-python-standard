@@ -30,6 +30,7 @@ from google.appengine.api.runtime import runtime
 from google.appengine.ext.deferred import deferred
 from google.appengine.runtime import background
 from google.appengine.runtime import callback
+from google.appengine.runtime import consts
 from google.appengine.runtime import context
 from google.appengine.runtime import request_environment
 import six
@@ -268,6 +269,12 @@ def MakeInitLegacyRequestOsEnvironMiddleware():
   @middleware
   def InitLegacyRequestOsEnvironMiddleware(app, wsgi_env, start_response):
     """The middleware WSGI app."""
+    if os.environ.get('REQUEST_ID_HASH') == consts.TESTBED_REQUEST_ID_HASH:
+
+
+
+      pass
+    else:
 
 
 
@@ -275,9 +282,10 @@ def MakeInitLegacyRequestOsEnvironMiddleware():
 
 
 
-    request_environment.current_request.Init(
-        errors=None,
-        environ=original_environ.copy())
+
+      request_environment.current_request.Init(
+          errors=None,
+          environ=original_environ.copy())
 
     return app(wsgi_env, start_response)
 
@@ -301,10 +309,18 @@ def LegacyCopyWsgiEnvToOsEnvMiddleware(app, wsgi_env, start_response):
     The wrapped app, also a WSGI app.
   """
 
-  assert isinstance(os.environ, request_environment.RequestLocalEnviron)
-  for key, val in six.iteritems(wsgi_env):
-    if isinstance(val, six.string_types):
-      os.environ[key] = val
+  if os.environ.get('REQUEST_ID_HASH') == consts.TESTBED_REQUEST_ID_HASH:
+
+
+
+    pass
+  else:
+    assert isinstance(os.environ, request_environment.RequestLocalEnviron)
+
+    for key, val in six.iteritems(wsgi_env):
+      if isinstance(val, six.string_types):
+        os.environ[key] = val
+
   return app(wsgi_env, start_response)
 
 

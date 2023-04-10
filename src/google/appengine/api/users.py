@@ -39,9 +39,6 @@ from google.appengine.runtime import context
 
 
 
-
-
-
 class Error(Exception):
   """Base User error type."""
 

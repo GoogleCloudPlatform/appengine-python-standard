@@ -55,6 +55,12 @@ from google.appengine.api import apiproxy_stub_map
 from google.appengine.api.modules import modules_service_pb2
 from google.appengine.runtime import apiproxy_errors
 
+LEGACY_COMPAT = True
+
+
+
+
+
 
 class Error(Exception):
   """Base-class for errors in this module."""
@@ -96,8 +102,11 @@ def get_current_version_name():
   will return "v1".
   """
   result = os.environ.get('GAE_VERSION')
-  if result:
+  if result or not LEGACY_COMPAT:
     return result
+
+  if 'CURRENT_VERSION_ID' not in os.environ:
+    return None
 
   result = os.environ['CURRENT_VERSION_ID'].split('.')[0]
   return None if result == 'None' else result
@@ -117,7 +126,9 @@ def get_current_instance_id():
     String containing the ID of the instance, or `None` if this is not an
     automatically-scaled module.
   """
-  return os.environ.get('GAE_INSTANCE') or os.environ.get('INSTANCE_ID', None)
+  if LEGACY_COMPAT:
+    return os.environ.get('GAE_INSTANCE') or os.environ.get('INSTANCE_ID')
+  return os.environ.get('GAE_INSTANCE')
 
 
 def _GetRpc():

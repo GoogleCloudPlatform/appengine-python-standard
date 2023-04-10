@@ -35,8 +35,6 @@ from google.appengine.datastore import datastore_index_xml
 
 
 
-
-
 __all__ = ['GenerateIndexFromHistory',
            'IndexYamlUpdater',
           ]

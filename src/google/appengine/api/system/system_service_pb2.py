@@ -18,10 +18,10 @@
 
 
 """Generated protocol buffer code."""
-from google.protobuf.internal import builder as _builder
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 
 _sym_db = _symbol_database.Default()
@@ -31,24 +31,25 @@ _sym_db = _symbol_database.Default()
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n0google/appengine/api/system/system_service.proto\x12\x10google.appengine\"f\n\x12SystemServiceError\"P\n\tErrorCode\x12\x06\n\x02OK\x10\x00\x12\x12\n\x0eINTERNAL_ERROR\x10\x01\x12\x14\n\x10\x42\x41\x43KEND_REQUIRED\x10\x02\x12\x11\n\rLIMIT_REACHED\x10\x03\"t\n\nSystemStat\x12\x0f\n\x07\x63urrent\x18\x01 \x01(\x01\x12\x11\n\taverage1m\x18\x03 \x01(\x01\x12\x12\n\naverage10m\x18\x04 \x01(\x01\x12\r\n\x05total\x18\x02 \x01(\x01\x12\x0e\n\x06rate1m\x18\x05 \x01(\x01\x12\x0f\n\x07rate10m\x18\x06 \x01(\x01\"\x17\n\x15GetSystemStatsRequest\"q\n\x16GetSystemStatsResponse\x12)\n\x03\x63pu\x18\x01 \x01(\x0b\x32\x1c.google.appengine.SystemStat\x12,\n\x06memory\x18\x02 \x01(\x0b\x32\x1c.google.appengine.SystemStat\"\x1f\n\x1dStartBackgroundRequestRequest\"4\n\x1eStartBackgroundRequestResponse\x12\x12\n\nrequest_id\x18\x01 \x01(\tB2\n\x1f\x63om.google.appengine.api.systemB\x0fSystemServicePb')
 
-_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'google.appengine.api.system.system_service_pb2', globals())
+_globals = globals()
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'google.google.appengine.api.system.system_service_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\n\037com.google.appengine.api.systemB\017SystemServicePb'
-  _SYSTEMSERVICEERROR._serialized_start=70
-  _SYSTEMSERVICEERROR._serialized_end=172
-  _SYSTEMSERVICEERROR_ERRORCODE._serialized_start=92
-  _SYSTEMSERVICEERROR_ERRORCODE._serialized_end=172
-  _SYSTEMSTAT._serialized_start=174
-  _SYSTEMSTAT._serialized_end=290
-  _GETSYSTEMSTATSREQUEST._serialized_start=292
-  _GETSYSTEMSTATSREQUEST._serialized_end=315
-  _GETSYSTEMSTATSRESPONSE._serialized_start=317
-  _GETSYSTEMSTATSRESPONSE._serialized_end=430
-  _STARTBACKGROUNDREQUESTREQUEST._serialized_start=432
-  _STARTBACKGROUNDREQUESTREQUEST._serialized_end=463
-  _STARTBACKGROUNDREQUESTRESPONSE._serialized_start=465
-  _STARTBACKGROUNDREQUESTRESPONSE._serialized_end=517
+  _globals['_SYSTEMSERVICEERROR']._serialized_start=70
+  _globals['_SYSTEMSERVICEERROR']._serialized_end=172
+  _globals['_SYSTEMSERVICEERROR_ERRORCODE']._serialized_start=92
+  _globals['_SYSTEMSERVICEERROR_ERRORCODE']._serialized_end=172
+  _globals['_SYSTEMSTAT']._serialized_start=174
+  _globals['_SYSTEMSTAT']._serialized_end=290
+  _globals['_GETSYSTEMSTATSREQUEST']._serialized_start=292
+  _globals['_GETSYSTEMSTATSREQUEST']._serialized_end=315
+  _globals['_GETSYSTEMSTATSRESPONSE']._serialized_start=317
+  _globals['_GETSYSTEMSTATSRESPONSE']._serialized_end=430
+  _globals['_STARTBACKGROUNDREQUESTREQUEST']._serialized_start=432
+  _globals['_STARTBACKGROUNDREQUESTREQUEST']._serialized_end=463
+  _globals['_STARTBACKGROUNDREQUESTRESPONSE']._serialized_start=465
+  _globals['_STARTBACKGROUNDREQUESTRESPONSE']._serialized_end=517
 

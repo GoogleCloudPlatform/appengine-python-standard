@@ -41,6 +41,8 @@ Example for a Flask app:
 import os
 from typing import Dict, Optional
 
+from google.appengine.api import full_app_id
+
 
 def wrap_wsgi_app(app, *, use_deferred=False, **kwargs):
   """Wrap a WSGI app with middlewares required to access App Engine APIs."""
@@ -54,7 +56,8 @@ class WSGIAppWrapper():
   def __init__(self, *, legacy_behaviors: Optional[Dict[str, bool]] = None):
     self.legacy_behaviors = dict(
         use_legacy_context_mode=True,
-        patch_thread_creation=True)
+        patch_thread_creation=True,
+        normalize_legacy_app_id=True)
     if legacy_behaviors is not None:
       self.legacy_behaviors.update(legacy_behaviors)
 
@@ -80,6 +83,10 @@ class WSGIAppWrapper():
       initialize.InitializeThreadingApis()
 
     default_api_stub.Register(default_api_stub.DefaultApiStub())
+
+    full_app_id.LEGACY_COMPAT = self.legacy_behaviors['normalize_legacy_app_id']
+    if full_app_id.LEGACY_COMPAT:
+      full_app_id.normalize()
 
     def if_legacy_context_mode(f):
       return f() if self.legacy_behaviors['use_legacy_context_mode'] else []

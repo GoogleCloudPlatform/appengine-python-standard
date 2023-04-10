@@ -35,6 +35,7 @@ import pickle
 import random
 import re
 import sys
+import threading
 import time
 import unittest as real_unittest
 
@@ -81,10 +82,8 @@ class TaskletTests(test_utils.NDBTest):
 
   def setUp(self):
     super(TaskletTests, self).setUp()
-    if eventloop._EVENT_LOOP_KEY in os.environ:
-      del os.environ[eventloop._EVENT_LOOP_KEY]
-    if tasklets._CONTEXT_KEY in os.environ:
-      del os.environ[tasklets._CONTEXT_KEY]
+    eventloop._state.event_loop = None
+    tasklets._state.reset(None)
     self.ev = eventloop.get_event_loop()
     self.log = []
 
@@ -661,6 +660,21 @@ class TaskletTests(test_utils.NDBTest):
     self.assertIsInstance(x, tasklets.Future)
     y = x.get_result()
     self.assertEqual(y, 5)
+
+  def test_tasklet_in_separate_thread(self):
+    results = []
+    @tasklets.tasklet
+    def ok():
+      raise tasklets.Return('ok')
+    def get_tasklet_result():
+      results.append(ok().get_result())
+
+    get_tasklet_result()
+    t = threading.Thread(target=get_tasklet_result)
+    t.start()
+    t.join()
+    get_tasklet_result()
+    self.assertLen(results, 3)
 
   def testTasklets_Raising(self):
     self.ExpectWarnings()

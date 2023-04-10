@@ -241,6 +241,7 @@ VM = 'vm'
 VM_SETTINGS = 'vm_settings'
 ZONES = 'zones'
 BETA_SETTINGS = 'beta_settings'
+FLEXIBLE_RUNTIME_SETTINGS = 'flexible_runtime_settings'
 VM_HEALTH_CHECK = 'vm_health_check'
 HEALTH_CHECK = 'health_check'
 RESOURCES = 'resources'
@@ -409,6 +410,10 @@ VPC_ACCESS_CONNECTOR_NAME = 'name'
 VPC_ACCESS_CONNECTOR_EGRESS_SETTING = 'egress_setting'
 EGRESS_SETTING_ALL_TRAFFIC = 'all-traffic'
 EGRESS_SETTING_PRIVATE_RANGES_ONLY = 'private-ranges-only'
+
+
+OPERATING_SYSTEM = 'operating_system'
+RUNTIME_VERSION = 'runtime_version'
 
 
 class _VersionedLibrary(object):
@@ -1851,6 +1856,14 @@ class RuntimeConfig(validation.ValidatedDict):
   VALUE_VALIDATOR = str
 
 
+class FlexibleRuntimeSettings(validation.Validated):
+  """Class for App Engine Flexible runtime settings."""
+  ATTRIBUTES = {
+      OPERATING_SYSTEM: validation.Regex('[a-z0-9]+'),
+      RUNTIME_VERSION: validation.Optional(str)
+  }
+
+
 class VmSettings(validation.ValidatedDict):
   """Class for VM settings.
 
@@ -2392,6 +2405,7 @@ class AppInfoExternal(validation.Validated):
       BUILD_ENV_VARIABLES: validation.Optional(EnvironmentVariables),
       STANDARD_WEBSOCKET: validation.Optional(bool),
       APP_ENGINE_APIS: validation.Optional(bool),
+      FLEXIBLE_RUNTIME_SETTINGS: validation.Optional(FlexibleRuntimeSettings),
   }
 
   def CheckInitialized(self):

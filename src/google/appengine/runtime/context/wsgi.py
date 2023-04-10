@@ -19,19 +19,25 @@
 import contextvars
 from typing import Dict
 
-HTTP_HOST = contextvars.ContextVar('HTTP_HOST')
+HTTP_HOST = contextvars.ContextVar('HTTP_HOST', default=None)
 HTTP_USER_AGENT = contextvars.ContextVar('HTTP_USER_AGENT')
 
+
+
+
+
+
+
 HTTP_X_CLOUD_TRACE_CONTEXT = contextvars.ContextVar(
-    'HTTP_X_CLOUD_TRACE_CONTEXT')
+    'HTTP_X_CLOUD_TRACE_CONTEXT', default=None)
 
 HTTP_X_GOOGLE_DAPPERTRACEINFO = contextvars.ContextVar(
-    'HTTP_X_GOOGLE_DAPPERTRACEINFO')
+    'HTTP_X_GOOGLE_DAPPERTRACEINFO', default=None)
 
 
 PATH_INFO = contextvars.ContextVar('PATH_INFO')
-PATH_TRANSLATED = contextvars.ContextVar('PATH_TRANSLATED')
-QUERY_STRING = contextvars.ContextVar('QUERY_STRING')
+PATH_TRANSLATED = contextvars.ContextVar('PATH_TRANSLATED', default=None)
+QUERY_STRING = contextvars.ContextVar('QUERY_STRING', default=None)
 SERVER_NAME = contextvars.ContextVar('SERVER_NAME')
 SERVER_PORT = contextvars.ContextVar('SERVER_PORT')
 SERVER_PROTOCOL = contextvars.ContextVar('SERVER_PROTOCOL')

@@ -25,9 +25,6 @@ from google.appengine.api import validation
 from absl.testing import absltest
 
 
-
-
-
 class ValidatedTest(absltest.TestCase):
   """Unit test for Validated class."""
 

@@ -29,9 +29,7 @@
 
 
 """Tests for eventloop.py."""
-
 import logging
-import os
 import time
 
 from google.appengine.api import apiproxy_stub_map
@@ -47,8 +45,7 @@ class EventLoopTests(test_utils.NDBTest):
 
   def setUp(self):
     super(EventLoopTests, self).setUp()
-    if eventloop._EVENT_LOOP_KEY in os.environ:
-      del os.environ[eventloop._EVENT_LOOP_KEY]
+    eventloop._state.event_loop = None
     self.ev = eventloop.get_event_loop()
 
   the_module = eventloop
@@ -192,7 +189,7 @@ class EventLoopTests(test_utils.NDBTest):
     M.query().fetch_page(2)
     ev = eventloop.get_event_loop()
     self.assertEqual(len(ev.rpcs), 1)
-    del os.environ[eventloop._EVENT_LOOP_KEY]
+    eventloop._state.event_loop = None
     ev = eventloop.get_event_loop()
     self.assertEqual(len(ev.rpcs), 0)
 
