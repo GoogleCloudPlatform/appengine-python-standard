@@ -37,57 +37,79 @@ Example for a Flask app:
   app.wsgi_app = google.appengine.api.wrap_wsgi_app(app.wsgi_app)
   ```
 """
+
 import os
-from google.appengine.api import full_app_id
+from typing import Dict, Optional
 
 
-
-
-def wrap_wsgi_app(app, use_legacy_context_mode=True, use_deferred=False):
+def wrap_wsgi_app(app, *, use_deferred=False, **kwargs):
   """Wrap a WSGI app with middlewares required to access App Engine APIs."""
+  return WSGIAppWrapper().wrap_wsgi_app(
+      app, use_deferred=use_deferred, **kwargs)
 
 
-  from google.appengine.runtime import initialize
-  from google.appengine.runtime import middlewares
-  from google.appengine.runtime import default_api_stub
+class WSGIAppWrapper():
+  """A mechanism for overriding wrap_wsgi_app's defaults."""
+
+  def __init__(self, *, legacy_behaviors: Optional[Dict[str, bool]] = None):
+    self.legacy_behaviors = dict(
+        use_legacy_context_mode=True,
+        patch_thread_creation=True)
+    if legacy_behaviors is not None:
+      self.legacy_behaviors.update(legacy_behaviors)
+
+
+
+  def wrap_wsgi_app(self, app, *, use_deferred=False, **kwargs):
+    """Wrap a WSGI app with middlewares required to access App Engine APIs."""
+
+
+    self.legacy_behaviors.update(kwargs)
 
 
 
 
-  initialize.InitializeThreadingApis()
+    from google.appengine.runtime import initialize
+    from google.appengine.runtime import middlewares
+    from google.appengine.runtime import default_api_stub
 
-  default_api_stub.Register(default_api_stub.DefaultApiStub())
+
+    if self.legacy_behaviors['patch_thread_creation']:
+
+
+      initialize.InitializeThreadingApis()
+
+    default_api_stub.Register(default_api_stub.DefaultApiStub())
+
+    def if_legacy_context_mode(f):
+      return f() if self.legacy_behaviors['use_legacy_context_mode'] else []
+
+    def if_deferred_enabled(f):
+      return f() if use_deferred else []
+
+
+    return middlewares.Wrap(
+        app,
+        if_legacy_context_mode(lambda: [
 
 
 
-  full_app_id.normalize()
+            middlewares.MakeInitLegacyRequestOsEnvironMiddleware(),
+        ]) + [
+            middlewares.RunInNewContextMiddleware,
+            middlewares.SetContextFromHeadersMiddleware,
+            middlewares.CallbackMiddleware,
+            middlewares.WaitForResponseMiddleware,
+            middlewares.WsgiEnvSettingMiddleware,
 
-  def if_legacy(array):
-    return array if use_legacy_context_mode else []
-
-  def if_deferred_enabled(array):
-    return array if use_deferred else []
-
-  return middlewares.Wrap(
-      app,
-      if_legacy([
-          middlewares.MakeInitLegacyRequestOsEnvironMiddleware(),
-      ]) + [
-          middlewares.RunInNewContextMiddleware,
-          middlewares.SetContextFromHeadersMiddleware,
-          middlewares.CallbackMiddleware,
-          middlewares.UseRequestSecurityTicketForApiMiddleware,
-          middlewares.WaitForResponseMiddleware,
-          middlewares.WsgiEnvSettingMiddleware,
-
-          middlewares.MakeLegacyWsgiEnvSettingMiddleware(),
-      ] + if_legacy([
-          middlewares.LegacyWsgiRemoveXAppenginePrefixMiddleware,
-          middlewares.LegacyCopyWsgiEnvToOsEnvMiddleware,
-      ]) + [
-          middlewares.ErrorLoggingMiddleware,
-          middlewares.BackgroundAndShutdownMiddleware,
-          middlewares.SetNamespaceFromHeader,
-      ] + if_deferred_enabled([
-          middlewares.AddDeferredMiddleware,
-      ]))
+            middlewares.MakeLegacyWsgiEnvSettingMiddleware(),
+        ] + if_legacy_context_mode(lambda: [
+            middlewares.LegacyWsgiRemoveXAppenginePrefixMiddleware,
+            middlewares.LegacyCopyWsgiEnvToOsEnvMiddleware,
+        ]) + [
+            middlewares.ErrorLoggingMiddleware,
+            middlewares.BackgroundAndShutdownMiddleware,
+            middlewares.SetNamespaceFromHeader,
+        ] + if_deferred_enabled(lambda: [
+            middlewares.AddDeferredMiddleware,
+        ]))
