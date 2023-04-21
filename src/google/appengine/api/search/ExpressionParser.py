@@ -106,7 +106,7 @@ tokenNames = [
 
 
 class ExpressionParser(Parser):
-    grammarFileName = "blaze-out/k8-fastbuild/genfiles/third_party/py/google/appengine/api/search/Expression.g"
+    grammarFileName = ""
     antlr_version = version_str_to_tuple("3.1.1")
     antlr_version_str = "3.1.1"
     tokenNames = tokenNames
