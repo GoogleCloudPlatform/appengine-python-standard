@@ -17,8 +17,8 @@
 
 
 import sys
-from google.appengine._internal.antlr3 import *
-from google.appengine._internal.antlr3.compat import set, frozenset
+from google.appengine._internal.google.appengine._internal.antlr3 import *
+from google.appengine._internal.google.appengine._internal.antlr3.compat import set, frozenset
 
 
 
@@ -89,7 +89,7 @@ EXPONENT=51
 
 class ExpressionLexer(Lexer):
 
-    grammarFileName = "blaze-out/k8-fastbuild/genfiles/third_party/py/google/appengine/api/search/Expression.g"
+    grammarFileName = ""
     antlr_version = version_str_to_tuple("3.1.1")
     antlr_version_str = "3.1.1"
 
@@ -2479,7 +2479,7 @@ class ExpressionLexer(Lexer):
 
 
 def main(argv, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr):
-    from google.appengine._internal.antlr3.main import LexerMain
+    from google.appengine._internal.google.appengine._internal.antlr3.main import LexerMain
     main = LexerMain(ExpressionLexer)
     main.stdin = stdin
     main.stdout = stdout
