@@ -17,10 +17,10 @@
 
 
 import sys
-from google.appengine._internal.google.appengine._internal.antlr3 import *
-from google.appengine._internal.google.appengine._internal.antlr3.compat import set, frozenset
+from google.appengine._internal.antlr3 import *
+from google.appengine._internal.antlr3.compat import set, frozenset
 
-from google.appengine._internal.google.appengine._internal.antlr3.tree import *
+from google.appengine._internal.antlr3.tree import *
 
 
 
@@ -2296,7 +2296,7 @@ class ExpressionParser(Parser):
 
 
 def main(argv, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr):
-    from google.appengine._internal.google.appengine._internal.antlr3.main import ParserMain
+    from google.appengine._internal.antlr3.main import ParserMain
     main = ParserMain("ExpressionLexer", ExpressionParser)
     main.stdin = stdin
     main.stdout = stdout

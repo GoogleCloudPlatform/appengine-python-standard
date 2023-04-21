@@ -17,8 +17,8 @@
 
 
 import sys
-from google.appengine._internal.google.appengine._internal.antlr3 import *
-from google.appengine._internal.google.appengine._internal.antlr3.compat import set, frozenset
+from google.appengine._internal.antlr3 import *
+from google.appengine._internal.antlr3.compat import set, frozenset
 
 
 
@@ -2479,7 +2479,7 @@ class ExpressionLexer(Lexer):
 
 
 def main(argv, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr):
-    from google.appengine._internal.google.appengine._internal.antlr3.main import LexerMain
+    from google.appengine._internal.antlr3.main import LexerMain
     main = LexerMain(ExpressionLexer)
     main.stdin = stdin
     main.stdout = stdout
