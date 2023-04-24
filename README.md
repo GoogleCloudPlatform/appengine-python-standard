@@ -13,7 +13,7 @@ In your `requirements.txt` file, add the following:
 
 `appengine-python-standard>=1.0.0`
 
-Currently, `1.0.0` is the latest released stable version. To use a pre-release version (Eg. `1.0.1-rc1`), modify the above line to `appengine-python-standard>=[insert_version]` (Eg. `appengine-python-standard>=1.0.1-rc1`).
+To use a pre-release version (Eg. `1.0.1-rc1`), modify the above line to `appengine-python-standard>=[insert_version]` (Eg. `appengine-python-standard>=1.0.1-rc1`).
 
 In your app's `app.yaml`, add the following:
 
