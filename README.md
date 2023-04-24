@@ -54,6 +54,7 @@ Then deploy your app as usual, with `gcloud app deploy`. The following modules a
 - `google.appengine.api.modules`
 - `google.appengine.api.oauth`
 - `google.appengine.api.runtime`
+- `google.appengine.api.search`
 - `google.appengine.api.taskqueue`
 - `google.appengine.api.urlfetch`
 - `google.appengine.api.users`
