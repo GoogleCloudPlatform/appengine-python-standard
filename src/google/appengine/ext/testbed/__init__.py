@@ -133,6 +133,7 @@ from google.appengine.api.memcache import memcache_stub
 from google.appengine.api.modules import modules_stub
 from google.appengine.api.namespace_manager import namespace_manager
 from google.appengine.api.oauth import oauth_api
+from google.appengine.api.search import simple_search_stub
 from google.appengine.api.taskqueue import taskqueue_stub
 from google.appengine.datastore import cloud_datastore_v1_stub
 from google.appengine.datastore import datastore_pbs
@@ -212,6 +213,7 @@ FILES_SERVICE_NAME = 'file'
 IMAGES_SERVICE_NAME = 'images'
 MAIL_SERVICE_NAME = 'mail'
 MEMCACHE_SERVICE_NAME = 'memcache'
+SEARCH_SERVICE_NAME = 'search'
 TASKQUEUE_SERVICE_NAME = 'taskqueue'
 URLFETCH_SERVICE_NAME = 'urlfetch'
 USER_SERVICE_NAME = 'user'
@@ -932,6 +934,21 @@ class Testbed(object):
       StubNotSupportedError: If called.
     """
     raise StubNotSupportedError('The xmpp stub is not supported in Titanoboa.')
+
+  def init_search_stub(self, enable=True, **stub_kw_args):
+    """Enables the search stub.
+
+    Args:
+      enable: `True` if the fake service should be enabled, or `False` if the
+          real service should be disabled.
+      **stub_kw_args: Keyword arguments that are passed on to the service
+          stub.
+    """
+    if not enable:
+      self._disable_stub(SEARCH_SERVICE_NAME)
+      return
+    stub = simple_search_stub.SearchServiceStub(**stub_kw_args)
+    self._register_stub(SEARCH_SERVICE_NAME, stub)
 
   def init_modules_stub(self, enable=True):
     """Enables the modules stub.
