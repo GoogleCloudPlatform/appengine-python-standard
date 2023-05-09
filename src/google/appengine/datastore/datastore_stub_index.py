@@ -309,7 +309,9 @@ class IndexYamlUpdater(object):
 
 
 
-        fh = openfile(index_yaml_file, 'rU')
+        # The 'U' option is deprecated in py3, as universal newlines
+        # are the default option
+        fh = openfile(index_yaml_file, 'r' if six.PY3 else 'rU')
       except IOError:
         index_yaml_data = None
       else:
