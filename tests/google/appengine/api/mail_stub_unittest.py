@@ -363,7 +363,7 @@ class MailServiceStubTest(absltest.TestCase):
                stdout=subprocess.PIPE).AndReturn(child)
 
     send.write(
-        mox.Regex(b'^(?s)(?!From ).*' +
+        mox.Regex(b'(?s)^(?!From ).*' +
                   re.escape(b'MIME-Version: 1.0\n'
                             b'To: to@nowhere.com\n'
                             b'Cc: cc1@nowhere.com, cc2@nowhere.com\n'
@@ -456,7 +456,7 @@ class MailServiceStubTest(absltest.TestCase):
                           'cc@nowhere.com',
                           'bcc@nowhere.com'],
 
-                         mox.Regex('^(?s)(?!From ).*' +
+                         mox.Regex('(?s)^(?!From ).*' +
                                    re.escape('MIME-Version: 1.0\n'
                                              'To: to@nowhere.com\n'
                                              'Cc: cc@nowhere.com\n'
@@ -504,7 +504,7 @@ class MailServiceStubTest(absltest.TestCase):
                           'cc@nowhere.com',
                           'bcc@nowhere.com'],
 
-                         mox.Regex('^(?s)(?!From ).*' +
+                         mox.Regex('(?s)^(?!From ).*' +
                                    re.escape('MIME-Version: 1.0\n'
                                              'To: to@nowhere.com\n'
                                              'Cc: cc@nowhere.com\n'
