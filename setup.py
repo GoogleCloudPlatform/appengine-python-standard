@@ -7,7 +7,7 @@ setuptools.setup(
     name="appengine-python-standard",
     version="1.1.2",
     author="Google LLC",
-    description="Google App Engine services SDK for Python 3",
+    description="a Google App Engine services SDK for Python 3",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/GoogleCloudPlatform/appengine-python-standard",
