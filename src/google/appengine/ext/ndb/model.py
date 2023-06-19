@@ -2199,10 +2199,11 @@ class DateTimeProperty(Property):
       raise TypeError('DateTimeProperty %s can only be set to datetime values; '
                       'received %r' % (self._name, value))
     if self._tzinfo is None and value.tzinfo is not None:
-      raise NotImplementedError('DateTimeProperty without tzinfo %s can only '
-                                'support naive datetimes (presumed UTC). '
-                                'Please set tzinfo to support alternative'
-                                'timezones.' % self._name)
+      raise datastore_errors.BadValueError('DateTimeProperty without tzinfo'
+                                           '%s can only support naive '
+                                           'datetimes (presumed UTC). Please'
+                                           'set tzinfo to support alternative'
+                                           'timezones.' % self._name)
 
     if self._tzinfo is not None and value.tzinfo is not None:
       value = value.astimezone(pytz.utc).replace(tzinfo=None)
