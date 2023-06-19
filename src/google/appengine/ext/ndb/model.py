@@ -324,6 +324,8 @@ import zlib
 
 from google.appengine.ext.ndb import key as key_module
 from google.appengine.ext.ndb import utils
+
+import pytz
 import six
 from six.moves import map
 import six.moves.cPickle as pickle
@@ -2146,22 +2148,25 @@ class DateTimeProperty(Property):
   """A Property whose value is a datetime object.
 
   Note: Unlike Django, auto_now_add can be overridden by setting the
-  value before writing the entity.  And unlike classic db, auto_now
-  does not supply a default value.  Also unlike classic db, when the
+  value before writing the entity. And unlike classic db, auto_now
+  does not supply a default value. Also unlike classic db, when the
   entity is written, the property values are updated to match what
-  was written.  Finally, beware that this also updates the value in
+  was written. Finally, beware that this also updates the value in
   the in-process cache, *and* that auto_now_add may interact weirdly
   with transaction retries (a retry of a property with auto_now_add
   set will reuse the value that was set on the first try).
   """
 
-  _attributes = Property._attributes + ['_auto_now', '_auto_now_add']
+  _attributes = Property._attributes + ['_auto_now', '_auto_now_add',
+                                        '_tzinfo']
 
   _auto_now = False
   _auto_now_add = False
+  _tzinfo = None
 
   @utils.positional(1 + Property._positional)
-  def __init__(self, name=None, auto_now=False, auto_now_add=False, **kwds):
+  def __init__(self, name=None, auto_now=False, auto_now_add=False,
+               tzinfo=None, **kwds):
     super(DateTimeProperty, self).__init__(name=name, **kwds)
 
     if self._repeated:
@@ -2173,6 +2178,7 @@ class DateTimeProperty(Property):
                          'repeated, but there would be no point.' % self._name)
     self._auto_now = auto_now
     self._auto_now_add = auto_now_add
+    self._tzinfo = tzinfo
 
   def _validate(self, value):
     if not isinstance(value, datetime.datetime):
@@ -2190,12 +2196,17 @@ class DateTimeProperty(Property):
 
   def _db_set_value(self, v, p, value):
     if not isinstance(value, datetime.datetime):
-      raise TypeError('DatetimeProperty %s can only be set to datetime values; '
+      raise TypeError('DateTimeProperty %s can only be set to datetime values; '
                       'received %r' % (self._name, value))
-    if value.tzinfo is not None:
-      raise NotImplementedError('DatetimeProperty %s can only support UTC. '
-                                'Please derive a new Property to support '
-                                'alternative timezones.' % self._name)
+    if self._tzinfo is None and value.tzinfo is not None:
+      raise NotImplementedError('DateTimeProperty without tzinfo %s can only '
+                                'support naive datetimes (presumed UTC). '
+                                'Please set tzinfo to support alternative'
+                                'timezones.' % self._name)
+
+    if self._tzinfo is not None and value.tzinfo is not None:
+      value = value.astimezone(pytz.utc).replace(tzinfo=None)
+
     dt = value - _EPOCH
     ival = dt.microseconds + 1000000 * (dt.seconds + 24 * 3600 * dt.days)
     v.int64Value = ival
@@ -2205,7 +2216,12 @@ class DateTimeProperty(Property):
     if not v.HasField('int64Value'):
       return None
     ival = v.int64Value
-    return _EPOCH + datetime.timedelta(microseconds=ival)
+    dt = _EPOCH + datetime.timedelta(microseconds=ival)
+
+    if self._tzinfo is not None:
+        dt = dt.replace(tzinfo=pytz.utc).astimezone(self._tzinfo)
+
+    return dt
 
 
 def _date_to_datetime(value):

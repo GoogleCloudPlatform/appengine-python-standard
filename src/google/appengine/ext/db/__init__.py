@@ -1338,7 +1338,7 @@ class Model(six.with_metaclass(PropertiedClass, object)):
     Example usage:
 
       class WikiTopic(db.Model):
-        creation_date = db.DatetimeProperty(auto_now_add=True)
+        creation_date = db.DateTimeProperty(auto_now_add=True)
         body = db.TextProperty(required=True)
 
       # The first time through we'll create the new topic.
