@@ -66,17 +66,17 @@ class PolyModelTests(test_utils.NDBTest):
       pump = model.BooleanProperty()
 
     self.assertEqual(Shoe._class_name(), 'Shoe')
-    self.assertEqual(Shoe._class_key(), [b'Shoe'])
+    self.assertEqual(Shoe._class_key(), ['Shoe'])
     self.assertEqual(Moccasin._class_name(), 'Moccasin')
-    self.assertEqual(Moccasin._class_key(), [b'Shoe', b'Moccasin'])
+    self.assertEqual(Moccasin._class_key(), ['Shoe', 'Moccasin'])
     self.assertEqual(Sneaker._class_name(), 'Sneaker')
-    self.assertEqual(Sneaker._class_key(), [b'Shoe', b'Sneaker'])
+    self.assertEqual(Sneaker._class_key(), ['Shoe', 'Sneaker'])
 
     s_key = model.Key('Shoe', 1)
     self.assertEqual(Shoe().put(), s_key)
     s = s_key.get()
     self.assertEqual(s._get_kind(), 'Shoe')
-    self.assertEqual(s._class_key(), [b'Shoe'])
+    self.assertEqual(s._class_key(), ['Shoe'])
     self.assertEqual(s.class_, ['Shoe'])
 
     m_key = model.Key('Shoe', 2)
@@ -124,7 +124,7 @@ class PolyModelTests(test_utils.NDBTest):
     class Dog(Animal):
       pass
     fido = Dog()
-    self.assertEqual(fido.class_, [b'Animal', b'Dog'])
+    self.assertEqual(fido.class_, ['Animal', 'Dog'])
     self.assertRaises(TypeError, setattr, fido, 'class_', ['Animal', 'Dog'])
 
   def testPolyExpando(self):
@@ -198,7 +198,7 @@ class PolyModelTests(test_utils.NDBTest):
     self.assertEqual(expected_k9.legs, 4)
     self.assertEqual(expected_k9._get_kind(), 'Animal')
     self.assertEqual(expected_k9._class_name(), 'Canine')
-    self.assertEqual(expected_k9._class_key(), [b'Animal', b'Canine'])
+    self.assertEqual(expected_k9._class_key(), ['Animal', 'Canine'])
 
     expected_cat = Cat(name='Tom', naps=12, sound='purr')
     self.assertIsInstance(expected_cat, Cat)
@@ -210,13 +210,13 @@ class PolyModelTests(test_utils.NDBTest):
     self.assertEqual(expected_cat.legs, 4)
     self.assertEqual(expected_cat._get_kind(), 'Animal')
     self.assertEqual(expected_cat._class_name(), 'Cat')
-    self.assertEqual(expected_cat._class_key(), [b'Animal', b'Feline', b'Cat'])
+    self.assertEqual(expected_cat._class_key(), ['Animal', 'Feline', 'Cat'])
 
     expected_wolf = Wolf(name='Warg')
     self.assertEqual(expected_wolf._get_kind(), 'Animal')
     self.assertEqual(expected_wolf._class_name(), 'Wolf')
     self.assertEqual(
-        expected_wolf._class_key(), [b'Animal', b'Canine', b'Wolf'])
+        expected_wolf._class_key(), ['Animal', 'Canine', 'Wolf'])
     self.assertRaises(AttributeError, lambda: expected_wolf.breed)
 
     expected_ghoul = Ghoul(name='Westminster', book=b'The Graveyard Book')
@@ -225,19 +225,19 @@ class PolyModelTests(test_utils.NDBTest):
     self.assertEqual(expected_ghoul._class_name(), 'Ghoul')
     self.assertEqual(
         expected_ghoul._class_key(),
-        [b'Animal', b'Feline', b'Cat', b'Canine', b'Dog', b'Monster', b'Ghoul'])
+        ['Animal', 'Feline', 'Cat', 'Canine', 'Dog', 'Monster', 'Ghoul'])
 
     actual_k9 = expected_k9.put().get()
     self.assertIsInstance(expected_k9, Canine)
     self.assertEqual(expected_k9.name, 'Reynard')
     self.assertEqual(expected_k9._get_kind(), 'Animal')
     self.assertEqual(expected_k9._class_name(), 'Canine')
-    self.assertEqual(expected_k9._class_key(), [b'Animal', b'Canine'])
+    self.assertEqual(expected_k9._class_key(), ['Animal', 'Canine'])
     self.assertIsInstance(actual_k9, Canine)
     self.assertEqual(actual_k9.name, 'Reynard')
     self.assertEqual(actual_k9._get_kind(), 'Animal')
     self.assertEqual(actual_k9._class_name(), 'Canine')
-    self.assertEqual(actual_k9._class_key(), [b'Animal', b'Canine'])
+    self.assertEqual(actual_k9._class_key(), ['Animal', 'Canine'])
     self.assertEqual(actual_k9, expected_k9)
 
     actual_cat = expected_cat.put().get()
@@ -265,7 +265,7 @@ class PolyModelTests(test_utils.NDBTest):
       fido1 = pickle.loads(s)
       self.assertEqual(fido1.name, 'Fido')
       self.assertEqual(fido1.breed, 'chihuahua')
-      self.assertEqual(fido1.class_, [b'Animal', b'Dog'])
+      self.assertEqual(fido1.class_, ['Animal', 'Dog'])
       self.assertEqual(fido, fido1)
 
   def testClassNameOverride(self):
@@ -282,7 +282,7 @@ class PolyModelTests(test_utils.NDBTest):
       def _class_name(cls):
         return 'Pussycat'
     tom = Cat()
-    self.assertEqual(tom.class_, [b'Animal', b'Feline', b'Pussycat'])
+    self.assertEqual(tom.class_, ['Animal', 'Feline', 'Pussycat'])
     tom.put()
     expected = [tom]
     actual = Cat.query().fetch()
@@ -339,6 +339,18 @@ class PolyModelTests(test_utils.NDBTest):
       pass
     self.assertEqual(Animal.query().filters, None)
     self.assertNotEqual(Cat.query().filters, None)
+
+  def testEqualityAfterPut(self):
+    """ See https://github.com/GoogleCloudPlatform/appengine-python-standard/issues/89 """
+    class Animal(PolyModel):
+      pass
+
+    a = Animal(id=1)
+    b = Animal(id=1)
+    a.put()
+
+    self.assertEqual(a, b)
+
 
 TOM_PB2 = """\
 key {
