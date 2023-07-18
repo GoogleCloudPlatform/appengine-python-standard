@@ -796,22 +796,34 @@ class SearchServiceStub(apiproxy_stub.APIProxyStub):
 
     response.status.code = search_service_pb2.SearchServiceError.OK
 
-    namespace = self._GetNamespace(request.params.namespace)
-    if namespace not in self.__indexes or not self.__indexes[namespace]:
-      return
+    params = request.params
+    namespace = self._GetNamespace(params.namespace)
+
+    indexes_by_namespace_and_name = {}
+    if params.all_namespaces:
+      for namespace, indexes_by_name in six.iteritems(self.__indexes):
+        for index_name, index in six.iteritems(indexes_by_name):
+          indexes_by_namespace_and_name[(namespace, index_name)] = index
+    else:
+      if namespace not in self.__indexes or not self.__indexes[namespace]:
+        return
+      for index_name, index in six.iteritems(self.__indexes[namespace]):
+        indexes_by_namespace_and_name[(namespace, index_name)] = index
 
     keys, indexes = list(
         six.moves.zip(*sorted(
-            six.iteritems(self.__indexes[namespace]), key=lambda v: v[0])))
+            six.iteritems(indexes_by_namespace_and_name),
+            key=lambda v: v[0])))
     position = 0
-    params = request.params
     if params.HasField('start_index_name'):
-      position = bisect.bisect_left(keys, params.start_index_name)
+      position = bisect.bisect_left(keys,
+                                    (params.namespace, params.start_index_name))
       if (not params.include_start_index and position < len(keys) and
-          keys[position] == params.start_index_name):
+          keys[position] == (params.namespace, params.start_index_name)):
         position += 1
     elif params.HasField('index_name_prefix'):
-      position = bisect.bisect_left(keys, params.index_name_prefix)
+      position = bisect.bisect_left(
+          keys, (params.namespace, params.index_name_prefix))
     if params.HasField('offset'):
       position += params.offset
     end_position = position + params.limit

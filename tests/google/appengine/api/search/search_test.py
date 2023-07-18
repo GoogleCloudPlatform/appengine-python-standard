@@ -3279,7 +3279,8 @@ class APIFunctionTest(TestCase):
   def ExpectListIndexesResponse(self, code, index_names, message=None,
                                 request=None, field_map=None, limit=20,
                                 fetch_schema=False, offset=None, deadline=None,
-                                storage_map=None):
+                                storage_map=None, namespace_list=None,
+                                all_namespaces=None):
     if request is None:
       request = search_service_pb2.ListIndexesRequest()
       params = request.params
@@ -3289,15 +3290,19 @@ class APIFunctionTest(TestCase):
         params.offset = offset
       params.limit = limit
       params.fetch_schema = fetch_schema
+      if all_namespaces is not None:
+        params.all_namespaces = all_namespaces
 
     def ResponseSideEffects(service, method, request, response):
       response_status = response.status
       response_status.code = code
       if message is not None:
         response_status.error_detail = message
-      for index_name in index_names:
+      for i, index_name in enumerate(index_names):
         metadata = response.index_metadata.add()
         metadata.index_spec.name = index_name
+        if namespace_list:
+          metadata.index_spec.namespace = namespace_list[i]
         if field_map:
           fields = field_map[index_name]
           for field in fields:
@@ -4581,6 +4586,18 @@ class APIFunctionTest(TestCase):
     self.assertEqual(None, response.results[0].schema)
     self.assertEqual(None, response.results[0].storage_usage)
     self.assertEqual(None, response.results[0].storage_limit)
+    self.mox.VerifyAll()
+
+  def testGetIndexesOkAllNamespaces(self):
+    self.ExpectListIndexesResponse(OK, ['index_name', 'another_index_name'],
+                                   namespace_list=['', 'ns'],
+                                   all_namespaces=True)
+    response = search.get_indexes(all_namespaces=True)
+    self.assertLen(response, 2)
+    self.assertEqual('', response.results[0].namespace)
+    self.assertEqual('index_name', response.results[0].name)
+    self.assertEqual('ns', response.results[1].namespace)
+    self.assertEqual('another_index_name', response.results[1].name)
     self.mox.VerifyAll()
 
   def testGetIndexesAsyncOk(self):
