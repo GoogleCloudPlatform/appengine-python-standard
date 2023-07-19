@@ -883,7 +883,7 @@ def _ListIndexesResponsePbToGetResponse(response, include_schema):
 def get_indexes(namespace='', offset=None, limit=20,
                 start_index_name=None, include_start_index=True,
                 index_name_prefix=None, fetch_schema=False, deadline=None,
-                **kwargs):
+                all_namespaces=None, **kwargs):
   """Returns a list of available indexes.
 
   Args:
@@ -895,9 +895,9 @@ def get_indexes(namespace='', offset=None, limit=20,
     include_start_index: Whether or not to return the start index.
     index_name_prefix: The prefix used to select returned indexes.
     fetch_schema: Whether to retrieve Schema for each Index or not.
-
-  Kwargs:
-    deadline: Deadline for RPC call in seconds; if None use the default.
+    deadline: Deadline for RPC calls in seconds; if None use the default.
+    all_namespaces: Whether to return indexes from all namespaces.
+    **kwargs: Additional kwargs.
 
   Returns:
     The GetResponse containing a list of available indexes.
@@ -911,18 +911,42 @@ def get_indexes(namespace='', offset=None, limit=20,
   """
   return get_indexes_async(
       namespace, offset, limit, start_index_name, include_start_index,
-      index_name_prefix, fetch_schema, deadline=deadline, **kwargs).get_result()
+      index_name_prefix, fetch_schema, deadline=deadline,
+      all_namespaces=all_namespaces, **kwargs).get_result()
 
 
 @datastore_rpc._positional(7)
 def get_indexes_async(namespace='', offset=None, limit=20,
                       start_index_name=None, include_start_index=True,
                       index_name_prefix=None, fetch_schema=False, deadline=None,
-                      **kwargs):
+                      all_namespaces=None, **kwargs):
   """Asynchronously returns a list of available indexes.
 
-  Identical to get_indexes() except that it returns a future. Call
-  get_result() on the return value to block on the call and get its result.
+  Identical to get_indexes() except that it returns a future.
+
+  Args:
+    namespace: The namespace of indexes to be returned. If not set
+      then the current namespace is used.
+    offset: The offset of the first returned index.
+    limit: The number of indexes to return.
+    start_index_name: The name of the first index to be returned.
+    include_start_index: Whether or not to return the start index.
+    index_name_prefix: The prefix used to select returned indexes.
+    fetch_schema: Whether to retrieve Schema for each Index or not.
+    deadline: Deadline for RPC calls in seconds; if None use the default.
+    all_namespaces: Whether to return indexes from all namespaces.
+    **kwargs: Additional kwargs.
+
+  Returns:
+    A future. Call get_result() on the return value to block on the call and get
+    its result.
+
+  Raises:
+    InternalError: If the request fails on internal servers.
+    TypeError: If any of the parameters have invalid types, or an unknown
+      attribute is passed.
+    ValueError: If any of the parameters have invalid values (e.g., a
+      negative deadline).
   """
 
   app_id = kwargs.pop('app_id', None)
@@ -960,6 +984,8 @@ def get_indexes_async(namespace='', offset=None, limit=20,
         'index_name_prefix',
         MAXIMUM_INDEX_NAME_LENGTH,
         empty_ok=False)
+  if all_namespaces is not None:
+    params.all_namespaces = bool(all_namespaces)
   params.fetch_schema = fetch_schema
 
   response = search_service_pb2.ListIndexesResponse()
