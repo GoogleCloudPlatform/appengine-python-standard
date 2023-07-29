@@ -60,6 +60,7 @@ Then deploy your app as usual, with `gcloud app deploy`. The following modules a
 - `google.appengine.api.users`
 - `google.appengine.ext.blobstore`
 - `google.appengine.ext.db`
+- `google.appengine.ext.deferred`
 - `google.appengine.ext.gql`
 - `google.appengine.ext.key_range`
 - `google.appengine.ext.ndb`
