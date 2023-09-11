@@ -21,7 +21,6 @@
 """An APIProxy stub that communicates with VMEngine service bridges."""
 
 from concurrent import futures
-import imp
 import logging
 import os
 import sys
@@ -224,12 +223,14 @@ class DefaultApiRPC(apiproxy_rpc.RPC):
         headers=headers,
         body=body_data)
 
+    is_lock_held = False
 
+    if six.PY2:
+      import imp
+      if imp.lock_held():
+        is_lock_held = True
 
-
-
-
-    if six.PY2 and imp.lock_held():
+    if is_lock_held:
       self.future = futures.Future()
       self.future.set_result(self._SendRequestAndFinish(**request_kwargs))
 

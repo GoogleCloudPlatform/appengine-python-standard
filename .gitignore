@@ -3,3 +3,5 @@ __pycache__
 src/appengine_python_standard.egg-info
 .tox
 .DS_Store
+build/*
+appengine_python_standard-*-py*.egg
