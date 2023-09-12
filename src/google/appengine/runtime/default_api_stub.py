@@ -24,7 +24,6 @@ from concurrent import futures
 import logging
 import os
 import sys
-import threading
 from google.appengine.api import apiproxy_rpc
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.ext.remote_api import remote_api_bytes_pb2 as remote_api_pb2
@@ -46,8 +45,9 @@ logging.getLogger('requests_nologs').setLevel(logging.ERROR)
 TICKET_HEADER = 'HTTP_X_APPENGINE_API_TICKET'
 DEV_TICKET_HEADER = 'HTTP_X_APPENGINE_DEV_REQUEST_ID'
 DAPPER_ENV_KEY = 'HTTP_X_GOOGLE_DAPPERTRACEINFO'
-SERVICE_BRIDGE_HOST = 'appengine.googleapis.internal'
-API_PORT = 10001
+SERVICE_BRIDGE_HOST = os.environ.get('API_HOST',
+                                     'appengine.googleapis.internal')
+API_PORT = os.environ.get('API_PORT', '10001')
 SERVICE_ENDPOINT_NAME = 'app-engine-apis'
 APIHOST_METHOD = '/VMRemoteAPI.CallRemoteAPI'
 PROXY_PATH = '/rpc_http'
@@ -163,23 +163,17 @@ class DefaultApiRPC(apiproxy_rpc.RPC):
 
 
 
-    ticket = None
-    if DefaultApiStub.ShouldUseRequestSecurityTicketForThread():
 
 
-      if context.READ_FROM_OS_ENVIRON:
-        ticket = os.environ.get(TICKET_HEADER,
-                                os.environ.get(DEV_TICKET_HEADER))
-      else:
+    if context.READ_FROM_OS_ENVIRON:
+      ticket = os.environ.get(TICKET_HEADER,
+                              os.environ.get(DEV_TICKET_HEADER))
+    else:
 
 
 
-        ticket = context.gae_headers.API_TICKET.get(
-            context.gae_headers.DEV_REQUEST_ID.get(None))
-
-    if not ticket:
-      raise apiproxy_errors.RPCFailedError(
-          'Attempted RPC call without active security ticket')
+      ticket = context.gae_headers.API_TICKET.get(
+          context.gae_headers.DEV_REQUEST_ID.get(None))
 
     request = remote_api_pb2.Request(
         service_name=self.package,
@@ -291,41 +285,11 @@ class DefaultApiRPC(apiproxy_rpc.RPC):
       self._state = apiproxy_rpc.RPC.FINISHING
 
 
-class _UseRequestSecurityTicketLocal(threading.local):
-  """Thread local holding if the default ticket should always be used."""
-
-  def __init__(self):
-    super(_UseRequestSecurityTicketLocal, self).__init__()
-    self.use_ticket_header_value = False
-
-
 class DefaultApiStub(object):
   """A stub for calling services through a VM service bridge.
 
   You can use this to stub out any service that the remote server supports.
   """
-
-
-  _USE_REQUEST_SECURITY_TICKET_LOCAL = _UseRequestSecurityTicketLocal()
-
-  @classmethod
-  def SetUseRequestSecurityTicketForThread(cls, value):
-    """Sets if the in environment security ticket should be used.
-
-    Security tickets are set in the context, which gets inherited by a
-    child thread.  Child threads should not use the security ticket of their
-    parent by default, because once the parent thread returns and the request
-    is complete, the security ticket is no longer valid.
-
-    Args:
-      value: Boolean value describing if we should use the security ticket.
-    """
-    cls._USE_REQUEST_SECURITY_TICKET_LOCAL.use_ticket_header_value = value
-
-  @classmethod
-  def ShouldUseRequestSecurityTicketForThread(cls):
-    """Gets if thie security ticket should be used for this thread."""
-    return cls._USE_REQUEST_SECURITY_TICKET_LOCAL.use_ticket_header_value
 
 
   def __init__(self):

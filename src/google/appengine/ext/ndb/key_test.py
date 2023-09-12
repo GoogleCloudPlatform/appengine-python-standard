@@ -92,7 +92,7 @@ class KeyTests(test_utils.NDBTest):
     e.name = flat[3]
     serialized = r.SerializeToString()
     ref_bytes = six.ensure_binary(r.SerializeToString())
-    urlsafe = base64.urlsafe_b64encode(ref_bytes).rstrip(b'=')
+    urlsafe = base64.urlsafe_b64encode(ref_bytes).rstrip(b'=').decode()
 
     k = key.Key(flat=flat)
     self.assertEqual(k.serialized(), serialized)
@@ -122,7 +122,7 @@ class KeyTests(test_utils.NDBTest):
     self.assertEqual(k.reference(), r)
 
     k1 = key.Key('A', 1)
-    self.assertEqual(k1.urlsafe(), b'ag9uZGItdGVzdC1hcHAtaWRyBwsSAUEYAQw')
+    self.assertEqual(k1.urlsafe(), 'ag9uZGItdGVzdC1hcHAtaWRyBwsSAUEYAQw')
     k2 = key.Key(urlsafe=k1.urlsafe())
     self.assertEqual(k1, k2)
 
@@ -252,7 +252,7 @@ class KeyTests(test_utils.NDBTest):
     r = k.reference()
     serialized = k.serialized()
     urlsafe = k.urlsafe()
-    key.Key(urlsafe=urlsafe.decode('utf8'))
+    key.Key(urlsafe=urlsafe)
     key.Key(serialized=serialized.decode('utf8'))
     key.Key(reference=r)
 

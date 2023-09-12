@@ -593,7 +593,7 @@ class Key(object):
     """
 
     urlsafe = base64.b64encode(self.reference().SerializeToString())
-    return urlsafe.rstrip(b'=').replace(b'+', b'-').replace(b'/', b'_')
+    return urlsafe.rstrip(b'=').replace(b'+', b'-').replace(b'/', b'_').decode()
 
 
 
