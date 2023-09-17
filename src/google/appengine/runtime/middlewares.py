@@ -31,7 +31,6 @@ from google.appengine.ext.deferred import deferred
 from google.appengine.runtime import background
 from google.appengine.runtime import callback
 from google.appengine.runtime import context
-from google.appengine.runtime import default_api_stub
 from google.appengine.runtime import request_environment
 import six
 from six.moves import urllib
@@ -86,29 +85,6 @@ def middleware(f):
 def Wrap(app, middlewares):
   """Wrap(app, [a,b,c]) is equivalent to a(b(c(app)))."""
   return functools.reduce(lambda app, mw: mw(app), reversed(middlewares), app)
-
-
-@middleware
-def UseRequestSecurityTicketForApiMiddleware(app, wsgi_env, start_response):
-  """WSGI middleware wrapper that sets the thread to use the security ticket.
-
-  This sets up the appengine api so that if a security ticket is passed in with
-  the request, it will be used.
-
-  Args:
-    app: (callable) a WSGI app per PEP 3333.
-    wsgi_env: see PEP 3333
-    start_response: see PEP 3333
-
-  Returns:
-    A wrapped <app>, which is also a valid WSGI app.
-  """
-  try:
-    default_api_stub.DefaultApiStub.SetUseRequestSecurityTicketForThread(True)
-    return app(wsgi_env, start_response)
-  finally:
-
-    default_api_stub.DefaultApiStub.SetUseRequestSecurityTicketForThread(False)
 
 
 @middleware

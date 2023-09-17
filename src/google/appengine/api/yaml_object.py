@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-
 """Builder for mapping YAML documents to object instances.
 
 `ObjectBuilder` is responsible for mapping a YAML document to classes defined
@@ -27,15 +26,13 @@ using the validation mechanism (see `google.appengine.api.validation.py`).
 
 
 
-
 import google
-
-from ruamel import yaml
 
 from google.appengine.api import validation
 from google.appengine.api import yaml_builder
 from google.appengine.api import yaml_errors
 from google.appengine.api import yaml_listener
+from ruamel.yaml import loader as yaml_loader
 
 
 
@@ -84,8 +81,8 @@ class _ObjectSequencer(object):
     """Set object used for constructing new sequence instances.
 
     Args:
-      constructor: Callable which can accept no arguments.  Must return
-        an instance of the appropriate class for the container.
+      constructor: Callable which can accept no arguments.  Must return an
+        instance of the appropriate class for the container.
     """
     self.constructor = constructor
 
@@ -282,7 +279,7 @@ class ObjectBuilder(yaml_builder.Builder):
       subject.value.append(value)
 
 
-def BuildObjects(default_class, stream, loader=yaml.loader.SafeLoader):
+def BuildObjects(default_class, stream, loader=yaml_loader.SafeLoader):
   """Build objects from stream.
 
   Handles the basic case of loading all the objects from a stream.
@@ -293,7 +290,7 @@ def BuildObjects(default_class, stream, loader=yaml.loader.SafeLoader):
     stream: String document or open file object to process as per the
       `yaml.parse` method.  Any object that implements a `read()` method which
       returns a string document will work with the YAML parser.
-    loader_class: Used for dependency injection.
+    loader: Used for dependency injection.
 
   Returns:
     List of `default_class` instances parsed from the stream.
@@ -306,7 +303,7 @@ def BuildObjects(default_class, stream, loader=yaml.loader.SafeLoader):
   return handler.GetResults()
 
 
-def BuildSingleObject(default_class, stream, loader=yaml.loader.SafeLoader):
+def BuildSingleObject(default_class, stream, loader=yaml_loader.SafeLoader):
   """Build object from stream.
 
   Handles the basic case of loading a single object from a stream.
@@ -314,10 +311,10 @@ def BuildSingleObject(default_class, stream, loader=yaml.loader.SafeLoader):
   Args:
     default_class: Class that is instantiated upon the detection of a new
       document.  An instance of this class will act as the document itself.
-    stream: String document or open file object to process as per the
-      yaml.parse method.  Any object that implements a 'read()' method which
-      returns a string document will work with the YAML parser.
-    loader_class: Used for dependency injection.
+    stream: String document or open file object to process as per the yaml.parse
+      method.  Any object that implements a 'read()' method which returns a
+      string document will work with the YAML parser.
+    loader: Used for dependency injection.
   """
   definitions = BuildObjects(default_class, stream, loader)
 

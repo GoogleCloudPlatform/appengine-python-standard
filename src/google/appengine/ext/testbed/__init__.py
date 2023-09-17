@@ -156,12 +156,10 @@ except AttributeError:
 
 
   mail_stub = None
-
-
-
-
-
-
+try:
+  from google.appengine.datastore import datastore_sqlite_stub
+except ImportError:
+  datastore_sqlite_stub = None
 try:
 
 
@@ -183,13 +181,13 @@ DEFAULT_ENVIRONMENT = {
     'GOOGLE_CLOUD_PROJECT': 'testbed-test',
     'AUTH_DOMAIN': 'gmail.com',
     'HTTP_HOST': 'testbed.example.com',
-    'CURRENT_MODULE_ID': 'default',
     'CURRENT_VERSION_ID': 'testbed-version',
     'GAE_RUNTIME': 'python3' + str(sys.version_info.minor),
+    'GAE_SERVICE': 'default',
+    'GAE_ENV': 'localdev',
     'REQUEST_ID_HASH': 'testbed-request-id-hash',
     'REQUEST_LOG_ID': '7357B3D7091D',
     'SERVER_NAME': 'testbed.example.com',
-    'SERVER_SOFTWARE': 'Development/1.0 (testbed)',
     'SERVER_PORT': '80',
     'USER_EMAIL': '',
     'USER_ID': '',
@@ -200,7 +198,6 @@ DEFAULT_ENVIRONMENT = {
 DEFAULT_APP_ID = DEFAULT_ENVIRONMENT['GAE_APPLICATION']
 DEFAULT_AUTH_DOMAIN = DEFAULT_ENVIRONMENT['AUTH_DOMAIN']
 DEFAULT_SERVER_NAME = DEFAULT_ENVIRONMENT['SERVER_NAME']
-DEFAULT_SERVER_SOFTWARE = DEFAULT_ENVIRONMENT['SERVER_SOFTWARE']
 DEFAULT_SERVER_PORT = DEFAULT_ENVIRONMENT['SERVER_PORT']
 
 
@@ -765,18 +762,15 @@ class Testbed(object):
       self._disable_stub(cloud_datastore_v1_stub.SERVICE_NAME)
       return
     if use_sqlite:
-
-
-
-
-
-
-
-
-
-
-
-      raise NotImplementedError('datastore_sqlite_stub not supported')
+      if datastore_sqlite_stub is None:
+        raise StubNotSupportedError(
+            'The sqlite stub is not supported in production.')
+      stub = datastore_sqlite_stub.DatastoreSqliteStub(
+          full_app_id.get(),
+          datastore_file,
+          use_atexit=False,
+          auto_id_policy=auto_id_policy,
+          **stub_kw_args)
     else:
       stub_kw_args.setdefault('save_changes', False)
       stub = datastore_file_stub.DatastoreFileStub(
