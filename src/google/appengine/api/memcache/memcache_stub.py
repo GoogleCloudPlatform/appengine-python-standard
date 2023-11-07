@@ -111,10 +111,12 @@ class CacheEntry(_LRUChainableElement):
     self.flags = flags
     self.cas_id = cas_id
     self.created_time = self.gettime()
+    self.last_access_time = self.created_time
     self.will_expire = expiration != 0
     self.locked = False
     self.namespace = namespace
     self._SetExpiration(expiration)
+    self._SetDeleteTime(0)
 
   def _SetExpiration(self, expiration):
     """Sets the expiration for this entry.
@@ -128,6 +130,23 @@ class CacheEntry(_LRUChainableElement):
       self.expiration_time = expiration
     else:
       self.expiration_time = self.gettime() + expiration
+
+  def _SetDeleteTime(self, timeout):
+    """Sets the deletion time for this entry.
+
+    Args:
+      timeout: Number containing the time or offset in seconds before the entry
+        is deleted. If timeout is above one month, then it's considered an
+        absolute time since the UNIX epoch.
+    """
+    if timeout > (86400 * 30):
+      self.delete_time = timeout
+    else:
+      self.delete_time = self.gettime() + timeout
+
+  def UpdateLastAccessTime(self):
+    """Sets the last access time for this entry."""
+    self.last_access_time = self.gettime()
 
   def CheckExpired(self):
     """Returns `True` if this entry has expired; `False` otherwise."""
@@ -145,6 +164,7 @@ class CacheEntry(_LRUChainableElement):
     self.will_expire = True
     self.locked = True
     self._SetExpiration(timeout)
+    self._SetDeleteTime(timeout)
 
   def CheckLocked(self):
     """Returns `True` if this entry was deleted but has not yet timed out."""
@@ -198,7 +218,7 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
     self._cache_creation_time = self._gettime()
 
   @apiproxy_stub.Synchronized
-  def _GetKey(self, namespace, key):
+  def _GetKey(self, namespace, key, for_peek=False):
     """Retrieves a `CacheEntry` from the cache if it hasn't expired.
 
     Does not take deletion timeout into account.
@@ -206,6 +226,9 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
     Args:
       namespace: The namespace that keys are stored under.
       key: The key to retrieve from the cache.
+      for_peek: If set true, returned items will include timestamps and indicate
+        whether the item is delete_locked or not. Also, the eviction order will
+        not be altered.
 
     Returns:
       The corresponding `CacheEntry` instance, or `None` if it was not found or
@@ -221,8 +244,8 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
       self._lru.Remove(entry)
       del namespace_dict[key]
       return None
-    elif not entry.will_expire:
-      self._lru.Update(entry)
+    elif not entry.will_expire and not for_peek:
+      entry.UpdateLastAccessTime()
 
     return entry
 
@@ -236,19 +259,31 @@ class MemcacheServiceStub(apiproxy_stub.APIProxyStub):
     """
     namespace = request.name_space
     keys = set(request.key)
+    for_peek = request.for_peek
     for key in keys:
-      entry = self._GetKey(namespace, key)
-      if entry is None or entry.CheckLocked():
+      entry = self._GetKey(namespace, key, for_peek)
+      is_locked = entry is not None and entry.CheckLocked()
+      if entry is None or (is_locked and not for_peek):
         self._misses += 1
         continue
       self._hits += 1
-      self._byte_hits += len(key) + len(entry.value)
+      value = entry.value
+      if is_locked:
+        value = b''
+      self._byte_hits += len(key) + len(value)
       item = response.item.add()
       item.key = key
-      item.value = entry.value
+      item.value = value
       item.flags = entry.flags
       if request.for_cas:
         item.cas_id = entry.cas_id
+      if for_peek:
+        item.is_delete_locked = is_locked
+        item.timestamps.last_access_time_sec = int(entry.last_access_time)
+        if entry.will_expire:
+          item.timestamps.expiration_time_sec = int(entry.expiration_time)
+        if is_locked:
+          item.timestamps.delete_lock_time_sec = int(entry.delete_time)
 
   @apiproxy_stub.Synchronized
   def _Dynamic_Set(self, request, response):

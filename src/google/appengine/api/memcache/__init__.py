@@ -121,6 +121,55 @@ TYPE_BOOL = 5
 CAPABILITY = capabilities.CapabilitySet('memcache')
 
 
+class ItemWithTimestamps(object):
+  """A Memcache item with its relevant timestamps."""
+
+  def __init__(
+      self,
+      value,
+      expiration_time_sec,
+      last_access_time_sec,
+      delete_lock_time_sec=0,
+  ):
+    """Constructor.
+
+    Args:
+      value: The Memcache item. Set to "" if the item is delete locked.
+      expiration_time_sec: The absolute expiration timestamp of the item in unix
+        epoch seconds. Set to 0 if no expiration time is set.
+      last_access_time_sec: The absolute last accessed timestamp of the item in
+        unix epoch seconds.
+      delete_lock_time_sec: Absolute delete_time timestamp of the item in unix
+        epoch seconds. Set to 0 if this item is not delete locked.
+    """
+    self.value = value
+    self.expiration_time_sec = expiration_time_sec
+    self.last_access_time_sec = last_access_time_sec
+    self.delete_lock_time_sec = delete_lock_time_sec
+
+  def get_value(self):
+    """Returns the value of the item."""
+    return self.value
+
+  def get_expiration_time_sec(self):
+    """Returns the absolute expiration timestamp in unix epoch seconds.
+
+    It is set to 0 if this item has no expiration timestamp.
+    """
+    return self.expiration_time_sec
+
+  def get_last_access_time_sec(self):
+    """Returns the last accessed timestamp of the item in unix epoch seconds."""
+    return self.last_access_time_sec
+
+  def get_delete_lock_time_sec(self):
+    """Returns the absolute delete_time timestamp in unix epoch seconds.
+
+    It is set to 0 if this item is not delete locked.
+    """
+    return self.delete_lock_time_sec
+
+
 def _is_pair(obj):
   """Helper to test if something is a pair (2-tuple)."""
   return isinstance(obj, tuple) and len(obj) == 2
@@ -656,6 +705,100 @@ class Client(object):
         ns = namespace if namespace else ''
         self._cas_ids[(ns, raw_key)] = returned_item.cas_id
       return_value[user_key[raw_key]] = value
+    return return_value
+
+  def peek(self, key, namespace=None):
+    """Gets an item from memcache along with its timestamp metadata.
+
+    Peeking at items will update stats, but will not alter the eviction order
+    of the item. Unlike get(), an item is fetched even if it is delete locked.
+
+    Args:
+      key: The key in memcache to look up. See docs on Client for details of
+        format.
+      namespace: a string specifying an optional namespace to use in the
+        request.
+
+    Returns:
+      An ItemWithTimestamps object which contains the value of the item along
+      with timestamp metadata - expiration timestamp, last access timestamp and
+      delete timestamp (if the item is delete locked).
+    """
+    if _is_pair(key):
+      key = key[1]
+    rpc = self.peek_multi_async([key], namespace=namespace)
+    results = rpc.get_result()
+    return results.get(key)
+
+  def peek_multi(self, keys, key_prefix='', namespace=None):
+    """Gets multiple items from memcache along with their timestamp metadata.
+
+    This is the recommended way to do bulk peek() calls.
+
+    Args:
+      keys: List of keys to look up.  Keys may be strings or tuples of
+        (hash_value, string).  Google App Engine does the sharding and hashing
+        automatically, though, so the hash value is ignored.  To memcache, keys
+        are just series of bytes, and not in any particular encoding.
+      key_prefix: Prefix to prepend to all keys when talking to the server; not
+        included in the returned dictionary.
+      namespace: a string specifying an optional namespace to use in the
+        request.
+
+    Returns:
+      A dictionary of the keys and ItemWithTimestamps objects. Even if the
+      key_prefix was specified, that key_prefix won't be on the keys in the
+      returned dictionary.
+
+      Each ItemWithTimestamps object contains the item corresponding to the
+      key, along with timestamp metadata - expiration timestamp, last access
+      timestamp and delete timestamp (if the item is delete locked).
+    """
+    rpc = self.peek_multi_async(keys, key_prefix, namespace)
+    return rpc.get_result()
+
+  def peek_multi_async(self, keys, key_prefix='', namespace=None, rpc=None):
+    """Async version of peek_multi()."""
+    request = MemcacheGetRequest()
+    self._add_app_id(request)
+    _add_name_space(request, namespace)
+
+    request.for_peek = True
+    response = MemcacheGetResponse()
+    user_key = {}
+    for key in keys:
+      request.key.append(_key_string(key, key_prefix, user_key))
+
+    return self._make_async_call(
+        rpc, 'Get', request, response, self.__peek_hook, user_key
+    )
+
+  def __peek_hook(self, rpc):
+    """Returns a dict of keys and ItemWithTimestamps objects."""
+    try:
+      rpc.check_success()
+    except apiproxy_errors.Error:
+      return {}
+
+    response = rpc.response
+    user_key = rpc.user_data
+    return_value = {}
+    for returned_item in response.item:
+      value = ''
+      if returned_item.value:
+        value = _decode_value(
+            returned_item.value, returned_item.flags, self._do_unpickle
+        )
+      timestamps = returned_item.timestamps
+      raw_key = returned_item.key
+
+      return_value[user_key[raw_key]] = ItemWithTimestamps(
+          value,
+          timestamps.expiration_time_sec,
+          timestamps.last_access_time_sec,
+          timestamps.delete_lock_time_sec,
+      )
+
     return return_value
 
 
@@ -1601,6 +1744,8 @@ def setup_client(client_obj):
   var_dict['flush_all'] = _CLIENT.flush_all
   var_dict['get_stats'] = _CLIENT.get_stats
   var_dict['offset_multi'] = _CLIENT.offset_multi
+  var_dict['peek'] = _CLIENT.peek
+  var_dict['peek_multi'] = _CLIENT.peek_multi
 
 _HAS_DYNAMIC_ATTRIBUTES = True
 setup_client(Client())
