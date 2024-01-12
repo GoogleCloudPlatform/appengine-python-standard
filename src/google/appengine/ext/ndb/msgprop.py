@@ -19,6 +19,7 @@
 
 from google.appengine.ext.ndb import model
 from google.appengine.ext.ndb import utils
+from google.appengine._internal import protorpc
 from protorpc import messages
 from protorpc import remote
 import six
