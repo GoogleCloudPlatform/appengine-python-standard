@@ -14,13 +14,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 """MessageProperty -- a property storing ProtoRPC Message objects.
 
 Basic usage:
 
 Let's assume you have a protorpc.messages.Message subclass, like this:
 
-  from protorpc import messages
+  from google.appengine._internal.protorpc import messages
 
   class Note(messages.Message):
     text = messages.StringField(1, required=True)
