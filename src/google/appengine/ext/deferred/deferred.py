@@ -45,7 +45,7 @@ be different).
 
 If your app relies on manipulating the import path, make sure that the function
 you are deferring is defined in a module that can be found without import path
-manipulation. Alternately, you can include deferred.TaskHandler in your own
+manipulation. Alternately, you can include deferred.Handler in your own
 webapp application instead of using the easy-install method detailed below.
 
 When you create a deferred task using deferred.defer, the task is serialized,
