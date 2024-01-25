@@ -143,9 +143,18 @@ class PolyModelTests(test_utils.NDBTest):
     self.assertEqual(cat1.naps, 18)
     self.assertEqual(cat1.sound, b'purr')
 
+    # un-indexed properties retain str type regardless of encoding:
+    Mammal._default_indexed = False
+    cat = Mammal(name='Clémentine', naps=18, sound=b'meow', action='stretch')
+    cat1 = cat.put().get(use_cache=False)
+    self.assertFalse(cat1 is cat)
+    self.assertEqual(cat1, cat)
+    self.assertEqual(cat1.name, 'Clémentine')
+    self.assertEqual(cat1.naps, 18)
+    self.assertEqual(cat1.sound, b'meow')
+    self.assertEqual(cat1.action, 'stretch')
+
   def testExpandoPoly(self):
-
-
 
     class Animal(model.Expando, PolyModel):
       pass
@@ -161,6 +170,18 @@ class PolyModelTests(test_utils.NDBTest):
     self.assertEqual(b'Tom', actual.name)
     self.assertEqual(18, actual.naps)
     self.assertEqual(b'purr', actual.sound)
+
+    # un-indexed properties retain str type regardless of encoding:
+    Mammal._default_indexed = False
+    expected = Mammal(name='Clémentine', naps=18, sound=b'meow', action='stretch')
+    actual = expected.put().get()
+
+    self.assertIsNot(expected, actual)
+    self.assertEqual(expected, actual)
+    self.assertEqual('Clémentine', actual.name)
+    self.assertEqual(18, actual.naps)
+    self.assertEqual(b'meow', actual.sound)
+    self.assertEqual('stretch', actual.action)
 
   def testInheritance(self):
 
