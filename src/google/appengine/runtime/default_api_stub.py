@@ -177,9 +177,6 @@ class DefaultApiRPC(apiproxy_rpc.RPC):
         ticket = context.gae_headers.API_TICKET.get(
             context.gae_headers.DEV_REQUEST_ID.get(None))
 
-    if not ticket:
-      raise apiproxy_errors.RPCFailedError(
-          'Attempted RPC call without active security ticket')
 
     request = remote_api_pb2.Request(
         service_name=self.package,
