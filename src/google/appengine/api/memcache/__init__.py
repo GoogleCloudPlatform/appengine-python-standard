@@ -25,6 +25,7 @@ required and higher performance is desired.
 import hashlib
 import math
 import os
+import pickle
 import types
 
 import six
@@ -390,7 +391,7 @@ class Client(object):
   def __init__(self,
                servers=None,
                debug=0,
-               pickleProtocol=six.moves.cPickle.HIGHEST_PROTOCOL,
+               pickleProtocol=pickle.DEFAULT_PROTOCOL,
                pickler=six.moves.cPickle.Pickler,
                unpickler=six.moves.cPickle.Unpickler,
                pload=None,
@@ -417,8 +418,13 @@ class Client(object):
 
 
 
-    if os.environ.get('MEMCACHE_USE_CROSS_COMPATIBLE_PROTOCOL', None):
-      pickleProtocol = 2
+    cross_compatible_protocol = os.environ.get(
+        'MEMCACHE_USE_CROSS_COMPATIBLE_PROTOCOL', None)
+    if cross_compatible_protocol:
+      if cross_compatible_protocol.isdigit():
+        pickleProtocol = int(cross_compatible_protocol)
+      else:
+        pickleProtocol = 2
 
     self._pickler_factory = pickler
     self._unpickler_factory = unpickler

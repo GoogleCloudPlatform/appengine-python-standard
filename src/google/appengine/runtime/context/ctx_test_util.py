@@ -35,6 +35,7 @@ class MySuite(unittest.TestCase):
 import contextvars
 import functools
 import os
+import typing
 
 from google.appengine.runtime import context
 
@@ -52,7 +53,8 @@ def isolated_context(*args, **kwargs):
   Returns:
     The raw function decorator.
   """
-  def argless_decorator(func_or_class):
+  _DECORATED_T = typing.TypeVar('_DECORATED_T')
+  def argless_decorator(func_or_class: _DECORATED_T) -> _DECORATED_T:
     if isinstance(func_or_class, type):
       return _isolated_context_class(*args, **kwargs)(func_or_class)
     return _isolated_context_callable(*args, **kwargs)(func_or_class)
@@ -67,8 +69,8 @@ def both_context_modes(*args, **kwargs):
   on that class, not on functions inherited from parent classes.
 
   Args:
-    *args: See _isolated_context_class and _isolated_context_callable
-    **kwargs: See _isolated_context_class and _isolated_context_callable
+    *args: Currently unused, but forwarded to class/callable decorators
+    **kwargs: Currently unused, but forwarded to class/callable decorators
 
   Returns:
     The raw function decorator.
@@ -88,13 +90,13 @@ def _isolated_context_callable(
     def run_in_ctx(*args, **kwargs):
       contextvars.Context().run(func, *args, **kwargs)
     if backup_and_restore_os_environ:
-      run_in_ctx = _isolate_os_environ(run_in_ctx)
+      run_in_ctx = _backup_and_restore_os_environ(run_in_ctx)
     return run_in_ctx
 
   return argless_decorator
 
 
-def _isolate_os_environ(func):
+def _backup_and_restore_os_environ(func):
   """Save and restore os.environ."""
 
   @functools.wraps(func)
@@ -134,7 +136,7 @@ def _both_context_modes_class():
   """Class decorator that duplicates every test function each context mode."""
 
   def argless_decorator(klass):
-    klass = _isolated_context_class(backup_and_restore_os_environ=True)(klass)
+    klass = _isolated_context_class()(klass)
     for func_name, func in vars(klass).items():
       if callable(func) and func_name.startswith('test'):
         setattr(klass, func_name, _both_context_modes_callable_raw(func))
@@ -194,11 +196,21 @@ def _both_context_modes_callable_raw(func):
   def test_both(self, *args, **kwargs):
     default_context_mode = context.READ_FROM_OS_ENVIRON
     other_context_mode = not default_context_mode
-    try:
-      func(self, *args, **kwargs)
-      context.READ_FROM_OS_ENVIRON = other_context_mode
-      with self.subTest(READ_CONTEXT_FROM_OS_ENVIRON=other_context_mode):
-        func(self, *args, **kwargs)
-    finally:
-      context.READ_FROM_OS_ENVIRON = default_context_mode
+
+    @_backup_and_restore_os_environ
+    def isolated_default_test():
+      contextvars.copy_context().run(func, self, *args, **kwargs)
+
+    @_backup_and_restore_os_environ
+    def isolated_other_test():
+      try:
+        context.READ_FROM_OS_ENVIRON = other_context_mode
+        contextvars.copy_context().run(func, self, *args, **kwargs)
+      finally:
+        context.READ_FROM_OS_ENVIRON = default_context_mode
+
+    isolated_default_test()
+    with self.subTest(READ_CONTEXT_FROM_OS_ENVIRON=other_context_mode):
+      isolated_other_test()
+
   return test_both

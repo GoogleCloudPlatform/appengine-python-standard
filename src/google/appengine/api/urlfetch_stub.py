@@ -88,7 +88,7 @@ _UNTRUSTED_REQUEST_HEADERS = frozenset([
 _MAX_URL_LENGTH = 10240
 
 
-def _SetupSSL(path):
+def SetupSSL(path):
   global CERT_PATH
   if os.path.exists(path):
     CERT_PATH = path

@@ -35,8 +35,6 @@ from google.appengine.datastore import datastore_index_xml
 
 
 
-
-
 __all__ = ['GenerateIndexFromHistory',
            'IndexYamlUpdater',
           ]
@@ -309,9 +307,7 @@ class IndexYamlUpdater(object):
 
 
 
-        # The 'U' option is deprecated in py3, as universal newlines
-        # are the default option
-        fh = openfile(index_yaml_file, 'r' if six.PY3 else 'rU')
+        fh = openfile(index_yaml_file, 'rU' if six.PY2 else 'r')
       except IOError:
         index_yaml_data = None
       else:

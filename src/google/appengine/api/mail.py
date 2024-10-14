@@ -191,6 +191,7 @@ HEADER_WHITELIST = frozenset([
     'In-Reply-To',
     'List-Id',
     'List-Unsubscribe',
+    'List-Unsubscribe-Post',
     'On-Behalf-Of',
     'References',
     'Resent-Date',
@@ -1562,7 +1563,7 @@ class AdminEmailMessage(_EmailMessageBase):
 
 
 class InboundEmailMessage(EmailMessage):
-  """Receives a parsed email as it is recevied from an external source.
+  """Receives a parsed email as it is received from an external source.
 
   This class makes use of a `date` field and can store any number of additional
   bodies. These additional attributes make the email more flexible as required

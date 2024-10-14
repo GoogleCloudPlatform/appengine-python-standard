@@ -133,12 +133,14 @@ from google.appengine.api.memcache import memcache_stub
 from google.appengine.api.modules import modules_stub
 from google.appengine.api.namespace_manager import namespace_manager
 from google.appengine.api.oauth import oauth_api
-from google.appengine.api.search import simple_search_stub
 from google.appengine.api.taskqueue import taskqueue_stub
 from google.appengine.datastore import cloud_datastore_v1_stub
 from google.appengine.datastore import datastore_pbs
 from google.appengine.datastore import datastore_stub_util
 from google.appengine.datastore import datastore_v4_stub
+from google.appengine.ext.ndb import eventloop
+from google.appengine.ext.ndb import tasklets
+from google.appengine.runtime import consts
 from google.appengine.runtime import context
 import six
 
@@ -156,12 +158,10 @@ except AttributeError:
 
 
   mail_stub = None
-
-
-
-
-
-
+try:
+  from google.appengine.datastore import datastore_sqlite_stub
+except ImportError:
+  datastore_sqlite_stub = None
 try:
 
 
@@ -183,13 +183,14 @@ DEFAULT_ENVIRONMENT = {
     'GOOGLE_CLOUD_PROJECT': 'testbed-test',
     'AUTH_DOMAIN': 'gmail.com',
     'HTTP_HOST': 'testbed.example.com',
-    'CURRENT_MODULE_ID': 'default',
-    'CURRENT_VERSION_ID': 'testbed-version',
+    'GAE_VERSION': 'testbed-version',
+    'GAE_DEPLOYMENT_ID': 'testbed-deployment_id',
     'GAE_RUNTIME': 'python3' + str(sys.version_info.minor),
-    'REQUEST_ID_HASH': 'testbed-request-id-hash',
+    'GAE_SERVICE': 'default',
+    'GAE_ENV': 'localdev',
+    'REQUEST_ID_HASH': consts.TESTBED_REQUEST_ID_HASH,
     'REQUEST_LOG_ID': '7357B3D7091D',
     'SERVER_NAME': 'testbed.example.com',
-    'SERVER_SOFTWARE': 'Development/1.0 (testbed)',
     'SERVER_PORT': '80',
     'USER_EMAIL': '',
     'USER_ID': '',
@@ -200,7 +201,6 @@ DEFAULT_ENVIRONMENT = {
 DEFAULT_APP_ID = DEFAULT_ENVIRONMENT['GAE_APPLICATION']
 DEFAULT_AUTH_DOMAIN = DEFAULT_ENVIRONMENT['AUTH_DOMAIN']
 DEFAULT_SERVER_NAME = DEFAULT_ENVIRONMENT['SERVER_NAME']
-DEFAULT_SERVER_SOFTWARE = DEFAULT_ENVIRONMENT['SERVER_SOFTWARE']
 DEFAULT_SERVER_PORT = DEFAULT_ENVIRONMENT['SERVER_PORT']
 
 
@@ -213,7 +213,6 @@ FILES_SERVICE_NAME = 'file'
 IMAGES_SERVICE_NAME = 'images'
 MAIL_SERVICE_NAME = 'mail'
 MEMCACHE_SERVICE_NAME = 'memcache'
-SEARCH_SERVICE_NAME = 'search'
 TASKQUEUE_SERVICE_NAME = 'taskqueue'
 URLFETCH_SERVICE_NAME = 'urlfetch'
 USER_SERVICE_NAME = 'user'
@@ -431,6 +430,8 @@ class Testbed(object):
         **oauth_api._TESTBED_RESET_TOKENS,
         namespace_manager._CURRENT_NAMESPACE:
             namespace_manager._TESTBED_RESET_TOKEN,
+        **tasklets._TESTBED_RESET_TOKENS,
+        eventloop._EVENT_LOOP_EXISTS: eventloop._TESTBED_RESET_TOKEN,
     }
 
     for ctxvar, token in all_reset_tokens.items():
@@ -442,10 +443,13 @@ class Testbed(object):
 
 
 
+
           pass
 
     namespace_manager._TESTBED_RESET_TOKEN = None
+    eventloop._TESTBED_RESET_TOKEN = None
     oauth_api._TESTBED_RESET_TOKENS.clear()
+    tasklets._TESTBED_RESET_TOKENS.clear()
 
     self._blob_storage = None
     self._activated = False
@@ -765,18 +769,15 @@ class Testbed(object):
       self._disable_stub(cloud_datastore_v1_stub.SERVICE_NAME)
       return
     if use_sqlite:
-
-
-
-
-
-
-
-
-
-
-
-      raise NotImplementedError('datastore_sqlite_stub not supported')
+      if datastore_sqlite_stub is None:
+        raise StubNotSupportedError(
+            'The sqlite stub is not supported in production.')
+      stub = datastore_sqlite_stub.DatastoreSqliteStub(
+          full_app_id.get(),
+          datastore_file,
+          use_atexit=False,
+          auto_id_policy=auto_id_policy,
+          **stub_kw_args)
     else:
       stub_kw_args.setdefault('save_changes', False)
       stub = datastore_file_stub.DatastoreFileStub(
@@ -934,21 +935,6 @@ class Testbed(object):
       StubNotSupportedError: If called.
     """
     raise StubNotSupportedError('The xmpp stub is not supported in Titanoboa.')
-
-  def init_search_stub(self, enable=True, **stub_kw_args):
-    """Enables the search stub.
-
-    Args:
-      enable: `True` if the fake service should be enabled, or `False` if the
-          real service should be disabled.
-      **stub_kw_args: Keyword arguments that are passed on to the service
-          stub.
-    """
-    if not enable:
-      self._disable_stub(SEARCH_SERVICE_NAME)
-      return
-    stub = simple_search_stub.SearchServiceStub(**stub_kw_args)
-    self._register_stub(SEARCH_SERVICE_NAME, stub)
 
   def init_modules_stub(self, enable=True):
     """Enables the modules stub.

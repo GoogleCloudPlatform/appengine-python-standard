@@ -16,6 +16,7 @@
 #
 """Wrapper for contextvars that can fall back to old os.environ hack."""
 import contextvars
+import functools
 import os
 from typing import Dict
 
@@ -26,13 +27,31 @@ READ_FROM_OS_ENVIRON = os.environ.get('READ_GAE_CONTEXT_FROM_OS_ENVIRON',
                                       'true') == 'true'
 
 
-def get(key, default=None):
+
+
+
+
+_UNSET = object()
+
+
+@functools.cache
+def _get_defined_vars():
+  return {
+      key: var for (key, var)
+      in tuple(vars(gae_headers).items()) + tuple(vars(wsgi).items())
+      if isinstance(var, contextvars.ContextVar)
+  }
+
+
+def get(key, default=_UNSET):
   """Read context from os.environ if READ_GAE_CONTEXT_FROM_OS_ENVIRON else, from contextvars."""
+  defined_vars = _get_defined_vars()
+  if key not in defined_vars:
+    raise LookupError(f'Unknow context variable "{key}"')
   if READ_FROM_OS_ENVIRON:
-    return os.environ.get(key, default)
-  ctxvar = vars(gae_headers).get(key, vars(wsgi).get(key))
-  assert isinstance(ctxvar, contextvars.ContextVar)
-  val = ctxvar.get(default)
+    return os.environ.get(key, None if default is _UNSET else default)
+  ctxvar = defined_vars[key]
+  val = ctxvar.get() if default == _UNSET else ctxvar.get(default)
   if isinstance(val, bool):
     return '1' if val else '0'
   return val

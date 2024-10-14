@@ -103,10 +103,6 @@ from google.appengine.datastore import datastore_rpc
 
 
 
-
-
-
-
 Error = datastore_errors.Error
 BadValueError = datastore_errors.BadValueError
 BadPropertyError = datastore_errors.BadPropertyError

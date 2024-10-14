@@ -1905,7 +1905,7 @@ class PickleProperty(BlobProperty):
     if os.environ.get('NDB_USE_CROSS_COMPATIBLE_PICKLE_PROTOCOL', False):
       protocol = 2
     else:
-      protocol = pickle.HIGHEST_PROTOCOL
+      protocol = pickle.DEFAULT_PROTOCOL
     return pickle.dumps(value, protocol)
 
   def _from_base_type(self, value):
@@ -3048,7 +3048,7 @@ class Model(six.with_metaclass(MetaModel, _NotEqualMixin)):
 
   def __setstate__(self, serialized_pb):
     if isinstance(serialized_pb, str):
-      # If 'serialized_pb' was written by a python27 clone.
+
       logging.warning(
           'Assuming python2 pickled state, converting to python3 type.'
       )

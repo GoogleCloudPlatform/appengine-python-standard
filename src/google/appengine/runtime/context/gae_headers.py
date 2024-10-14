@@ -20,16 +20,16 @@ from typing import Dict
 
 PREFIX = 'HTTP_X_APPENGINE_'
 
-AUTH_DOMAIN = contextvars.ContextVar('AUTH_DOMAIN')
+AUTH_DOMAIN = contextvars.ContextVar('AUTH_DOMAIN', default='gmail.com')
 DEFAULT_VERSION_HOSTNAME = contextvars.ContextVar('DEFAULT_VERSION_HOSTNAME')
 USER_EMAIL = contextvars.ContextVar('USER_EMAIL')
 USER_ID = contextvars.ContextVar('USER_ID')
-USER_IS_ADMIN = contextvars.ContextVar('USER_IS_ADMIN')
+USER_IS_ADMIN = contextvars.ContextVar('USER_IS_ADMIN', default=False)
 USER_NICKNAME = contextvars.ContextVar('USER_NICKNAME')
 DEFAULT_NAMESPACE = contextvars.ContextVar('DEFAULT_NAMESPACE')
 API_TICKET = contextvars.ContextVar('API_TICKET')
-DEV_REQUEST_ID = contextvars.ContextVar('DEV_REQUEST_ID')
-REQUEST_LOG_ID = contextvars.ContextVar('REQUEST_LOG_ID')
+DEV_REQUEST_ID = contextvars.ContextVar('DEV_REQUEST_ID', default=None)
+REQUEST_LOG_ID = contextvars.ContextVar('REQUEST_LOG_ID', default=None)
 
 
 def init_from_wsgi_environ(
@@ -37,7 +37,7 @@ def init_from_wsgi_environ(
   """Init contextvars from matching X_APPENGINE_ headers if found."""
 
   reset_tokens: Dict[contextvars.ContextVar, contextvars.Token] = {}
-  for ctxvar in [v for _, v in globals().items()
+  for ctxvar in [v for _, v in globals().copy().items()
                  if isinstance(v, contextvars.ContextVar)]:
     value = wsgi_env.get(PREFIX + ctxvar.name)
     if value is not None:

@@ -388,7 +388,7 @@ application: snippets
     - url: a.b.eric.com/c
       module: default
     dispatch:
-    - url: guido.com/c
+    - url: user.com/c
       module: default
     """
     self.assertRaises(yaml_errors.EventError,

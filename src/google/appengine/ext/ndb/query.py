@@ -155,8 +155,6 @@ in a tasklet, properly yielding when appropriate::
 
 """
 
-
-
 import datetime
 import functools
 import heapq
