@@ -55,7 +55,7 @@ class WSGIAppWrapper():
 
   def __init__(self, *, legacy_behaviors: Optional[Dict[str, bool]] = None):
     self.legacy_behaviors = dict(
-        use_legacy_context_mode=True,
+        use_legacy_context_mode=False,
         patch_thread_creation=True,
         normalize_legacy_app_id=True)
     if legacy_behaviors is not None:
