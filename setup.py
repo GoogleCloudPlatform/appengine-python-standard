@@ -20,7 +20,7 @@ setuptools.setup(
         "google-auth>=1.31.0",
         "mock>=4.0.3",
         "Pillow>=8.3.1",
-        "protobuf==5.28.2",
+        "protobuf==5.30.1",
         "pytz>=2021.1",
         "requests>=2.25.1",
         "ruamel.yaml>=0.17.7",
