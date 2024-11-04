@@ -18,8 +18,6 @@
 
 """Base class useful for testing with API stubs."""
 
-
-
 import os
 import shutil
 
@@ -33,17 +31,16 @@ from google.appengine.api.taskqueue import taskqueue_stub
 from google.appengine.datastore import cloud_datastore_v1_remote_stub
 from google.appengine.datastore import cloud_datastore_v1_stub
 from google.appengine.datastore import datastore_pbs
+from google.appengine.datastore import datastore_sqlite_stub
 from google.appengine.datastore import datastore_v4_stub
-
-
 
 
 
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_boolean("use_sqlite", False,
-                     "uses the sqlite based datastore stub")
+flags.DEFINE_boolean('use_sqlite', False,
+                     'uses the sqlite based datastore stub')
 
 _CLOUD_DATASTORE_ENABLED = datastore_pbs._CLOUD_DATASTORE_ENABLED
 
@@ -99,10 +96,8 @@ class APITest(object):
         os.remove(filename)
 
     if flags.FLAGS.use_sqlite:
-
-
-
-
+      self.datastore_stub = datastore_sqlite_stub.DatastoreSqliteStub(
+          app_id, self.datastore_file, **kwargs)
       raise NotImplementedError('datastore_sqlite_stub not supported')
     else:
 

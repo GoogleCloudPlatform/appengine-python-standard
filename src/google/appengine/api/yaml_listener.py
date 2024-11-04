@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-
 """PyYAML event listener.
 
 Contains class which interprets YAML events and forwards them to
@@ -25,21 +24,22 @@ a handler object.
 
 import copy
 from google.appengine.api import yaml_errors
-from ruamel import yaml
-
+from ruamel.yaml import error as ruamel_yaml_error
+from ruamel.yaml import events as yaml_events
+from ruamel.yaml import loader as yaml_loader
 
 
 _EVENT_METHOD_MAP = {
-  yaml.events.StreamStartEvent: 'StreamStart',
-  yaml.events.StreamEndEvent: 'StreamEnd',
-  yaml.events.DocumentStartEvent: 'DocumentStart',
-  yaml.events.DocumentEndEvent: 'DocumentEnd',
-  yaml.events.AliasEvent: 'Alias',
-  yaml.events.ScalarEvent: 'Scalar',
-  yaml.events.SequenceStartEvent: 'SequenceStart',
-  yaml.events.SequenceEndEvent: 'SequenceEnd',
-  yaml.events.MappingStartEvent: 'MappingStart',
-  yaml.events.MappingEndEvent: 'MappingEnd',
+    yaml_events.StreamStartEvent: 'StreamStart',
+    yaml_events.StreamEndEvent: 'StreamEnd',
+    yaml_events.DocumentStartEvent: 'DocumentStart',
+    yaml_events.DocumentEndEvent: 'DocumentEnd',
+    yaml_events.AliasEvent: 'Alias',
+    yaml_events.ScalarEvent: 'Scalar',
+    yaml_events.SequenceStartEvent: 'SequenceStart',
+    yaml_events.SequenceEndEvent: 'SequenceEnd',
+    yaml_events.MappingStartEvent: 'MappingStart',
+    yaml_events.MappingEndEvent: 'MappingEnd',
 }
 
 
@@ -50,6 +50,7 @@ class EventHandler(object):
   Implementing classes instances are passed to the constructor of
   `EventListener` to act as a receiver of YAML parse events.
   """
+
   def StreamStart(self, event, loader):
     """Handles start of stream event."""
 
@@ -126,15 +127,15 @@ class EventListener(object):
 
     Args:
       event_handler: Event handler that will receive mapped events. Must
-        implement at least one appropriate handler method named from
-        the values of the `_EVENT_METHOD_MAP`.
+        implement at least one appropriate handler method named from the values
+        of the `_EVENT_METHOD_MAP`.
 
     Raises:
       `ListenerConfigurationError` if `event_handler` is not an `EventHandler`.
     """
     if not isinstance(event_handler, EventHandler):
       raise yaml_errors.ListenerConfigurationError(
-        'Must provide event handler of type yaml_listener.EventHandler')
+          'Must provide event handler of type yaml_listener.EventHandler')
     self._event_method_map = {}
 
     for event, method in _EVENT_METHOD_MAP.items():
@@ -152,8 +153,8 @@ class EventListener(object):
     """
 
     if event.__class__ not in _EVENT_METHOD_MAP:
-      raise yaml_errors.IllegalEvent(
-            "%s is not a valid PyYAML class" % event.__class__.__name__)
+      raise yaml_errors.IllegalEvent('%s is not a valid PyYAML class' %
+                                     event.__class__.__name__)
 
     if event.__class__ in self._event_method_map:
       self._event_method_map[event.__class__](event, loader)
@@ -167,8 +168,7 @@ class EventListener(object):
 
     Args:
       events: Iterator or generator containing events to process.
-    raises:
-      EventListenerParserError when a yaml.parser.ParserError is raised.
+    raises: EventListenerParserError when a yaml.parser.ParserError is raised.
       EventError when an exception occurs during the handling of an event.
     """
     for event in events:
@@ -180,9 +180,8 @@ class EventListener(object):
 
   def _GenerateEventParameters(self,
                                stream,
-                               loader_class=yaml.loader.SafeLoader,
-                               **loader_args
-                              ):
+                               loader_class=yaml_loader.SafeLoader,
+                               **loader_args):
     """Creates a generator that yields event, loader parameter pairs.
 
     For use as parameters to HandleEvent method for use by Parse method.
@@ -203,7 +202,6 @@ class EventListener(object):
         instantiate new yaml.loader instance.
       **loader_args: Pass to the loader on construction
 
-
     Yields:
       Tuple(event, loader) where:
         event: Event emitted by PyYAML loader.
@@ -214,10 +212,10 @@ class EventListener(object):
       loader = loader_class(stream, **loader_args)
       while loader.check_event():
         yield (loader.get_event(), loader)
-    except yaml.error.YAMLError as e:
+    except ruamel_yaml_error.YAMLError as e:
       raise yaml_errors.EventListenerYAMLError(e)
 
-  def Parse(self, stream, loader_class=yaml.loader.SafeLoader, **loader_args):
+  def Parse(self, stream, loader_class=yaml_loader.SafeLoader, **loader_args):
     """Calls YAML parser to generate and handle all events.
 
     Calls PyYAML parser and sends resulting generator to `handle_event` method
@@ -237,5 +235,6 @@ class EventListener(object):
       loader_args = copy.copy(loader_args)
       version = loader_args['version']
       del loader_args['version']
-    self._HandleEvents(self._GenerateEventParameters(
-        stream, loader_class, version=version, **loader_args))
+    self._HandleEvents(
+        self._GenerateEventParameters(
+            stream, loader_class, version=version, **loader_args))

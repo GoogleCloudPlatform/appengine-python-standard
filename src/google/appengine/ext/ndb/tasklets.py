@@ -91,6 +91,7 @@ the tasklet into a generator.
 """
 
 import collections
+import contextvars
 import functools
 import logging
 import os
@@ -124,7 +125,9 @@ __all__ = ['Return', 'tasklet', 'synctasklet', 'toplevel', 'sleep',
 
 _logging_debug = utils.logging_debug
 
-_CALLBACK_KEY = '__CALLBACK__'
+_TESTBED_RESET_TOKENS = {}
+_CALLBACK_IS_SET = contextvars.ContextVar('ndb.cleanup_callback', default=False)
+_CONTEXT_IS_SET = contextvars.ContextVar('ndb.context', default=False)
 
 
 def _is_generator(obj):
@@ -149,18 +152,12 @@ class _State(threading.local):
     self.current_context = ctx
 
   def add_generator(self, gen):
-    if _CALLBACK_KEY not in os.environ:
-      apiproxy.SetRequestEndCallback(self.reset)
-      os.environ[_CALLBACK_KEY] = '1'
-
+    self._set_cleanup()
     _logging_debug('all_generators: add %s', gen)
     self.all_generators.add(gen)
 
   def add_pending(self, fut):
-    if _CALLBACK_KEY not in os.environ:
-      apiproxy.SetRequestEndCallback(self.reset)
-      os.environ[_CALLBACK_KEY] = '1'
-
+    self._set_cleanup()
     _logging_debug('all_pending: add %s', fut)
     self.all_pending.add(fut)
 
@@ -196,6 +193,13 @@ class _State(threading.local):
         line = fut.dump_stack()
       pending.append(line)
     return '\n'.join(pending)
+
+  def _set_cleanup(self):
+    if not _CALLBACK_IS_SET.get():
+      apiproxy.SetRequestEndCallback(self.reset)
+      token = _CALLBACK_IS_SET.set(True)
+      if _CALLBACK_IS_SET not in _TESTBED_RESET_TOKENS:
+        _TESTBED_RESET_TOKENS[_CALLBACK_IS_SET] = token
 
   def reset(self, unused_req_id):
     self.current_context = None
@@ -1143,8 +1147,6 @@ def toplevel(func):
   return add_context_wrapper
 
 
-_CONTEXT_KEY = '__CONTEXT__'
-
 _DATASTORE_APP_ID_ENV = 'DATASTORE_APP_ID'
 _DATASTORE_PROJECT_ID_ENV = 'DATASTORE_PROJECT_ID'
 _DATASTORE_ADDITIONAL_APP_IDS_ENV = 'DATASTORE_ADDITIONAL_APP_IDS'
@@ -1154,7 +1156,7 @@ _DATASTORE_USE_PROJECT_ID_AS_APP_ID_ENV = 'DATASTORE_USE_PROJECT_ID_AS_APP_ID'
 def get_context():
 
   ctx = None
-  if os.getenv(_CONTEXT_KEY):
+  if _CONTEXT_IS_SET.get():
     ctx = _state.current_context
   if ctx is None:
     ctx = make_default_context()
@@ -1278,7 +1280,9 @@ def _make_cloud_datastore_context(app_id, external_app_ids=()):
 
 def set_context(new_context):
 
-  os.environ[_CONTEXT_KEY] = '1'
+  token = _CONTEXT_IS_SET.set(True)
+  if _CONTEXT_IS_SET not in _TESTBED_RESET_TOKENS:
+    _TESTBED_RESET_TOKENS[_CONTEXT_IS_SET] = token
   _state.set_context(new_context)
 
 

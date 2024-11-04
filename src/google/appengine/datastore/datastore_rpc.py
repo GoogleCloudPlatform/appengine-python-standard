@@ -21,8 +21,6 @@ datastore client libraries.
 """
 
 
-
-
 __all__ = ['AbstractAdapter',
            'BaseConfiguration',
            'BaseConnection',

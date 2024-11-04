@@ -26,11 +26,6 @@ import re
 import typing
 import wsgiref.util
 
-
-
-
-
-from google.appengine.runtime import default_api_stub
 from google.appengine.runtime import thread_hooks
 
 import six
@@ -179,21 +174,10 @@ def InitializeLogging(custom_json_formatter=None):
   logger.addHandler(logging_handler)
 
 
-class SecurityTicketThreadHook(thread_hooks.ThreadHook):
-  """Sets and clears UseRequestSecurityTicket on a thread."""
-
-  def PreTarget(self):
-    default_api_stub.DefaultApiStub.SetUseRequestSecurityTicketForThread(True)
-
-  def PostTarget(self):
-    default_api_stub.DefaultApiStub.SetUseRequestSecurityTicketForThread(False)
-
-
 @functools.lru_cache(maxsize=None)
 def InitializeThreadingApis():
   """Helper to monkey-patch various threading APIs."""
 
 
-  thread_hooks.PatchStartNewThread(hooks=[
-      SecurityTicketThreadHook, thread_hooks.RequestEnvironmentThreadHook
-  ])
+  thread_hooks.PatchStartNewThread(
+      hooks=[thread_hooks.RequestEnvironmentThreadHook])

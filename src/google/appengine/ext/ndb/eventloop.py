@@ -41,7 +41,7 @@ The API here is inspired by Monocle.
 """
 
 import collections
-import os
+import contextvars
 import threading
 import time
 
@@ -301,10 +301,18 @@ class EventLoop(object):
 class _State(threading.local):
   event_loop = None
 
-
-_EVENT_LOOP_KEY = '__EVENT_LOOP__'
+_TESTBED_RESET_TOKEN = None
+_EVENT_LOOP_EXISTS = contextvars.ContextVar('ndb.eventloop', default=False)
 
 _state = _State()
+
+
+def _set_event_loop(ev: EventLoop):
+  global _TESTBED_RESET_TOKEN
+  _state.event_loop = ev
+  token = _EVENT_LOOP_EXISTS.set(True)
+  if _TESTBED_RESET_TOKEN is None:
+    _TESTBED_RESET_TOKEN = token
 
 
 def get_event_loop():
@@ -315,14 +323,13 @@ def get_event_loop():
   at the start of each request.  Also, each thread gets its own loop.
   """
   ev = _state.event_loop
-  if not os.getenv(_EVENT_LOOP_KEY) and ev is not None:
+  if not _EVENT_LOOP_EXISTS.get() and ev is not None:
     ev.clear()
     _state.event_loop = None
     ev = None
   if ev is None:
     ev = EventLoop()
-    _state.event_loop = ev
-    os.environ[_EVENT_LOOP_KEY] = '1'
+    _set_event_loop(ev)
   return ev
 
 

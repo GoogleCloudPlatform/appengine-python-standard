@@ -156,6 +156,8 @@ GCE_RESOURCE_PATH_REGEX = r'^[a-z\d-]+(/[a-z\d-]+)*$'
 
 GCE_RESOURCE_NAME_REGEX = r'^[a-z]([a-z\d-]{0,61}[a-z\d])?$'
 
+FLEX_INSTANCE_IP_MODE_REGEX = r'^(EXTERNAL|external|INTERNAL|internal)$'
+
 VPC_ACCESS_CONNECTOR_NAME_REGEX = r'^[a-z\d-]+(/.+)*$'
 
 ALTERNATE_HOSTNAME_SEPARATOR = '-dot-'
@@ -239,6 +241,7 @@ VM = 'vm'
 VM_SETTINGS = 'vm_settings'
 ZONES = 'zones'
 BETA_SETTINGS = 'beta_settings'
+FLEXIBLE_RUNTIME_SETTINGS = 'flexible_runtime_settings'
 VM_HEALTH_CHECK = 'vm_health_check'
 HEALTH_CHECK = 'health_check'
 RESOURCES = 'resources'
@@ -394,6 +397,7 @@ INSTANCE_TAG = 'instance_tag'
 NETWORK_NAME = 'name'
 SUBNETWORK_NAME = 'subnetwork_name'
 SESSION_AFFINITY = 'session_affinity'
+INSTANCE_IP_MODE = 'instance_ip_mode'
 
 
 STANDARD_MIN_INSTANCES = 'min_instances'
@@ -406,6 +410,10 @@ VPC_ACCESS_CONNECTOR_NAME = 'name'
 VPC_ACCESS_CONNECTOR_EGRESS_SETTING = 'egress_setting'
 EGRESS_SETTING_ALL_TRAFFIC = 'all-traffic'
 EGRESS_SETTING_PRIVATE_RANGES_ONLY = 'private-ranges-only'
+
+
+OPERATING_SYSTEM = 'operating_system'
+RUNTIME_VERSION = 'runtime_version'
 
 
 class _VersionedLibrary(object):
@@ -1848,6 +1856,14 @@ class RuntimeConfig(validation.ValidatedDict):
   VALUE_VALIDATOR = str
 
 
+class FlexibleRuntimeSettings(validation.Validated):
+  """Class for App Engine Flexible runtime settings."""
+  ATTRIBUTES = {
+      OPERATING_SYSTEM: validation.Regex('[a-z0-9]+'),
+      RUNTIME_VERSION: validation.Optional(str)
+  }
+
+
 class VmSettings(validation.ValidatedDict):
   """Class for VM settings.
 
@@ -2052,20 +2068,20 @@ class Network(validation.Validated):
 
   ATTRIBUTES = {
 
-      FORWARDED_PORTS: validation.Optional(validation.Repeated(validation.Regex(
-          '[0-9]+(:[0-9]+)?(/(udp|tcp))?'))),
-
-      INSTANCE_TAG: validation.Optional(validation.Regex(
-          GCE_RESOURCE_NAME_REGEX)),
-
-      NETWORK_NAME: validation.Optional(validation.Regex(
-          GCE_RESOURCE_PATH_REGEX)),
-
-      SUBNETWORK_NAME: validation.Optional(validation.Regex(
-          GCE_RESOURCE_NAME_REGEX)),
-
+      FORWARDED_PORTS:
+          validation.Optional(
+              validation.Repeated(
+                  validation.Regex('[0-9]+(:[0-9]+)?(/(udp|tcp))?'))),
+      INSTANCE_TAG:
+          validation.Optional(validation.Regex(GCE_RESOURCE_NAME_REGEX)),
+      NETWORK_NAME:
+          validation.Optional(validation.Regex(GCE_RESOURCE_PATH_REGEX)),
+      SUBNETWORK_NAME:
+          validation.Optional(validation.Regex(GCE_RESOURCE_NAME_REGEX)),
       SESSION_AFFINITY:
-          validation.Optional(bool)
+          validation.Optional(bool),
+      INSTANCE_IP_MODE:
+          validation.Optional(validation.Regex(FLEX_INSTANCE_IP_MODE_REGEX))
   }
 
 
@@ -2389,6 +2405,7 @@ class AppInfoExternal(validation.Validated):
       BUILD_ENV_VARIABLES: validation.Optional(EnvironmentVariables),
       STANDARD_WEBSOCKET: validation.Optional(bool),
       APP_ENGINE_APIS: validation.Optional(bool),
+      FLEXIBLE_RUNTIME_SETTINGS: validation.Optional(FlexibleRuntimeSettings),
   }
 
   def CheckInitialized(self):

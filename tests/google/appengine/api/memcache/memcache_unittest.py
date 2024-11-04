@@ -23,6 +23,8 @@ correctly, and returns the correct results assuming faked response protos.
 
 import collections
 import hashlib
+import os
+import pickle
 
 import google
 
@@ -52,6 +54,8 @@ MemcacheSetRequest = memcache_service_pb2.MemcacheSetRequest
 
 MemcacheGetResponse = memcache_service_pb2.MemcacheGetResponse
 MemcacheGetRequest = memcache_service_pb2.MemcacheGetRequest
+
+ItemTimestamps = memcache_service_pb2.ItemTimestamps
 
 MemcacheIncrementResponse = memcache_service_pb2.MemcacheIncrementResponse
 MemcacheIncrementRequest = memcache_service_pb2.MemcacheIncrementRequest
@@ -426,6 +430,29 @@ class MemcacheTest(absltest.TestCase):
         six.moves.cPickle.loads)
     self.assertEqual(my_value, value)
 
+  def testPickleCrossCompatibleProtocol(self):
+    old_proto = pickle.HIGHEST_PROTOCOL - 1
+    original_value = {'foo': 'some text', 'bar': ['list', b'of', 3]}
+    with mock.patch.object(
+        os,
+        'environ',
+        new={'MEMCACHE_USE_CROSS_COMPATIBLE_PROTOCOL': str(old_proto)}):
+      client = memcache.Client()
+    data = client._do_pickle(original_value)
+    self.assertStartsWith(data, b'\x80' + chr(old_proto).encode())
+    value = client._do_unpickle(data)
+    self.assertEqual(value, original_value)
+
+  def testPickleCrossCompatibleProtocolOldBehavior(self):
+    original_value = {'foo': 'some text', 'bar': ['list', b'of', 3]}
+    with mock.patch.object(
+        os, 'environ', new={'MEMCACHE_USE_CROSS_COMPATIBLE_PROTOCOL': 'true'}):
+      client = memcache.Client()
+    data = client._do_pickle(original_value)
+    self.assertStartsWith(data, b'\x80\x02')
+    value = client._do_unpickle(data)
+    self.assertEqual(value, original_value)
+
   def testDecodeValueHelperIntValue(self):
     """Tests encoding the server value when it's an int."""
     my_value = 42
@@ -556,6 +583,96 @@ class MemcacheTest(absltest.TestCase):
     self.assertEqual('Get', service_method)
     self.assertEqual(b'foo_value', return_value)
     self.assertEqual(1, len(proto_request.key))
+    self.assertEqual(b'foo', proto_request.key[0])
+
+  def testPeekWithValue(self):
+    """Tests that peek() returns a value on a cache hit."""
+    response = MemcacheGetResponse()
+    response_item = response.item.add()
+    response_item.key = b'foo'
+    response_item.value = b'foo_value'
+
+    sample_expiration_time = 2341330
+    sample_last_access_time = 234133
+
+    response_item.timestamps.CopyFrom(ItemTimestamps())
+    response_item.timestamps.last_access_time_sec = sample_last_access_time
+    response_item.timestamps.expiration_time_sec = sample_expiration_time
+
+    service_method, proto_request, return_value = self.CallMethod(
+        'peek',
+        args=['foo'],
+        proto_response=response,
+    )
+    self.assertEqual('Get', service_method)
+    self.assertEqual(b'foo_value', return_value.value)
+    self.assertEqual(sample_expiration_time, return_value.expiration_time_sec)
+    self.assertEqual(sample_last_access_time, return_value.last_access_time_sec)
+    self.assertEqual(0, return_value.delete_lock_time_sec)
+    self.assertLen(proto_request.key, 1)
+    self.assertEqual(b'foo', proto_request.key[0])
+
+  def testPeekMultiWithValue(self):
+    """Tests that peek_multi() returns correct values on a cache hit."""
+    response = MemcacheGetResponse()
+    response_item1 = response.item.add()
+    response_item1.key = b'foo'
+    response_item1.value = b'foo_value'
+
+    timestamps1 = ItemTimestamps()
+    timestamps1.last_access_time_sec = 100
+    timestamps1.expiration_time_sec = 200
+    response_item1.timestamps.CopyFrom(timestamps1)
+
+    response_item2 = response.item.add()
+    response_item2.key = b'bar'
+    response_item2.value = b'bar_value'
+
+    timestamps2 = ItemTimestamps()
+    timestamps2.last_access_time_sec = 555
+    timestamps2.delete_lock_time_sec = 999
+    response_item2.timestamps.CopyFrom(timestamps2)
+
+    service_method, proto_request, return_value = self.CallMethod(
+        'peek_multi',
+        args=[['foo', 'bar']],
+        proto_response=response,
+    )
+    expected_return1 = memcache.ItemWithTimestamps(b'foo_value', 200, 100, 0)
+    expected_return2 = memcache.ItemWithTimestamps(b'bar_value', 0, 555, 999)
+
+    self.assertEqual('Get', service_method)
+    self.assertLen(proto_request.key, 2)
+    self.assertEqual(b'foo', proto_request.key[0])
+    self.assertEqual(b'bar', proto_request.key[1])
+
+    self.assertEqual(expected_return1.__dict__, return_value['foo'].__dict__)
+    self.assertEqual(expected_return2.__dict__, return_value['bar'].__dict__)
+
+  def testPeekWithDeleteLocked(self):
+    """Tests that peek() works correctly for a pickled delete locked value."""
+    response = MemcacheGetResponse()
+    response_item = response.item.add()
+    response_item.key = b'foo'
+    response_item.value = b''
+    response_item.flags = memcache.TYPE_PICKLED
+
+    sample_delete_lock_time = 4541122
+
+    timestamps = ItemTimestamps()
+    timestamps.delete_lock_time_sec = sample_delete_lock_time
+    response_item.timestamps.CopyFrom(timestamps)
+
+    service_method, proto_request, return_value = self.CallMethod(
+        'peek',
+        args=['foo'],
+        proto_response=response,
+    )
+    self.assertEqual('Get', service_method)
+    self.assertEqual('', return_value.value)
+    self.assertEqual(0, return_value.expiration_time_sec)
+    self.assertEqual(sample_delete_lock_time, return_value.delete_lock_time_sec)
+    self.assertLen(proto_request.key, 1)
     self.assertEqual(b'foo', proto_request.key[0])
 
   def testGetForCas(self):
@@ -1770,7 +1887,7 @@ class MemcacheTest(absltest.TestCase):
     client = memcache.Client(pickler=six.moves.cPickle.Pickler)
     stored_value = client._do_pickle(my_value)
     expected_value = six.moves.cPickle.dumps(
-        my_value, protocol=six.moves.cPickle.HIGHEST_PROTOCOL)
+        my_value, protocol=pickle.DEFAULT_PROTOCOL)
 
     self.assertEqual(expected_value, stored_value)
 
@@ -1786,7 +1903,7 @@ class MemcacheTest(absltest.TestCase):
     stored_value = client._do_pickle(my_value)
     pickle_value = six.BytesIO()
     pickler = six.moves.cPickle.Pickler(
-        pickle_value, protocol=six.moves.cPickle.HIGHEST_PROTOCOL)
+        pickle_value, protocol=pickle.DEFAULT_PROTOCOL)
     pickler.persistent_id = self.PersistentId
     pickler.dump(my_value)
     expected_value = pickle_value.getvalue()
@@ -1801,7 +1918,7 @@ class MemcacheTest(absltest.TestCase):
         'bar': 1.0,
     }
     my_value = six.moves.cPickle.dumps(
-        expected_value, protocol=six.moves.cPickle.HIGHEST_PROTOCOL)
+        expected_value, protocol=pickle.DEFAULT_PROTOCOL)
     client = memcache.Client()
     retrieved_value = client._do_unpickle(my_value)
 
@@ -1817,7 +1934,7 @@ class MemcacheTest(absltest.TestCase):
     expected_value = {str(my_value): 2}
     pickle_value = six.BytesIO()
     pickler = six.moves.cPickle.Pickler(
-        pickle_value, protocol=six.moves.cPickle.HIGHEST_PROTOCOL)
+        pickle_value, protocol=pickle.DEFAULT_PROTOCOL)
     pickler.persistent_id = self.PersistentId
     pickler.dump(my_value)
     pickled_value = pickle_value.getvalue()

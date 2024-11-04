@@ -245,6 +245,43 @@ class MemcacheServiceStubTest(absltest.TestCase):
     for key in result:
       self.assertEqual(mapping[key], result[key])
 
+  def testPeekWithExpiration(self):
+    """Tests peeking at a single key with expiration set."""
+    expiration = long(self.gettime() + 1000)
+    self.assertTrue(memcache.set(self.key1, self.value1, time=expiration))
+    result = memcache.peek(self.key1)
+
+    self.assertEqual(self.value1, result.get_value())
+    self.assertEqual(expiration, result.get_expiration_time_sec())
+    self.assertEqual(0, result.get_delete_lock_time_sec())
+    self.assertNotEqual(0, result.get_last_access_time_sec())
+
+  def testPeekMulti(self):
+    """Tests peeking at multiple keys."""
+    mapping = {
+        self.key1: self.value1,
+        self.key2: self.value2,
+        self.key3: self.value3,
+    }
+    self.assertEqual([], memcache.set_multi(mapping))
+    result = memcache.peek_multi(list(mapping.keys()))
+    self.assertEqual(len(mapping), len(result))
+    for key in result:
+      self.assertEqual(mapping[key], result[key].get_value())
+      self.assertEqual(0, result[key].get_expiration_time_sec())
+      self.assertEqual(0, result[key].get_delete_lock_time_sec())
+      self.assertNotEqual(0, result[key].get_last_access_time_sec())
+
+  def testPeekDeleteLocked(self):
+    """Tests peeking at a delete locked key."""
+    self.assertTrue(memcache.set(self.key1, self.value1))
+    self.assertEqual(
+        memcache.DELETE_SUCCESSFUL, memcache.delete(self.key1, seconds=1000)
+    )
+    result = memcache.peek(self.key1)
+    self.assertEqual('', result.get_value())
+    self.assertNotEqual(0, result.get_delete_lock_time_sec())
+
   def testDelete(self):
     """Tests delete when the item is present."""
     self.assertTrue(memcache.set(self.key1, self.value1))

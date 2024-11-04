@@ -30,8 +30,6 @@ format, width, height, and a histogram of color values.
 
 
 
-
-
 import json
 import struct
 

@@ -60,5 +60,17 @@ class ContextTest(absltest.TestCase):
       context.READ_FROM_OS_ENVIRON = True
       self.assertEqual(context.get('USER_ID'), 'value in os.environ')
 
+  @ctx_test_util.both_context_modes()
+  def testContextGet(self):
+
+    self.assertIsNone(context.get('REQUEST_LOG_ID'))
+
+    self.assertIsNone(context.get('HTTP_HOST'))
+
+    self.assertRaises(LookupError, context.get, 'UNDEFINED_VAR')
+
+    self.assertRaises(
+        LookupError, context.get, 'UNDEFINED_VAR', 'some-default-value')
+
 if __name__ == '__main__':
   absltest.main()

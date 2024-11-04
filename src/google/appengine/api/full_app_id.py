@@ -21,15 +21,17 @@ which gets a "display" app ID.
 """
 
 
-
-
-
-
 import os
-from typing import MutableMapping, Text, Optional
+from typing import MutableMapping, Optional, Tuple
 
 
-OsEnvironLike = Optional[MutableMapping[Text, Text]]
+OsEnvironLike = Optional[MutableMapping[str, str]]
+
+LEGACY_COMPAT = True
+
+
+
+
 
 
 def get(environ: OsEnvironLike = None) -> str:
@@ -41,17 +43,18 @@ def get(environ: OsEnvironLike = None) -> str:
   Returns:
     Default application ID as a string.
 
-  We read from the environment APPLICATION_ID (deprecated) or else
-  GAE_APPLICATION.
+  We read from the environment GAE_APPLICATION.
   """
 
   if environ is None:
     environ = os.environ
+  app_id = environ.get('GAE_APPLICATION', '')
+  if LEGACY_COMPAT and 'APPLICATION_ID' in environ:
+    app_id = environ['APPLICATION_ID']
+  return app_id
 
-  return environ.get('APPLICATION_ID', environ.get('GAE_APPLICATION', ''))
 
-
-def put(app_id: str, environ: OsEnvironLike = None):
+def put(app_id: str, environ: OsEnvironLike = None) -> None:
   """Set the application ID in the environment.
 
   Args:
@@ -62,17 +65,18 @@ def put(app_id: str, environ: OsEnvironLike = None):
   if environ is None:
     environ = os.environ
 
-  environ['APPLICATION_ID'] = app_id
   environ['GAE_APPLICATION'] = app_id
+  if LEGACY_COMPAT:
+    environ['APPLICATION_ID'] = app_id
 
 
-def normalize(environ: OsEnvironLike = None):
+def normalize(environ: OsEnvironLike = None) -> None:
   """Normalize the environment variables which set the app ID."""
 
   put(get(environ=environ), environ=environ)
 
 
-def clear(environ: OsEnvironLike = None):
+def clear(environ: OsEnvironLike = None) -> None:
   """Unset the application ID in the environment.
 
   Args:
@@ -82,8 +86,9 @@ def clear(environ: OsEnvironLike = None):
   if environ is None:
     environ = os.environ
 
-  environ.pop('APPLICATION_ID', None)
   environ.pop('GAE_APPLICATION', None)
+  if LEGACY_COMPAT:
+    environ.pop('APPLICATION_ID', None)
 
 
 _PARTITION_SEPARATOR = '~'
@@ -91,7 +96,7 @@ _DOMAIN_SEPARATOR = ':'
 
 
 def parse(app_id: Optional[str] = None,
-          environ: OsEnvironLike = None):
+          environ: OsEnvironLike = None) -> Tuple[str, str, str]:
   """Parses a full app ID into `partition`, `domain_name`, and `display_app_id`.
 
   Args:
@@ -118,7 +123,7 @@ def parse(app_id: Optional[str] = None,
 
 
 def project_id(app_id: Optional[str] = None,
-               environ: OsEnvironLike = None):
+               environ: OsEnvironLike = None) -> str:
   """Parses the domain prefixed project ID from the app_id.
 
   Args:
@@ -126,8 +131,7 @@ def project_id(app_id: Optional[str] = None,
     environ: Environment dictionary. Uses os.environ if `None`.
 
   Returns:
-    A tuple `(partition, domain_name, display_app_id)`.  The partition and
-    domain name might be empty.
+    The project id as a string, including the domain if there is one.
   """
   _, domain_name, display_app_id = parse(app_id, environ)
   if domain_name:

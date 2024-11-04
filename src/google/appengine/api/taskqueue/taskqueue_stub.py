@@ -2066,7 +2066,6 @@ def _GetTargetFromHostHeader(default_version_hostname, host_header):
 
 
 
-
   default_address_offset = host_header.find(default_version_hostname)
   if default_address_offset <= 0:
     return None
@@ -2305,7 +2304,7 @@ class _BackgroundTaskScheduler(object):
 
 
 
-      timeout = min(timeout, 2**32)
+      timeout = min(timeout, threading.TIMEOUT_MAX)
       self._event.wait(timeout)
       self._event.clear()
       now = self._get_time()
@@ -2551,15 +2550,24 @@ class TaskQueueServiceStub(apiproxy_stub.APIProxyStub):
 
 
 
-    originating_module = self.request_data.get_module(request_id)
 
-
-    host_header = '.'.join((originating_module, self._default_http_server),)
     for r in request.add_request:
       for h in r.header:
         if h.key.lower() == b'host':
           break
       else:
+        if request_id:
+
+
+          originating_module = self.request_data.get_module(request_id)
+        else:
+
+
+          originating_module = 'default'
+
+
+
+        host_header = '.'.join((originating_module, self._default_http_server),)
         h = r.header.add()
         h.key = b'host'
         h.value = host_header.encode()

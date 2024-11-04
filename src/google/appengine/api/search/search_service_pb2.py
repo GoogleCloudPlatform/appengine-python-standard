@@ -17,11 +17,22 @@
 
 
 
+
+
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+_runtime_version.ValidateProtobufRuntimeVersion(
+    _runtime_version.Domain.PUBLIC,
+    5,
+    30,
+    0,
+    '-dev',
+    'google/appengine/api/search/search_service.proto'
+)
 
 
 _sym_db = _symbol_database.Default()
@@ -35,11 +46,11 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n0google/appengine/
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'google.appengine.api.search.search_service_pb2', _globals)
-if _descriptor._USE_C_DESCRIPTORS == False:
-  DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'\n%com.google.appengine.api.search.protoB\017SearchServicePb'
-  _INDEXDOCUMENTPARAMS.fields_by_name['freshness']._options = None
-  _INDEXDOCUMENTPARAMS.fields_by_name['freshness']._serialized_options = b'\030\001'
+if not _descriptor._USE_C_DESCRIPTORS:
+  _globals['DESCRIPTOR']._loaded_options = None
+  _globals['DESCRIPTOR']._serialized_options = b'\n%com.google.appengine.api.search.protoB\017SearchServicePb'
+  _globals['_INDEXDOCUMENTPARAMS'].fields_by_name['freshness']._loaded_options = None
+  _globals['_INDEXDOCUMENTPARAMS'].fields_by_name['freshness']._serialized_options = b'\030\001'
   _globals['_SEARCHSERVICEERROR']._serialized_start=114
   _globals['_SEARCHSERVICEERROR']._serialized_end=282
   _globals['_SEARCHSERVICEERROR_ERRORCODE']._serialized_start=137
@@ -142,3 +153,4 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_SEARCHRESULT']._serialized_end=5777
   _globals['_SEARCHRESPONSE']._serialized_start=5780
   _globals['_SEARCHRESPONSE']._serialized_end=6014
+

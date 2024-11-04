@@ -1149,17 +1149,17 @@ class GqlTest(absltest.TestCase):
 
   def testDotInProperty(self):
 
-    guido = datastore.Entity('Person')
-    guido['address.street'] = 'Spear'
-    guido['address.city'] = 'SF'
-    guido['address.zip'] = 94105
+    user = datastore.Entity('Person')
+    user['address.street'] = 'Spear'
+    user['address.city'] = 'SF'
+    user['address.zip'] = 94105
     try:
-      datastore.Put(guido)
+      datastore.Put(user)
       select = gql.GQL("SELECT * FROM Person WHERE address.street = 'Spear'")
       results = [a for a in select.Run()]
-      self.assertEqual([guido], results)
+      self.assertEqual([user], results)
     finally:
-      datastore.Delete(guido)
+      datastore.Delete(user)
 
   def AssertRaisesBadQuery(self, substr, callable_obj, *args):
     """Asserts that callable_obj(*args) raises a matching BadQueryError."""

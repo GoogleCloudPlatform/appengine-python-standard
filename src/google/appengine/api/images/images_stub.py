@@ -205,7 +205,7 @@ class ImagesServiceStub(apiproxy_stub.APIProxyStub):
           alpha = int(round(alpha))
         mask = Image.new('L', source.size, alpha)
         canvas.paste(source, (x_offset, y_offset), mask)
-    response_value = self._EncodeImage(canvas, request.canvas.output)
+    response_value = self.EncodeImage(canvas, request.canvas.output)
     response.image.content = response_value
 
   def _Dynamic_Histogram(self, request, response):
@@ -261,27 +261,32 @@ class ImagesServiceStub(apiproxy_stub.APIProxyStub):
 
     input_settings = request.input
     correct_orientation = (
-        input_settings.HasField('correct_exif_orientation') and
-        input_settings.correct_exif_orientation ==
-        images_service_pb2.InputSettings.CORRECT_ORIENTATION)
+        input_settings.HasField('correct_exif_orientation')
+        and input_settings.correct_exif_orientation
+        == images_service_pb2.InputSettings.CORRECT_ORIENTATION
+    )
 
 
 
-    source_metadata = self._ExtractMetadata(original_image,
-                                            input_settings.parse_metadata)
+    source_metadata = self._ExtractMetadata(
+        original_image, input_settings.parse_metadata
+    )
     if input_settings.parse_metadata:
       logging.info(
           'Once the application is deployed, a more powerful metadata '
-          'extraction will be performed which might return many more fields.')
+          'extraction will be performed which might return many more fields.'
+      )
 
-    new_image = self._ProcessTransforms(original_image, request.transform,
-                                        correct_orientation)
+    new_image = self._ProcessTransforms(
+        original_image, request.transform, correct_orientation
+    )
 
     substitution_rgb = None
     if input_settings.HasField('transparent_substitution_rgb'):
       substitution_rgb = input_settings.transparent_substitution_rgb
-    response_value = self._EncodeImage(new_image, request.output,
-                                       substitution_rgb)
+    response_value = self.EncodeImage(
+        new_image, request.output, substitution_rgb
+    )
     response.image.content = response_value
     response.source_metadata = source_metadata
 
@@ -291,7 +296,7 @@ class ImagesServiceStub(apiproxy_stub.APIProxyStub):
   def _Dynamic_DeleteUrlBase(self, request, response):
     self._blob_stub.DeleteUrlBase(request, response)
 
-  def _EncodeImage(self, image, output_encoding, substitution_rgb=None):
+  def EncodeImage(self, image, output_encoding, substitution_rgb=None):
     """Encode the given image and return it in string form.
 
     Args:
@@ -529,7 +534,7 @@ class ImagesServiceStub(apiproxy_stub.APIProxyStub):
     new_width, new_height = self._CalculateNewDimensions(
         current_width, current_height, width, height, crop_to_fit,
         allow_stretch)
-    new_image = image.resize((new_width, new_height), Image.ANTIALIAS)
+    new_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
     if crop_to_fit and (new_width > width or new_height > height):
 
       left = int((new_width - width) * transform.crop_offset_x)
@@ -711,18 +716,18 @@ class ImagesServiceStub(apiproxy_stub.APIProxyStub):
 
 
     if orientation == 2:
-      image = image.transpose(Image.FLIP_LEFT_RIGHT)
+      image = image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
     elif orientation == 3:
       image = image.rotate(180)
     elif orientation == 4:
-      image = image.transpose(Image.FLIP_TOP_BOTTOM)
+      image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
     elif orientation == 5:
-      image = image.transpose(Image.FLIP_TOP_BOTTOM)
+      image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
       image = image.rotate(270)
     elif orientation == 6:
       image = image.rotate(270)
     elif orientation == 7:
-      image = image.transpose(Image.FLIP_LEFT_RIGHT)
+      image = image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
       image = image.rotate(270)
     elif orientation == 8:
       image = image.rotate(90)
@@ -789,11 +794,11 @@ class ImagesServiceStub(apiproxy_stub.APIProxyStub):
 
       elif transform.HasField('horizontal_flip'):
 
-        new_image = new_image.transpose(Image.FLIP_LEFT_RIGHT)
+        new_image = new_image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
 
       elif transform.HasField('vertical_flip'):
 
-        new_image = new_image.transpose(Image.FLIP_TOP_BOTTOM)
+        new_image = new_image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
 
       elif (transform.HasField('crop_left_x') or
             transform.HasField('crop_top_y') or

@@ -20,7 +20,6 @@
 import base64
 import datetime
 import operator
-import os
 import pickle
 
 from google.appengine.api import apiproxy_stub_map
@@ -29,23 +28,11 @@ from google.appengine.api import full_app_id
 from google.appengine.api.taskqueue import taskqueue_stub
 from google.appengine.ext import db
 from google.appengine.ext import deferred
+from google.appengine.runtime.context import ctx_test_util
 import six
 
 from absl.testing import absltest
 
-
-
-
-def setUpModule():
-
-
-  os.environ["HTTP_HOST"] = "my-app.appspot.com"
-  os.environ["DEFAULT_VERSION_HOSTNAME"] = "my-app.appspot.com"
-
-
-def tearDownModule():
-  del os.environ["HTTP_HOST"]
-  del os.environ["DEFAULT_VERSION_HOSTNAME"]
 
 
 calls = []
@@ -170,6 +157,7 @@ def ExecuteHandler(task, wsgi_environ_overrides):
   return deferred_handler.post(wsgi_environ)
 
 
+@ctx_test_util.isolated_context()
 class SerializationTest(absltest.TestCase):
 
   def setUp(self):
@@ -231,13 +219,17 @@ class SerializationTest(absltest.TestCase):
                       ClassGenerator(1), 2)
 
 
+@ctx_test_util.isolated_context()
 class DeferredTest(absltest.TestCase):
 
   def setUp(self):
     calls[:] = []
 
     full_app_id.put("test_app")
-    os.environ["USER_IS_ADMIN"] = "1"
+    ctx_test_util.set_both("USER_IS_ADMIN", "1")
+
+    ctx_test_util.set_both("HTTP_HOST", "my-app.appspot.com")
+    ctx_test_util.set_both("DEFAULT_VERSION_HOSTNAME", "my-app.appspot.com")
 
 
     apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()

@@ -3071,7 +3071,8 @@ def _NeedsIndexes(func):
     try:
       return func(self, *args, **kwargs)
     finally:
-      self._UpdateIndexes()
+      with self._index_setup_lock:
+        self._UpdateIndexes()
 
   return UpdateIndexesWrapper
 

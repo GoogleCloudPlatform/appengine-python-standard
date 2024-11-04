@@ -72,8 +72,6 @@ from google.appengine.datastore import entity_bytes_pb2 as entity_pb2
 
 
 
-
-
 if datastore_pbs._CLOUD_DATASTORE_ENABLED:
   from google.appengine.datastore.datastore_pbs import googledatastore
 
@@ -639,15 +637,17 @@ class Key(object):
     """
     if not self.has_id_or_name():
       raise datastore_errors.BadKeyError(
-        'ToTagUri() called for an entity with an incomplete key.')
+          'ToTagUri() called for an entity with an incomplete key.'
+      )
 
-    return u'tag:%s.%s,%s:%s[%s]' % (
+    return 'tag:%s.%s,%s:%s[%s]' % (
 
         saxutils.escape(EncodeAppIdNamespace(self.app(), self.namespace())),
         context.get('AUTH_DOMAIN'),
         datetime.date.today().isoformat(),
         saxutils.escape(self.kind()),
-        saxutils.escape(str(self)))
+        saxutils.escape(str(self)),
+    )
 
   ToXml = ToTagUri
 
@@ -731,7 +731,6 @@ class Key(object):
       raise datastore_errors.BadKeyError(
         'Cannot string encode an incomplete key!\n%s' % self.__reference)
     return self._bytes.decode('utf-8')
-
 
   def __repr__(self):
     """Returns a Python string of the form `datastore_types.Key.from_path(...)` that can be used to recreate this key.
