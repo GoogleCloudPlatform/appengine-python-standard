@@ -41,7 +41,7 @@ import urllib3
 
 
 
-# logging.getLogger('requests_nologs').setLevel(logging.ERROR)
+logging.getLogger('requests_nologs').setLevel(logging.ERROR)
 
 TICKET_HEADER = 'HTTP_X_APPENGINE_API_TICKET'
 DEV_TICKET_HEADER = 'HTTP_X_APPENGINE_DEV_REQUEST_ID'
