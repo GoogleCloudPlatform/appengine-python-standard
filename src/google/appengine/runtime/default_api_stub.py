@@ -72,29 +72,11 @@ POOL_SIZE_LOWER_LIMIT = 10
 POOL_SIZE_UPPER_LIMIT = 100
 POOL_SIZE_DEFAULT_VALUE = 10
 
-env_pool_size = os.environ.get('POOL_SIZE_URLLIB3')
-
-if env_pool_size is not None:
-  try:
-    URLLIB3_POOL_SIZE = int(env_pool_size)
-    logging.info(
-        f'Setting user-provided urllib3 pool size of {URLLIB3_POOL_SIZE}'
-    )
-  except ValueError:
-    logging.warning(
-        f'Invalid value for POOL_SIZE_URLLIB3: {env_pool_size}. '
-        f'Defaulting to {POOL_SIZE_DEFAULT_VALUE}.'
-    )
-    URLLIB3_POOL_SIZE = POOL_SIZE_DEFAULT_VALUE
-else:
-  URLLIB3_POOL_SIZE = POOL_SIZE_DEFAULT_VALUE
+URLLIB3_POOL_SIZE = int(
+    os.environ.get('POOL_SIZE_URLLIB3', POOL_SIZE_DEFAULT_VALUE)
+)
 
 if not (POOL_SIZE_LOWER_LIMIT <= URLLIB3_POOL_SIZE <= POOL_SIZE_UPPER_LIMIT):
-  logging.warning(
-      f'URLLIB3_POOL_SIZE ({URLLIB3_POOL_SIZE}) is out of range'
-      f' [{POOL_SIZE_LOWER_LIMIT}, {POOL_SIZE_UPPER_LIMIT}]. Defaulting to'
-      f' {POOL_SIZE_DEFAULT_VALUE}.'
-  )
   URLLIB3_POOL_SIZE = POOL_SIZE_DEFAULT_VALUE
 
 
