@@ -193,7 +193,7 @@ class PolyModel(model.Model):
     cls._kind_map[cls._class_name()] = cls
     class_key = cls._class_key()
     if class_key:
-      cls._class_map[tuple(class_key)] = cls
+      cls._class_map[tuple(map(six.ensure_binary, class_key))] = cls
 
   @classmethod
   def _from_pb(cls, pb, set_key=True, ent=None, key=None):
@@ -216,7 +216,7 @@ class PolyModel(model.Model):
 
     This is a list of class names, e.g. ['Animal', 'Feline', 'Cat'].
     """
-    return [six.ensure_binary(c._class_name()) for c in cls._get_hierarchy()]
+    return [c._class_name() for c in cls._get_hierarchy()]
 
   @classmethod
   def _get_kind(cls):
