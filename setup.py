@@ -25,7 +25,7 @@ setuptools.setup(
         "requests>=2.25.1",
         "ruamel.yaml>=0.17.7",
         "six>=1.15.0",
-        "urllib3>=1.26.2,<2",
+        "urllib3>=2",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
