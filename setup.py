@@ -26,7 +26,7 @@ setuptools.setup(
         "ruamel.yaml>=0.17.7",
         "six>=1.15.0",
         "urllib3>=1.26.2,<2",
-        "legacy-cgi>=2.6.2"
+        "legacy-cgi>=2.6.2; python_version>='3.10'",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
