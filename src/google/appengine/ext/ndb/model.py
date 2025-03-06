@@ -2741,8 +2741,9 @@ class GenericProperty(Property):
         sval = modelclass._from_pb(pb)
       elif meaning != entity_pb2.Property.BYTESTRING:
         try:
-          sval.decode('ascii')
-
+          decoded = sval.decode('ascii')
+          if six.PY3 and meaning == entity_pb2.Property.TEXT:
+            sval = decoded
         except UnicodeDecodeError:
           try:
             sval = six.text_type(sval.decode('utf-8'))
