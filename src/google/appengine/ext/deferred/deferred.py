@@ -107,7 +107,7 @@ app.wsgi_app = wrap_wsgi_app(app.wsgi_app, use_deferred=True)
 
 
 
-
+import base64
 import http
 import logging
 import os
@@ -159,7 +159,7 @@ def run(data):
     PermanentTaskFailure if an error occurred during unpickling the task.
   """
   try:
-    func, args, kwds = pickle.loads(data)
+    func, args, kwds = pickle.loads(base64.b64decode(data))
   except Exception as e:
     raise PermanentTaskFailure(e)
   else:
@@ -265,10 +265,10 @@ def serialize(obj, *args, **kwargs):
   """
   curried = _curry_callable(obj, *args, **kwargs)
   if os.environ.get("DEFERRED_USE_CROSS_COMPATIBLE_PICKLE_PROTOCOL", False):
-    protocol = 0
+    protocol = 2
   else:
     protocol = pickle.HIGHEST_PROTOCOL
-  return pickle.dumps(curried, protocol)
+  return base64.b64encode(pickle.dumps(curried, protocol))
 
 
 def defer(obj, *args, **kwargs):
