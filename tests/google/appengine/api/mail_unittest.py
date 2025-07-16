@@ -1713,6 +1713,222 @@ class SendMailTest(absltest.TestCase):
     self.assertEqual(', '.join(cc_list), str(sent_message['Cc']))
     self.assertNotIn('Bcc', sent_message)  # Bcc should not be in the headers
 
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_HtmlBody(self, mock_smtp):
+    """Tests that mail.send_mail handles HTML bodies correctly."""
+    environ = {
+        'USE_SMTP_MAIL_SERVICE': 'true',
+        'SMTP_HOST': 'smtp.example.com',
+        'SMTP_PORT': '587',
+    }
+    
+    text_body = 'This is the plain text body.'
+    html_body = '<h1>This is the HTML body</h1>'
+
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail(
+          sender='sender@example.com',
+          to='recipient@example.com',
+          subject='A Subject',
+          body=text_body,
+          html=html_body)
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    sent_message = instance.send_message.call_args[0][0]
+
+    # Check that the message is multipart/mixed, which contains a multipart/alternative part.
+    self.assertTrue(sent_message.is_multipart())
+    self.assertEqual('multipart/mixed', sent_message.get_content_type())
+    
+    # The first payload should be the multipart/alternative message
+    body_payload = sent_message.get_payload(0)
+    self.assertTrue(body_payload.is_multipart())
+    self.assertEqual('multipart/alternative', body_payload.get_content_type())
+
+    # Check that there are two payloads (plain and html) inside the alternative part
+    alternative_payloads = body_payload.get_payload()
+    self.assertLen(alternative_payloads, 2)
+
+    text_part = alternative_payloads[0]
+    html_part = alternative_payloads[1]
+
+    self.assertEqual('text/plain', text_part.get_content_type())
+    self.assertEqual(text_body, text_part.get_payload())
+    
+    self.assertEqual('text/html', html_part.get_content_type())
+    self.assertEqual(html_body, html_part.get_payload())
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_WithAttachment(self, mock_smtp):
+    """Tests that mail.send_mail handles a single attachment correctly."""
+    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    attachment_data = b'This is attachment data.'
+    
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail(
+          sender='sender@example.com',
+          to='recipient@example.com',
+          subject='A Subject',
+          body='A body.',
+          attachments=[('attachment.txt', attachment_data)])
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    sent_message = instance.send_message.call_args[0][0]
+
+    self.assertEqual('multipart/mixed', sent_message.get_content_type())
+    self.assertEqual('sender@example.com', str(sent_message['From']))
+    self.assertEqual('recipient@example.com', str(sent_message['To']))
+    self.assertEqual('A Subject', str(sent_message['Subject']))
+    
+    body_part, attachment_part = sent_message.get_payload()
+    
+    self.assertEqual('text/plain', body_part.get_content_type())
+    self.assertEqual('attachment.txt', attachment_part.get_filename())
+    self.assertEqual(b'This is attachment data.', attachment_part.get_payload(decode=True))
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_WithMultipleAttachments(self, mock_smtp):
+    """Tests that mail.send_mail handles multiple attachments correctly."""
+    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    attachments = [
+        ('one.txt', b'data1'),
+        ('two.txt', b'data2'),
+    ]
+    
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail(
+          sender='sender@example.com',
+          to='recipient@example.com',
+          subject='A Subject',
+          body='A body.',
+          attachments=attachments)
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    sent_message = instance.send_message.call_args[0][0]
+
+    self.assertEqual('multipart/mixed', sent_message.get_content_type())
+    self.assertEqual('sender@example.com', str(sent_message['From']))
+    self.assertEqual('recipient@example.com', str(sent_message['To']))
+    self.assertEqual('A Subject', str(sent_message['Subject']))
+    
+    payloads = sent_message.get_payload()
+    self.assertLen(payloads, 3) # 1 body + 2 attachments
+    
+    self.assertEqual('one.txt', payloads[1].get_filename())
+    self.assertEqual(b'data1', payloads[1].get_payload(decode=True))
+    self.assertEqual('two.txt', payloads[2].get_filename())
+    self.assertEqual(b'data2', payloads[2].get_payload(decode=True))
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_WithHtmlAndAttachment(self, mock_smtp):
+    """Tests handling of both HTML body and attachments."""
+    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail(
+          sender='sender@example.com',
+          to='recipient@example.com',
+          subject='A Subject',
+          body='A body.',
+          html='<h1>A body</h1>',
+          attachments=[('attachment.txt', b'attachment data')])
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    sent_message = instance.send_message.call_args[0][0]
+
+    self.assertEqual('multipart/mixed', sent_message.get_content_type())
+    self.assertEqual('sender@example.com', str(sent_message['From']))
+    self.assertEqual('recipient@example.com', str(sent_message['To']))
+    self.assertEqual('A Subject', str(sent_message['Subject']))
+    
+    body_part, attachment_part = sent_message.get_payload()
+    
+    # The body part should be multipart/alternative
+    self.assertTrue(body_part.is_multipart())
+    self.assertEqual('multipart/alternative', body_part.get_content_type())
+    
+    # The attachment should be correct
+    self.assertEqual('attachment.txt', attachment_part.get_filename())
+    self.assertEqual(b'attachment data', attachment_part.get_payload(decode=True))
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_WithReplyTo(self, mock_smtp):
+    """Tests that the Reply-To header is handled correctly."""
+    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail(
+          sender='sender@example.com',
+          to='recipient@example.com',
+          subject='A Subject',
+          body='A body.',
+          reply_to='reply-to@example.com')
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    sent_message = instance.send_message.call_args[0][0]
+
+    self.assertEqual('reply-to@example.com', str(sent_message['Reply-To']))
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_WithCustomHeaders(self, mock_smtp):
+    """Tests that custom headers are handled correctly."""
+    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    headers = {
+        'List-Id': 'some-list <list.example.com>',
+        'References': '<foo@bar.com>'
+    }
+    
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail(
+          sender='sender@example.com',
+          to='recipient@example.com',
+          subject='A Subject',
+          body='A body.',
+          headers=headers)
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    sent_message = instance.send_message.call_args[0][0]
+
+    self.assertEqual('some-list <list.example.com>', str(sent_message['List-Id']))
+    self.assertEqual('<foo@bar.com>', str(sent_message['References']))
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_NoTls(self, mock_smtp):
+    """Tests that TLS is not used when disabled."""
+    environ = {
+        'USE_SMTP_MAIL_SERVICE': 'true',
+        'SMTP_HOST': 'smtp.example.com',
+        'SMTP_USE_TLS': 'false',
+    }
+    
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail(
+          sender='sender@example.com',
+          to='recipient@example.com',
+          subject='A Subject',
+          body='A body.')
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    instance.starttls.assert_not_called()
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_NoAuth(self, mock_smtp):
+    """Tests that login is not attempted when credentials are not provided."""
+    environ = {
+        'USE_SMTP_MAIL_SERVICE': 'true',
+        'SMTP_HOST': 'smtp.example.com',
+    }
+    
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail(
+          sender='sender@example.com',
+          to='recipient@example.com',
+          subject='A Subject',
+          body='A body.')
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    instance.login.assert_not_called()
+
 
   def testSendMailSuccess(self):
     """Test the case where sendmail results are ok."""
