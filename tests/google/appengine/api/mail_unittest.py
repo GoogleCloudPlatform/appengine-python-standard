@@ -2026,6 +2026,66 @@ class SendMailTest(absltest.TestCase):
     instance.login.assert_not_called()
 
   @mock.patch('smtplib.SMTP')
+  def testSendAdminEmailViaSmtp(self, mock_smtp):
+    """Tests that admin emails are sent to the list in the env var."""
+    admin_list = 'admin1@example.com,admin2@example.com'
+    environ = {
+        'USE_SMTP_MAIL_SERVICE': 'true',
+        'SMTP_HOST': 'smtp.example.com',
+        'ADMIN_EMAIL_RECIPIENTS': admin_list,
+    }
+    
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail_to_admins(
+          sender='sender@example.com',
+          subject='Admin Subject',
+          body='Admin body.')
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    to_addrs = instance.send_message.call_args[1]['to_addrs']
+    self.assertCountEqual(admin_list.split(','), to_addrs)
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_AmpHtmlBody(self, mock_smtp):
+    """Tests that mail.send_mail handles AMP HTML bodies correctly."""
+    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    amp_html_body = '<html><body>AMP for Email is awesome!</body></html>'
+    
+    with mock.patch.dict('os.environ', environ):
+        mail.send_mail(
+            sender='sender@example.com',
+            to='recipient@example.com',
+            subject='A Subject',
+            body='A body.',
+            amp_html=amp_html_body)
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    sent_message = instance.send_message.call_args[0][0]
+    
+    self.assertTrue(sent_message.is_multipart())
+    self.assertEqual('multipart/mixed', sent_message.get_content_type())
+    
+    body_payload = sent_message.get_payload(0)
+    self.assertTrue(body_payload.is_multipart())
+    self.assertEqual('multipart/alternative', body_payload.get_content_type())
+
+    payloads = body_payload.get_payload()
+    self.assertLen(payloads, 2)
+    
+    amp_part = next(p for p in payloads if p.get_content_type() == 'text/x-amp-html')
+    self.assertEqual(amp_html_body, amp_part.get_payload(decode=True).decode('utf-8'))
+
+  def testInvalidAttachmentType(self):
+    """Tests that an error is raised for blacklisted attachment types."""
+    with self.assertRaises(mail.InvalidAttachmentTypeError):
+        mail.send_mail(
+            sender='sender@example.com',
+            to='recipient@example.com',
+            subject='A Subject',
+            body='A body.',
+            attachments=[('virus.exe', b'some data')])
+
+  @mock.patch('smtplib.SMTP')
   def testSendEmailViaSmtp_WithUnicode(self, mock_smtp):
     """Tests that unicode characters are handled correctly."""
     environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}

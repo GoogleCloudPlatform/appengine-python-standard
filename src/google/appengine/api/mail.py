@@ -1217,12 +1217,17 @@ class _EmailMessageBase(object):
             del mime_message['Bcc']
 
         recipients = []
-        if hasattr(self, 'to'):
-            recipients.extend(_email_sequence(self.to))
-        if hasattr(self, 'cc'):
-            recipients.extend(_email_sequence(self.cc))
-        if hasattr(self, 'bcc'):
-            recipients.extend(_email_sequence(self.bcc))
+        if isinstance(self, AdminEmailMessage):
+            admin_emails = os.environ.get('ADMIN_EMAIL_RECIPIENTS')
+            if admin_emails:
+                recipients.extend(admin_emails.split(','))
+        else:
+            if hasattr(self, 'to'):
+                recipients.extend(_email_sequence(self.to))
+            if hasattr(self, 'cc'):
+                recipients.extend(_email_sequence(self.cc))
+            if hasattr(self, 'bcc'):
+                recipients.extend(_email_sequence(self.bcc))
 
         try:
             host = os.environ['SMTP_HOST']
