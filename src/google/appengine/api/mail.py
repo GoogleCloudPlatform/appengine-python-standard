@@ -1229,6 +1229,9 @@ class _EmailMessageBase(object):
             if hasattr(self, 'bcc'):
                 recipients.extend(_email_sequence(self.bcc))
 
+        if not recipients:
+            raise MissingRecipientsError()
+
         try:
             host = os.environ['SMTP_HOST']
             port = int(os.environ.get('SMTP_PORT', 587))
@@ -1249,10 +1252,10 @@ class _EmailMessageBase(object):
             raise InvalidSenderError(f'SMTP authentication failed: {e.smtp_error}')
         except (smtplib.SMTPException, OSError) as e:
             logging.error('Failed to send email via SMTP: %s', e)
-            raise InternalTransientError(f'Failed to send email via SMTP: {e}')
+            raise Error(f'Failed to send email via SMTP: {e}')
         except KeyError as e:
             logging.error('Missing required SMTP environment variable: %s', e)
-            raise InternalTransientError(f'Missing required SMTP environment variable: {e}')
+            raise Error(f'Missing required SMTP environment variable: {e}')
 
     else:
         logging.info('Sending email via App Engine Mail API.')

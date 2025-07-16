@@ -32,6 +32,7 @@ import email
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import re
+import smtplib
 import textwrap
 import zlib
 
@@ -2084,6 +2085,78 @@ class SendMailTest(absltest.TestCase):
             subject='A Subject',
             body='A body.',
             attachments=[('virus.exe', b'some data')])
+
+  @mock.patch('smtplib.SMTP')
+  def testSendAdminEmailViaSmtp_NoRecipients(self, mock_smtp):
+    """Tests that an error is raised when no admin recipients are specified."""
+    environ = {
+        'USE_SMTP_MAIL_SERVICE': 'true',
+        'SMTP_HOST': 'smtp.example.com',
+    }
+    
+    with mock.patch.dict('os.environ', environ):
+      with self.assertRaises(mail.MissingRecipientsError):
+        mail.send_mail_to_admins(
+            sender='sender@example.com',
+            subject='Admin Subject',
+            body='Admin body.')
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_AuthenticationError(self, mock_smtp):
+    """Tests that an authentication error is handled correctly."""
+    environ = {
+        'USE_SMTP_MAIL_SERVICE': 'true',
+        'SMTP_HOST': 'smtp.example.com',
+        'SMTP_USER': 'user',
+        'SMTP_PASSWORD': 'password',
+    }
+    
+    instance = mock_smtp.return_value.__enter__.return_value
+    instance.login.side_effect = smtplib.SMTPAuthenticationError(535, 'Auth failed')
+    
+    with mock.patch.dict('os.environ', environ):
+      with self.assertRaises(mail.InvalidSenderError):
+        mail.send_mail(
+            sender='sender@example.com',
+            to='recipient@example.com',
+            subject='A Subject',
+            body='A body.')
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_ConnectionError(self, mock_smtp):
+    """Tests that a connection error is handled correctly."""
+    environ = {
+        'USE_SMTP_MAIL_SERVICE': 'true',
+        'SMTP_HOST': 'smtp.example.com',
+    }
+    
+    mock_smtp.side_effect = smtplib.SMTPConnectError(550, 'Connection refused')
+    
+    with mock.patch.dict('os.environ', environ):
+      with self.assertRaises(mail.Error):
+        mail.send_mail(
+            sender='sender@example.com',
+            to='recipient@example.com',
+            subject='A Subject',
+            body='A body.')
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_ConnectionError(self, mock_smtp):
+    """Tests that a connection error is handled correctly."""
+    environ = {
+        'USE_SMTP_MAIL_SERVICE': 'true',
+        'SMTP_HOST': 'smtp.example.com',
+    }
+    
+    mock_smtp.side_effect = smtplib.SMTPConnectError(550, 'Connection refused')
+    
+    with mock.patch.dict('os.environ', environ):
+      with self.assertRaises(mail.Error):
+        mail.send_mail(
+            sender='sender@example.com',
+            to='recipient@example.com',
+            subject='A Subject',
+            body='A body.')
 
   @mock.patch('smtplib.SMTP')
   def testSendEmailViaSmtp_WithUnicode(self, mock_smtp):
