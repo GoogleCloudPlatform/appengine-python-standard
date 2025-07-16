@@ -1756,7 +1756,80 @@ class SendMailTest(absltest.TestCase):
     self.assertEqual(text_body, text_part.get_payload())
     
     self.assertEqual('text/html', html_part.get_content_type())
-    self.assertEqual(html_body, html_part.get_payload())
+    self.assertEqual(html_body, html_part.get_payload(decode=True).decode('utf-8'))
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_AttachmentsOnly(self, mock_smtp):
+    """Tests sending an email with only attachments."""
+    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    attachments = [
+        ('one.txt', b'data1'),
+        ('two.txt', b'data2'),
+    ]
+    
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail(
+          sender='sender@example.com',
+          to='recipient@example.com',
+          subject='A Subject',
+          body='',
+          attachments=attachments)
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    sent_message = instance.send_message.call_args[0][0]
+
+    self.assertTrue(sent_message.is_multipart())
+    self.assertEqual('multipart/mixed', sent_message.get_content_type())
+    
+    payloads = sent_message.get_payload()
+    self.assertLen(payloads, 3) # body, and two attachments
+    
+    body_part, attachment_one, attachment_two = payloads
+    self.assertEqual('text/plain', body_part.get_content_type())
+    self.assertEqual('', body_part.get_payload())
+
+    self.assertEqual('one.txt', attachment_one.get_filename())
+    self.assertEqual(b'data1', attachment_one.get_payload(decode=True))
+    
+    self.assertEqual('two.txt', attachment_two.get_filename())
+    self.assertEqual(b'data2', attachment_two.get_payload(decode=True))
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_HtmlBodyOnly(self, mock_smtp):
+    """Tests sending an email with only an HTML body."""
+    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    html_body = '<h1>Just HTML</h1>'
+    
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail(
+          sender='sender@example.com',
+          to='recipient@example.com',
+          subject='A Subject',
+          body='',
+          html=html_body)
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    sent_message = instance.send_message.call_args[0][0]
+
+    self.assertTrue(sent_message.is_multipart())
+    self.assertEqual('multipart/mixed', sent_message.get_content_type())
+    
+    # The first part of the mixed message should be the multipart/alternative.
+    body_payload = sent_message.get_payload(0)
+    self.assertTrue(body_payload.is_multipart())
+    self.assertEqual('multipart/alternative', body_payload.get_content_type())
+
+    # The alternative part should contain both the (empty) text part and the html part.
+    payloads = body_payload.get_payload()
+    self.assertLen(payloads, 2)
+    
+    text_part, html_part = payloads
+    
+    self.assertEqual('text/plain', text_part.get_content_type())
+    self.assertEqual('', text_part.get_payload())
+
+    self.assertEqual('text/html', html_part.get_content_type())
+    self.assertEqual(html_body, html_part.get_payload(decode=True).decode('utf-8'))
 
   @mock.patch('smtplib.SMTP')
   def testSendEmailViaSmtp_WithAttachment(self, mock_smtp):
@@ -1893,6 +1966,29 @@ class SendMailTest(absltest.TestCase):
     self.assertEqual('<foo@bar.com>', str(sent_message['References']))
 
   @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_WithAttachmentContentId(self, mock_smtp):
+    """Tests that attachments with Content-ID are handled correctly."""
+    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    attachment = mail.Attachment(
+        'image.png', b'image data', content_id='<image_id>')
+    
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail(
+          sender='sender@example.com',
+          to='recipient@example.com',
+          subject='A Subject',
+          body='A body.',
+          attachments=[attachment])
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    sent_message = instance.send_message.call_args[0][0]
+    
+    _, attachment_part = sent_message.get_payload()
+    
+    self.assertEqual('<image_id>', attachment_part['Content-ID'])
+
+
+  @mock.patch('smtplib.SMTP')
   def testSendEmailViaSmtp_NoTls(self, mock_smtp):
     """Tests that TLS is not used when disabled."""
     environ = {
@@ -1928,6 +2024,81 @@ class SendMailTest(absltest.TestCase):
 
     instance = mock_smtp.return_value.__enter__.return_value
     instance.login.assert_not_called()
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_WithUnicode(self, mock_smtp):
+    """Tests that unicode characters are handled correctly."""
+    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    
+    sender = u'J\xe9r\xe9my <sender@example.com>'
+    subject = u'Un sujet avec des caract\xe8res sp\xe9ciaux'
+    body = u'La decisi\xf3n ha sido tomada.'
+
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail(
+          sender=sender,
+          to='recipient@example.com',
+          subject=subject,
+          body=body)
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    sent_message = instance.send_message.call_args[0][0]
+
+    self.assertEqual(subject, str(sent_message['Subject']))
+    self.assertEqual(sender, str(sent_message['From']))
+
+    # The SDK wraps even single-body messages in a multipart container.
+    self.assertTrue(sent_message.is_multipart())
+    body_part = sent_message.get_payload(0)
+
+    # Decode the payload of the body part to compare content.
+    decoded_payload = body_part.get_payload(decode=True).decode('utf-8')
+    self.assertEqual(body, decoded_payload)
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_WithAmpHtml(self, mock_smtp):
+    """Tests that AMP HTML is handled correctly."""
+    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    
+    text_body = 'Plain text'
+    html_body = '<h1>HTML</h1>'
+    amp_html_body = '<html ⚡4email><body>AMP</body></html>'
+
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail(
+          sender='sender@example.com',
+          to='recipient@example.com',
+          subject='A Subject',
+          body=text_body,
+          html=html_body,
+          amp_html=amp_html_body)
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    sent_message = instance.send_message.call_args[0][0]
+
+    # The SDK behavior is to wrap the bodies in multipart/mixed.
+    self.assertTrue(sent_message.is_multipart())
+    self.assertEqual('multipart/mixed', sent_message.get_content_type())
+    
+    # The first part of the mixed message should be the multipart/alternative.
+    body_payload = sent_message.get_payload(0)
+    self.assertTrue(body_payload.is_multipart())
+    self.assertEqual('multipart/alternative', body_payload.get_content_type())
+
+    # The alternative part should contain the three body types.
+    payloads = body_payload.get_payload()
+    self.assertLen(payloads, 3)
+    
+    text_part, amp_part, html_part = payloads
+
+    self.assertEqual('text/plain', text_part.get_content_type())
+    self.assertEqual(text_body, text_part.get_payload(decode=True).decode('utf-8'))
+    
+    self.assertEqual('text/x-amp-html', amp_part.get_content_type())
+    self.assertEqual(amp_html_body, amp_part.get_payload(decode=True).decode('utf-8'))
+
+    self.assertEqual('text/html', html_part.get_content_type())
+    self.assertEqual(html_body, html_part.get_payload(decode=True).decode('utf-8'))
 
 
   def testSendMailSuccess(self):
