@@ -45,6 +45,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import functools
 import logging
+import os
+import smtplib
 import typing
 
 from google.appengine.api import api_base_pb2
@@ -1197,20 +1199,69 @@ class _EmailMessageBase(object):
     return self.to_mime_message()
 
   def send(self, make_sync_call=apiproxy_stub_map.MakeSyncCall):
-    """Sends an email message via the Mail API.
+    """Sends an email message via the Mail API or SMTP.
+
+    If the 'USE_SMTP_MAIL_SERVICE' environment variable is set to 'true', this
+    method will send the email via SMTP using credentials from other
+    environment variables. Otherwise, it falls back to the App Engine Mail API.
 
     Args:
       make_sync_call: Method that will make a synchronous call to the API proxy.
     """
-    message = self.ToProto()
-    response = api_base_pb2.VoidProto()
+    if os.environ.get('USE_SMTP_MAIL_SERVICE') == 'true':
+        logging.info('Sending email via SMTP.')
+        mime_message = self.to_mime_message()
 
-    try:
-      make_sync_call('mail', self._API_CALL, message, response)
-    except apiproxy_errors.ApplicationError as e:
-      if e.application_error in ERROR_MAP:
-        raise ERROR_MAP[e.application_error](e.error_detail)
-      raise e
+        # The Bcc header should not be in the final message.
+        if 'Bcc' in mime_message:
+            del mime_message['Bcc']
+
+        recipients = []
+        if hasattr(self, 'to'):
+            recipients.extend(_email_sequence(self.to))
+        if hasattr(self, 'cc'):
+            recipients.extend(_email_sequence(self.cc))
+        if hasattr(self, 'bcc'):
+            recipients.extend(_email_sequence(self.bcc))
+
+        try:
+            host = os.environ['SMTP_HOST']
+            port = int(os.environ.get('SMTP_PORT', 587))
+            user = os.environ.get('SMTP_USER')
+            password = os.environ.get('SMTP_PASSWORD')
+            use_tls = os.environ.get('SMTP_USE_TLS', 'true').lower() == 'true'
+
+            with smtplib.SMTP(host, port) as server:
+                if use_tls:
+                    server.starttls()
+                if user and password:
+                    server.login(user, password)
+                server.send_message(mime_message, from_addr=self.sender, to_addrs=recipients)
+            logging.info('Email sent successfully via SMTP.')
+
+        except smtplib.SMTPAuthenticationError as e:
+            logging.error('SMTP authentication failed: %s', e.smtp_error)
+            raise InvalidSenderError(f'SMTP authentication failed: {e.smtp_error}')
+        except (smtplib.SMTPException, OSError) as e:
+            logging.error('Failed to send email via SMTP: %s', e)
+            raise InternalTransientError(f'Failed to send email via SMTP: {e}')
+        except KeyError as e:
+            logging.error('Missing required SMTP environment variable: %s', e)
+            raise InternalTransientError(f'Missing required SMTP environment variable: {e}')
+
+    else:
+        logging.info('Sending email via App Engine Mail API.')
+        message = self.ToProto()
+        response = api_base_pb2.VoidProto()
+
+        try:
+          make_sync_call('mail', self._API_CALL, message, response)
+          logging.info('Email sent successfully via App Engine Mail API.')
+        except apiproxy_errors.ApplicationError as e:
+          logging.error('App Engine Mail API error: %s', e)
+          if e.application_error in ERROR_MAP:
+            raise ERROR_MAP[e.application_error](e.error_detail)
+          raise e
 
 
   def Send(self, *args, **kwds):

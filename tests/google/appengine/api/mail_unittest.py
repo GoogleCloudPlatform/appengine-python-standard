@@ -44,6 +44,10 @@ from google.appengine.runtime import apiproxy_errors
 import six
 
 from absl.testing import absltest
+try:
+  from unittest import mock
+except ImportError:
+  import mock
 
 
 
@@ -1626,6 +1630,89 @@ class SendMailTest(absltest.TestCase):
 
 
     mail.send_mail(make_sync_call=FakeMakeSyncCall, *positional, **parameters)
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp(self, mock_smtp):
+    """Tests that mail.send_mail uses SMTP when configured."""
+    environ = {
+        'USE_SMTP_MAIL_SERVICE': 'true',
+        'SMTP_HOST': 'smtp.example.com',
+        'SMTP_PORT': '587',
+        'SMTP_USER': 'user',
+        'SMTP_PASSWORD': 'password',
+        'SMTP_USE_TLS': 'true',
+    }
+
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail(
+          sender='sender@example.com',
+          to='recipient@example.com',
+          subject='A Subject',
+          body='A body.',
+          cc='cc@example.com',
+          bcc='bcc@example.com')
+
+    # Check that smtplib.SMTP was called with the correct host and port
+    mock_smtp.assert_called_once_with('smtp.example.com', 587)
+
+    # Check that the SMTP instance was used correctly
+    instance = mock_smtp.return_value.__enter__.return_value
+    instance.starttls.assert_called_once()
+    instance.login.assert_called_once_with('user', 'password')
+    self.assertEqual(1, instance.send_message.call_count)
+
+    # Check the arguments of send_message
+    sent_message = instance.send_message.call_args[0][0]
+    from_addr = instance.send_message.call_args[1]['from_addr']
+    to_addrs = instance.send_message.call_args[1]['to_addrs']
+
+    self.assertEqual('sender@example.com', from_addr)
+    self.assertCountEqual(['recipient@example.com', 'cc@example.com', 'bcc@example.com'], to_addrs)
+    
+    # Check the message headers
+    self.assertEqual('A Subject', str(sent_message['Subject']))
+    self.assertEqual('sender@example.com', str(sent_message['From']))
+    self.assertEqual('recipient@example.com', str(sent_message['To']))
+    self.assertEqual('cc@example.com', str(sent_message['Cc']))
+    self.assertNotIn('Bcc', sent_message)
+
+  @mock.patch('smtplib.SMTP')
+  def testSendEmailViaSmtp_MultipleRecipients(self, mock_smtp):
+    """Tests that mail.send_mail handles multiple recipients via SMTP."""
+    environ = {
+        'USE_SMTP_MAIL_SERVICE': 'true',
+        'SMTP_HOST': 'smtp.example.com',
+        'SMTP_PORT': '587',
+        'SMTP_USER': 'user',
+        'SMTP_PASSWORD': 'password',
+        'SMTP_USE_TLS': 'true',
+    }
+    
+    to_list = ['to1@example.com', 'to2@example.com']
+    cc_list = ['cc1@example.com', 'cc2@example.com']
+    bcc_list = ['bcc1@example.com', 'bcc2@example.com']
+
+    with mock.patch.dict('os.environ', environ):
+      mail.send_mail(
+          sender='sender@example.com',
+          to=to_list,
+          subject='A Subject',
+          body='A body.',
+          cc=cc_list,
+          bcc=bcc_list)
+
+    instance = mock_smtp.return_value.__enter__.return_value
+    sent_message = instance.send_message.call_args[0][0]
+    to_addrs = instance.send_message.call_args[1]['to_addrs']
+
+    # Check that all recipients are in the `to_addrs` list for the SMTP server
+    self.assertCountEqual(to_list + cc_list + bcc_list, to_addrs)
+    
+    # Check the message headers
+    self.assertEqual(', '.join(to_list), str(sent_message['To']))
+    self.assertEqual(', '.join(cc_list), str(sent_message['Cc']))
+    self.assertNotIn('Bcc', sent_message)  # Bcc should not be in the headers
+
 
   def testSendMailSuccess(self):
     """Test the case where sendmail results are ok."""
