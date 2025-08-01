@@ -1208,7 +1208,7 @@ class _EmailMessageBase(object):
     Args:
       make_sync_call: Method that will make a synchronous call to the API proxy.
     """
-    if os.environ.get('USE_SMTP_MAIL_SERVICE') == 'true':
+    if os.environ.get('APPENGINE_USE_SMTP_MAIL_SERVICE') == 'true':
         logging.info('Sending email via SMTP.')
         mime_message = self.to_mime_message()
 
@@ -1218,7 +1218,7 @@ class _EmailMessageBase(object):
 
         recipients = []
         if isinstance(self, AdminEmailMessage):
-            admin_emails = os.environ.get('ADMIN_EMAIL_RECIPIENTS')
+            admin_emails = os.environ.get('APPENGINE_ADMIN_EMAIL_RECIPIENTS')
             if admin_emails:
                 recipients.extend(admin_emails.split(','))
         else:
@@ -1233,11 +1233,11 @@ class _EmailMessageBase(object):
             raise MissingRecipientsError()
 
         try:
-            host = os.environ['SMTP_HOST']
-            port = int(os.environ.get('SMTP_PORT', 587))
-            user = os.environ.get('SMTP_USER')
-            password = os.environ.get('SMTP_PASSWORD')
-            use_tls = os.environ.get('SMTP_USE_TLS', 'true').lower() == 'true'
+            host = os.environ['APPENGINE_SMTP_HOST']
+            port = int(os.environ.get('APPENGINE_SMTP_PORT', 587))
+            user = os.environ.get('APPENGINE_SMTP_USER')
+            password = os.environ.get('APPENGINE_SMTP_PASSWORD')
+            use_tls = os.environ.get('APPENGINE_SMTP_USE_TLS', 'true').lower() == 'true'
 
             with smtplib.SMTP(host, port) as server:
                 if use_tls:

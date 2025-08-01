@@ -1636,12 +1636,12 @@ class SendMailTest(absltest.TestCase):
   def testSendEmailViaSmtp(self, mock_smtp):
     """Tests that mail.send_mail uses SMTP when configured."""
     environ = {
-        'USE_SMTP_MAIL_SERVICE': 'true',
-        'SMTP_HOST': 'smtp.example.com',
-        'SMTP_PORT': '587',
-        'SMTP_USER': 'user',
-        'SMTP_PASSWORD': 'password',
-        'SMTP_USE_TLS': 'true',
+        'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true',
+        'APPENGINE_SMTP_HOST': 'smtp.example.com',
+        'APPENGINE_SMTP_PORT': '587',
+        'APPENGINE_SMTP_USER': 'user',
+        'APPENGINE_SMTP_PASSWORD': 'password',
+        'APPENGINE_SMTP_USE_TLS': 'true',
     }
 
     with mock.patch.dict('os.environ', environ):
@@ -1681,12 +1681,12 @@ class SendMailTest(absltest.TestCase):
   def testSendEmailViaSmtp_MultipleRecipients(self, mock_smtp):
     """Tests that mail.send_mail handles multiple recipients via SMTP."""
     environ = {
-        'USE_SMTP_MAIL_SERVICE': 'true',
-        'SMTP_HOST': 'smtp.example.com',
-        'SMTP_PORT': '587',
-        'SMTP_USER': 'user',
-        'SMTP_PASSWORD': 'password',
-        'SMTP_USE_TLS': 'true',
+        'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true',
+        'APPENGINE_SMTP_HOST': 'smtp.example.com',
+        'APPENGINE_SMTP_PORT': '587',
+        'APPENGINE_SMTP_USER': 'user',
+        'APPENGINE_SMTP_PASSWORD': 'password',
+        'APPENGINE_SMTP_USE_TLS': 'true',
     }
     
     to_list = ['to1@example.com', 'to2@example.com']
@@ -1718,9 +1718,9 @@ class SendMailTest(absltest.TestCase):
   def testSendEmailViaSmtp_HtmlBody(self, mock_smtp):
     """Tests that mail.send_mail handles HTML bodies correctly."""
     environ = {
-        'USE_SMTP_MAIL_SERVICE': 'true',
-        'SMTP_HOST': 'smtp.example.com',
-        'SMTP_PORT': '587',
+        'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true',
+        'APPENGINE_SMTP_HOST': 'smtp.example.com',
+        'APPENGINE_SMTP_PORT': '587',
     }
     
     text_body = 'This is the plain text body.'
@@ -1762,7 +1762,7 @@ class SendMailTest(absltest.TestCase):
   @mock.patch('smtplib.SMTP')
   def testSendEmailViaSmtp_AttachmentsOnly(self, mock_smtp):
     """Tests sending an email with only attachments."""
-    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    environ = {'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true', 'APPENGINE_SMTP_HOST': 'smtp.example.com'}
     attachments = [
         ('one.txt', b'data1'),
         ('two.txt', b'data2'),
@@ -1798,7 +1798,7 @@ class SendMailTest(absltest.TestCase):
   @mock.patch('smtplib.SMTP')
   def testSendEmailViaSmtp_HtmlBodyOnly(self, mock_smtp):
     """Tests sending an email with only an HTML body."""
-    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    environ = {'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true', 'APPENGINE_SMTP_HOST': 'smtp.example.com'}
     html_body = '<h1>Just HTML</h1>'
     
     with mock.patch.dict('os.environ', environ):
@@ -1835,7 +1835,7 @@ class SendMailTest(absltest.TestCase):
   @mock.patch('smtplib.SMTP')
   def testSendEmailViaSmtp_WithAttachment(self, mock_smtp):
     """Tests that mail.send_mail handles a single attachment correctly."""
-    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    environ = {'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true', 'APPENGINE_SMTP_HOST': 'smtp.example.com'}
     attachment_data = b'This is attachment data.'
     
     with mock.patch.dict('os.environ', environ):
@@ -1863,7 +1863,7 @@ class SendMailTest(absltest.TestCase):
   @mock.patch('smtplib.SMTP')
   def testSendEmailViaSmtp_WithMultipleAttachments(self, mock_smtp):
     """Tests that mail.send_mail handles multiple attachments correctly."""
-    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    environ = {'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true', 'APPENGINE_SMTP_HOST': 'smtp.example.com'}
     attachments = [
         ('one.txt', b'data1'),
         ('two.txt', b'data2'),
@@ -1896,7 +1896,7 @@ class SendMailTest(absltest.TestCase):
   @mock.patch('smtplib.SMTP')
   def testSendEmailViaSmtp_WithHtmlAndAttachment(self, mock_smtp):
     """Tests handling of both HTML body and attachments."""
-    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    environ = {'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true', 'APPENGINE_SMTP_HOST': 'smtp.example.com'}
     
     with mock.patch.dict('os.environ', environ):
       mail.send_mail(
@@ -1928,7 +1928,7 @@ class SendMailTest(absltest.TestCase):
   @mock.patch('smtplib.SMTP')
   def testSendEmailViaSmtp_WithReplyTo(self, mock_smtp):
     """Tests that the Reply-To header is handled correctly."""
-    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    environ = {'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true', 'APPENGINE_SMTP_HOST': 'smtp.example.com'}
     
     with mock.patch.dict('os.environ', environ):
       mail.send_mail(
@@ -1946,7 +1946,7 @@ class SendMailTest(absltest.TestCase):
   @mock.patch('smtplib.SMTP')
   def testSendEmailViaSmtp_WithCustomHeaders(self, mock_smtp):
     """Tests that custom headers are handled correctly."""
-    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    environ = {'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true', 'APPENGINE_SMTP_HOST': 'smtp.example.com'}
     headers = {
         'List-Id': 'some-list <list.example.com>',
         'References': '<foo@bar.com>'
@@ -1969,7 +1969,7 @@ class SendMailTest(absltest.TestCase):
   @mock.patch('smtplib.SMTP')
   def testSendEmailViaSmtp_WithAttachmentContentId(self, mock_smtp):
     """Tests that attachments with Content-ID are handled correctly."""
-    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    environ = {'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true', 'APPENGINE_SMTP_HOST': 'smtp.example.com'}
     attachment = mail.Attachment(
         'image.png', b'image data', content_id='<image_id>')
     
@@ -1993,9 +1993,9 @@ class SendMailTest(absltest.TestCase):
   def testSendEmailViaSmtp_NoTls(self, mock_smtp):
     """Tests that TLS is not used when disabled."""
     environ = {
-        'USE_SMTP_MAIL_SERVICE': 'true',
-        'SMTP_HOST': 'smtp.example.com',
-        'SMTP_USE_TLS': 'false',
+        'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true',
+        'APPENGINE_SMTP_HOST': 'smtp.example.com',
+        'APPENGINE_SMTP_USE_TLS': 'false',
     }
     
     with mock.patch.dict('os.environ', environ):
@@ -2012,8 +2012,8 @@ class SendMailTest(absltest.TestCase):
   def testSendEmailViaSmtp_NoAuth(self, mock_smtp):
     """Tests that login is not attempted when credentials are not provided."""
     environ = {
-        'USE_SMTP_MAIL_SERVICE': 'true',
-        'SMTP_HOST': 'smtp.example.com',
+        'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true',
+        'APPENGINE_SMTP_HOST': 'smtp.example.com',
     }
     
     with mock.patch.dict('os.environ', environ):
@@ -2031,9 +2031,9 @@ class SendMailTest(absltest.TestCase):
     """Tests that admin emails are sent to the list in the env var."""
     admin_list = 'admin1@example.com,admin2@example.com'
     environ = {
-        'USE_SMTP_MAIL_SERVICE': 'true',
-        'SMTP_HOST': 'smtp.example.com',
-        'ADMIN_EMAIL_RECIPIENTS': admin_list,
+        'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true',
+        'APPENGINE_SMTP_HOST': 'smtp.example.com',
+        'APPENGINE_ADMIN_EMAIL_RECIPIENTS': admin_list,
     }
     
     with mock.patch.dict('os.environ', environ):
@@ -2049,7 +2049,7 @@ class SendMailTest(absltest.TestCase):
   @mock.patch('smtplib.SMTP')
   def testSendEmailViaSmtp_AmpHtmlBody(self, mock_smtp):
     """Tests that mail.send_mail handles AMP HTML bodies correctly."""
-    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    environ = {'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true', 'APPENGINE_SMTP_HOST': 'smtp.example.com'}
     amp_html_body = '<html><body>AMP for Email is awesome!</body></html>'
     
     with mock.patch.dict('os.environ', environ):
@@ -2090,8 +2090,8 @@ class SendMailTest(absltest.TestCase):
   def testSendAdminEmailViaSmtp_NoRecipients(self, mock_smtp):
     """Tests that an error is raised when no admin recipients are specified."""
     environ = {
-        'USE_SMTP_MAIL_SERVICE': 'true',
-        'SMTP_HOST': 'smtp.example.com',
+        'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true',
+        'APPENGINE_SMTP_HOST': 'smtp.example.com',
     }
     
     with mock.patch.dict('os.environ', environ):
@@ -2105,10 +2105,10 @@ class SendMailTest(absltest.TestCase):
   def testSendEmailViaSmtp_AuthenticationError(self, mock_smtp):
     """Tests that an authentication error is handled correctly."""
     environ = {
-        'USE_SMTP_MAIL_SERVICE': 'true',
-        'SMTP_HOST': 'smtp.example.com',
-        'SMTP_USER': 'user',
-        'SMTP_PASSWORD': 'password',
+        'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true',
+        'APPENGINE_SMTP_HOST': 'smtp.example.com',
+        'APPENGINE_SMTP_USER': 'user',
+        'APPENGINE_SMTP_PASSWORD': 'password',
     }
     
     instance = mock_smtp.return_value.__enter__.return_value
@@ -2126,8 +2126,8 @@ class SendMailTest(absltest.TestCase):
   def testSendEmailViaSmtp_ConnectionError(self, mock_smtp):
     """Tests that a connection error is handled correctly."""
     environ = {
-        'USE_SMTP_MAIL_SERVICE': 'true',
-        'SMTP_HOST': 'smtp.example.com',
+        'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true',
+        'APPENGINE_SMTP_HOST': 'smtp.example.com',
     }
     
     mock_smtp.side_effect = smtplib.SMTPConnectError(550, 'Connection refused')
@@ -2144,8 +2144,8 @@ class SendMailTest(absltest.TestCase):
   def testSendEmailViaSmtp_ConnectionError(self, mock_smtp):
     """Tests that a connection error is handled correctly."""
     environ = {
-        'USE_SMTP_MAIL_SERVICE': 'true',
-        'SMTP_HOST': 'smtp.example.com',
+        'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true',
+        'APPENGINE_SMTP_HOST': 'smtp.example.com',
     }
     
     mock_smtp.side_effect = smtplib.SMTPConnectError(550, 'Connection refused')
@@ -2161,7 +2161,7 @@ class SendMailTest(absltest.TestCase):
   @mock.patch('smtplib.SMTP')
   def testSendEmailViaSmtp_WithUnicode(self, mock_smtp):
     """Tests that unicode characters are handled correctly."""
-    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    environ = {'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true', 'APPENGINE_SMTP_HOST': 'smtp.example.com'}
     
     sender = u'J\xe9r\xe9my <sender@example.com>'
     subject = u'Un sujet avec des caract\xe8res sp\xe9ciaux'
@@ -2191,7 +2191,7 @@ class SendMailTest(absltest.TestCase):
   @mock.patch('smtplib.SMTP')
   def testSendEmailViaSmtp_WithAmpHtml(self, mock_smtp):
     """Tests that AMP HTML is handled correctly."""
-    environ = {'USE_SMTP_MAIL_SERVICE': 'true', 'SMTP_HOST': 'smtp.example.com'}
+    environ = {'APPENGINE_USE_SMTP_MAIL_SERVICE': 'true', 'APPENGINE_SMTP_HOST': 'smtp.example.com'}
     
     text_body = 'Plain text'
     html_body = '<h1>HTML</h1>'
