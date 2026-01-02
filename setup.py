@@ -18,6 +18,8 @@ setuptools.setup(
         "attrs>=21.2.0",
         "frozendict>=1.2",
         "google-auth>=1.31.0",
+        "grpcio>=1.50.0",
+        "grpcio-tools>=1.50.0",
         "mock>=4.0.3",
         "Pillow>=8.3.1",
         "protobuf>=3.19.0",
