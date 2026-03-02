@@ -5,3 +5,4 @@ src/appengine_python_standard.egg-info
 .DS_Store
 build/*
 appengine_python_standard-*-py*.egg
+.coverage
