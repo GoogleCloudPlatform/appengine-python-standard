@@ -23,6 +23,7 @@ setuptools.setup(
         "protobuf>=3.19.0",
         "pytz>=2021.1",
         "requests>=2.25.1",
+        "rsa",
         "ruamel.yaml>=0.17.7",
         "six>=1.15.0",
         "urllib3>=1.26.2,<2",
