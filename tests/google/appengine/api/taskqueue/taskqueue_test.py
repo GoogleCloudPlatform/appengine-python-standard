@@ -34,6 +34,7 @@ from google.appengine.api import apiproxy_rpc
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import datastore
 from google.appengine.api import datastore_errors
+from google.appengine.api import datastore_file_stub
 from google.appengine.api import full_app_id
 from google.appengine.api import module_testutil
 from google.appengine.api import modules
@@ -3364,8 +3365,13 @@ class QueueTransactionalAddTest(HttpEnvironTest):
 
     full_app_id.put(self.APP_ID)
 
+
   def SetupMox(self):
     self.mox = mox.Mox()
+    apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()
+    self.datastore_stub = datastore_file_stub.DatastoreFileStub(
+        'test-app-id', '/dev/null', '/dev/null')
+    apiproxy_stub_map.apiproxy.RegisterStub('datastore_v3', self.datastore_stub)
     self.mox.StubOutWithMock(apiproxy_stub_map, 'CreateRPC')
 
   def tearDown(self):
@@ -3499,8 +3505,15 @@ class QueueTransactionalAddTest(HttpEnvironTest):
           q, [Task(method='PULL', payload=longstring) for _ in range(3)],
           transactional=True)
 
+    def SetDatastoreResponse(service, method, request, response):
+      response.app = 'app'
+      response.handle = self.tx_handle
+
     apiproxy_stub_map.CreateRPC('datastore_v3',
-                                mox.IgnoreArg()).WithSideEffects(MockRPC)
+                                mox.IgnoreArg()).WithSideEffects(
+                                    functools.partial(
+                                        MockRPC,
+                                        populate_response=SetDatastoreResponse))
     apiproxy_stub_map.CreateRPC('datastore_v3',
                                 mox.IgnoreArg()).WithSideEffects(MockRPC)
 
