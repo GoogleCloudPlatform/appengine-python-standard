@@ -529,7 +529,7 @@ class ImagesServiceStub(apiproxy_stub.APIProxyStub):
     new_width, new_height = self._CalculateNewDimensions(
         current_width, current_height, width, height, crop_to_fit,
         allow_stretch)
-    new_image = image.resize((new_width, new_height), Image.ANTIALIAS)
+    new_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
     if crop_to_fit and (new_width > width or new_height > height):
 
       left = int((new_width - width) * transform.crop_offset_x)
