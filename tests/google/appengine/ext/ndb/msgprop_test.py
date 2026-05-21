@@ -45,43 +45,10 @@ class Color(messages.Enum):
   BLUE = 450
 
 
-SAMPLE_PB1 = r"""key <
-  app: "ndb-test-app-id"
-  path <
-    Element {
-      type: "Storage"
-      id: 1
-    }
-  >
->
-entity_group <
-  Element {
-    type: "Storage"
-    id: 1
-  }
->
-property <
-  name: "greet.text"
-  value <
-    stringValue: "abc"
-  >
-  multiple: false
->
-raw_property <
-  meaning: 14
-  name: "greet.__protobuf__"
-  value <
-    stringValue: "\n\003abc\020{"
-  >
-  multiple: false
->
-"""
-
-
 SAMPLE_PB2 = r"""key {
   app: "ndb-test-app-id"
   path {
-    Element {
+    element {
       type: "Storage"
       id: 1
     }
@@ -103,7 +70,7 @@ raw_property {
   }
 }
 entity_group {
-  Element {
+  element {
     type: "Storage"
     id: 1
   }
@@ -139,12 +106,7 @@ class MsgPropTests(test_utils.NDBTest):
     self.assertEqual(result.greet, Greeting(when=123, text='abc'))
     self.assertEqual(result,
                      Storage(greet=Greeting(when=123, text='abc'), key=key))
-    try:
-      self.assertEqual(str(result._to_pb()), SAMPLE_PB2)
-    except AssertionError:
-
-
-      self.assertEqual(str(result._to_pb()), SAMPLE_PB1)
+    self.assertEqual(str(result._to_pb()), SAMPLE_PB2)
 
   def testValidator(self):
     logs = []

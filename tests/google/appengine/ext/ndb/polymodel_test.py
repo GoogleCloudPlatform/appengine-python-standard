@@ -344,7 +344,7 @@ TOM_PB2 = """\
 key {
   app: "ndb-test-app-id"
   path {
-    Element {
+    element {
       type: "Animal"
     }
   }
@@ -399,7 +399,7 @@ TOM_PB1 = """\
 key <
   app: "ndb-test-app-id"
   path <
-    Element {
+    element {
       type: "Animal"
     }
   >
