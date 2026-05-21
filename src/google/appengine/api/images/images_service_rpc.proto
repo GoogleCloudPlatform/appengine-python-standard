@@ -1,0 +1,37 @@
+// Copyright 2008 Google Inc. All Rights Reserved.
+// Author: ttrimble@google.com (Troy Trimble)
+
+// edition = "2023";
+
+// Some generic_services option(s) added automatically.
+// See:  http://go/proto2-generic-services-default
+package apphosting;
+
+import "images_service.proto";
+
+service ImagesService {
+  // Perform transformations on the given image and return the result.
+  rpc Transform(ImagesTransformRequest) returns (ImagesTransformResponse) {}
+
+  // Composite images onto a canvas and return the result.
+  rpc Composite(ImagesCompositeRequest) returns (ImagesCompositeResponse) {}
+
+  // Calculate the histogram of an image and return it.
+  rpc Histogram(ImagesHistogramRequest) returns (ImagesHistogramResponse) {}
+
+  // Obtains a URL that can serve the image dynamically at different sizes.
+  // The URL format will look like the following:
+  //
+  // http://lh3.ggpht.com/SomeEncryptedString
+  //
+  // to serve this image at different sizes just append the size option:
+  //
+  // http://lh3.ggpht.com/SomeEncryptedString=s128 (serves a 128 sized image)
+  //
+  // The allowed thumbnail sizes are any integer in the range [0, 1600].
+  rpc GetUrlBase(ImagesGetUrlBaseRequest) returns (ImagesGetUrlBaseResponse) {}
+
+  // Delete a URL that was created with GetUrlBase
+  rpc DeleteUrlBase(ImagesDeleteUrlBaseRequest)
+      returns (ImagesDeleteUrlBaseResponse) {}
+}
