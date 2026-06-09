@@ -27,16 +27,16 @@ class ImagesGrpcTest(absltest.TestCase):
 
   def setUp(self):
     super().setUp()
-    os.environ['USE_CUSTOM_IMAGES_GRPC_SERVICE'] = 'True'
+    os.environ[images.USE_CUSTOM_IMAGES_GRPC_SERVICE] = 'True'
     self.use_grpc_patcher = mock.patch('google.appengine.api.images._USE_GRPC', True)
     self.use_grpc_patcher.start()
-    os.environ['IMAGES_SERVICE_ENDPOINT'] = 'https://localhost'
+    os.environ[images.IMAGES_SERVICE_ENDPOINT] = 'https://localhost'
 
   def tearDown(self):
     self.use_grpc_patcher.stop()
     super().tearDown()
-    del os.environ['USE_CUSTOM_IMAGES_GRPC_SERVICE']
-    del os.environ['IMAGES_SERVICE_ENDPOINT']
+    del os.environ[images.USE_CUSTOM_IMAGES_GRPC_SERVICE]
+    del os.environ[images.IMAGES_SERVICE_ENDPOINT]
 
   @mock.patch('google.appengine.api.images._make_grpc_call')
   def test_execute_transforms_async_grpc(self, mock_make_grpc_call):

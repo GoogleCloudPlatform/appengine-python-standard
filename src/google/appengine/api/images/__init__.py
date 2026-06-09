@@ -54,7 +54,12 @@ import six
 from six.moves import range
 
 
-_USE_GRPC = bool(os.environ.get('USE_CUSTOM_IMAGES_GRPC_SERVICE'))
+# Image server configuration environment variable names.
+USE_CUSTOM_IMAGES_GRPC_SERVICE = 'APPENGINE_USE_CUSTOM_IMAGES_GRPC_SERVICE'
+IMAGES_SERVICE_ENDPOINT = 'APPENGINE_IMAGES_SERVICE_ENDPOINT'
+
+
+_USE_GRPC = bool(os.environ.get(USE_CUSTOM_IMAGES_GRPC_SERVICE))
 
 
 class _FakeRpc(object):
@@ -69,9 +74,10 @@ class _FakeRpc(object):
 
 def _make_grpc_call(method_name, request):
     """Creates an authenticated gRPC channel and makes an RPC call."""
-    endpoint = os.environ.get('IMAGES_SERVICE_ENDPOINT')
+    endpoint = os.environ.get(IMAGES_SERVICE_ENDPOINT)
     if not endpoint:
-        raise ValueError("IMAGES_SERVICE_ENDPOINT environment variable not set")
+        raise ValueError(
+            "%s environment variable not set" % IMAGES_SERVICE_ENDPOINT)
 
     parsed = six.moves.urllib.parse.urlparse(endpoint)
     target_host = parsed.netloc + ':443'
