@@ -8,19 +8,22 @@ jobs:
  build-and-publish:
     name: Build and Publish
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e
       with:
         ref: ${{ github.event.release.tag_name }}
+        persist-credentials: false
     - name: Install Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@e9aba2c848f5ebd159c070c61ea2c4e2b122355e
     - name: Install build dependencies
       run: python -m pip install -U setuptools build wheel
     - name: Build distributions
       run: python -m build
     - name: Publish
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@c885e3684f3c07e1dbfaedb92012a0eb38630bf8
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
