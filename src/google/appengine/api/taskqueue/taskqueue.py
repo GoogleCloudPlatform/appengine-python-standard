@@ -46,6 +46,8 @@ from google.appengine.api import namespace_manager
 from google.appengine.api import urlfetch
 from google.appengine.api.taskqueue import taskqueue_service_bytes_pb2 as taskqueue_service_pb2
 from google.appengine.runtime import apiproxy_errors
+from google.appengine.api.taskqueue import cloudtask
+from google.appengine.api.taskqueue import cloudtask_transactional
 from google.appengine.runtime import context
 import six
 from six.moves import urllib
@@ -1557,13 +1559,13 @@ class QueueStatistics(object):
 
       return []
 
-    rpc = create_rpc(deadline)
-    cls.fetch_async(queue_or_queues, rpc)
-    return rpc.get_result()
+    return cls.fetch_async(queue_or_queues).get_result()
 
   @classmethod
   def _FetchMultipleQueues(cls, queues, multiple, rpc=None):
     """Internal implementation of fetch stats where queues must be a list."""
+    if cloudtask.is_cloudtask_push_queue_enabled():
+      return cloudtask._CloudTaskRPC(lambda: cloudtask.fetch_queue_stats_in_cloud_tasks(queues, multiple))
 
     def ResultHook(rpc):
       """Processes the TaskQueueFetchQueueStatsResponse."""
@@ -1654,6 +1656,10 @@ class Queue(object):
     Raises:
       Error-subclass on application errors.
     """
+    if cloudtask.is_cloudtask_push_queue_enabled():
+      cloudtask.purge_queue_in_cloud_tasks(self.__name)
+      return
+
     request = taskqueue_service_pb2.TaskQueuePurgeQueueRequest()
     response = taskqueue_service_pb2.TaskQueuePurgeQueueResponse()
 
@@ -1789,6 +1795,9 @@ class Queue(object):
 
   def __DeleteTasks(self, tasks, multiple, rpc=None):
     """Internal implementation of delete_tasks_async(), tasks must be a list."""
+    if (cloudtask.is_cloudtask_push_queue_enabled()
+        and not any(getattr(t, 'method', None) == 'PULL' for t in tasks)):
+      return cloudtask._CloudTaskRPC(lambda: cloudtask.delete_tasks_in_cloud_tasks(self.__name, tasks, multiple))
 
     def ResultHook(rpc):
       """Processes the TaskQueueDeleteResponse."""
@@ -2133,6 +2142,16 @@ class Queue(object):
       raise InvalidTaskError(
           'You cannot add both push and pull tasks in a single call.')
 
+    # Intercept for Cloud Tasks backend
+    if (cloudtask.is_cloudtask_push_queue_enabled()
+        and has_push_task
+        and len(tasks) >= 1):
+      if transactional:
+        cloudtask_transactional.add_transactional_tasks(self.__name, tasks, multiple)
+        return cloudtask._CloudTaskRPC(lambda: tasks if multiple else tasks[0])
+      else:
+        return cloudtask._CloudTaskRPC(lambda: cloudtask.create_tasks_in_cloud_tasks(self.__name, tasks, multiple))
+
     if has_push_task:
       fill_function = self.__FillAddPushTasksRequest
     else:
@@ -2471,9 +2490,7 @@ class Queue(object):
       Error-subclass on application errors.
     """
     _ValidateDeadline(deadline)
-    rpc = create_rpc(deadline)
-    self.fetch_statistics_async(rpc)
-    return rpc.get_result()
+    return self.fetch_statistics_async().get_result()
 
   def __repr__(self):
     ATTRS = ['name']
@@ -2596,3 +2613,5 @@ def add(*args, **kwargs):
   queue_name = kwargs.pop('queue_name', _DEFAULT_QUEUE)
   return Task(*args, **kwargs).add(
       queue_name=queue_name, transactional=transactional)
+
+

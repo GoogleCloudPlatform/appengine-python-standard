@@ -28,6 +28,7 @@ setuptools.setup(
         "six>=1.15.0",
         "urllib3>=1.26.2,<2",
         "legacy-cgi>=2.6.2; python_version>='3.10'",
+        "google-cloud-tasks>=2.24.0",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
