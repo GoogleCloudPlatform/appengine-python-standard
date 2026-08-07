@@ -1815,8 +1815,8 @@ def composite_async(inputs,
     BadRequestError: If more than `MAX_TRANSFORMS_PER_REQUEST` compositions
         have been requested, if the canvas width or height is greater than
         4000 or less than or equal to 0, if the color is invalid, if the opacity
-        is outside the range [0,1] for any composition option, or the anchor is
-        invalid.
+        is outside the range [0,1] for any composition option, if the anchor is
+        invalid, or if any image data is invalid.
   """
   if (not isinstance(width, six.integer_types) or
       not isinstance(height, six.integer_types) or
@@ -1874,7 +1874,10 @@ def composite_async(inputs,
       image_map[image] = len(request.image)
 
       if isinstance(image, Image):
-        image._set_imagedata(request.image.add())
+        try:
+          image._set_imagedata(request.image.add())
+        except Exception as e:
+          raise BadRequestError("Invalid image data: %s" % e)
       else:
         request.image.add().content = image
 
