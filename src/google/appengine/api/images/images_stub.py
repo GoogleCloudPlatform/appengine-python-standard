@@ -529,7 +529,7 @@ class ImagesServiceStub(apiproxy_stub.APIProxyStub):
     new_width, new_height = self._CalculateNewDimensions(
         current_width, current_height, width, height, crop_to_fit,
         allow_stretch)
-    new_image = image.resize((new_width, new_height), Image.ANTIALIAS)
+    new_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
     if crop_to_fit and (new_width > width or new_height > height):
 
       left = int((new_width - width) * transform.crop_offset_x)
@@ -711,18 +711,18 @@ class ImagesServiceStub(apiproxy_stub.APIProxyStub):
 
 
     if orientation == 2:
-      image = image.transpose(Image.FLIP_LEFT_RIGHT)
+      image = image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
     elif orientation == 3:
       image = image.rotate(180)
     elif orientation == 4:
-      image = image.transpose(Image.FLIP_TOP_BOTTOM)
+      image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
     elif orientation == 5:
-      image = image.transpose(Image.FLIP_TOP_BOTTOM)
+      image = image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
       image = image.rotate(270)
     elif orientation == 6:
       image = image.rotate(270)
     elif orientation == 7:
-      image = image.transpose(Image.FLIP_LEFT_RIGHT)
+      image = image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
       image = image.rotate(270)
     elif orientation == 8:
       image = image.rotate(90)
@@ -789,11 +789,11 @@ class ImagesServiceStub(apiproxy_stub.APIProxyStub):
 
       elif transform.HasField('horizontal_flip'):
 
-        new_image = new_image.transpose(Image.FLIP_LEFT_RIGHT)
+        new_image = new_image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
 
       elif transform.HasField('vertical_flip'):
 
-        new_image = new_image.transpose(Image.FLIP_TOP_BOTTOM)
+        new_image = new_image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
 
       elif (transform.HasField('crop_left_x') or
             transform.HasField('crop_top_y') or

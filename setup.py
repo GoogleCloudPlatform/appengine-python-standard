@@ -21,7 +21,7 @@ setuptools.setup(
         "grpcio>=1.50.0",
         "grpcio-tools>=1.50.0",
         "mock>=4.0.3",
-        "Pillow>=8.3.1",
+        "Pillow>=10.3.0",
         "protobuf>=3.19.0",
         "pytz>=2021.1",
         "requests>=2.25.1",
