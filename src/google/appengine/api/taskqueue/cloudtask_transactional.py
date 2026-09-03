@@ -26,7 +26,7 @@ from google.api_core import exceptions as google_exceptions
 from google.appengine.api import datastore
 from google.appengine.api.taskqueue import cloudtask
 from google.appengine.api.taskqueue import taskqueue
-from google.cloud import tasks_v2beta3
+from google.cloud import tasks_v2
 from google.protobuf.timestamp_pb2 import Timestamp
 
 try:
@@ -117,7 +117,7 @@ def add_transactional_tasks(queue_name, tasks, multiple):
 
 def build_task_payload_for_transactional_task(queue_name, task):
   """Builds the Cloud Tasks task payload for a transactional task."""
-  client = tasks_v2beta3.CloudTasksClient()
+  client = tasks_v2.CloudTasksClient()
   project = cloudtask._get_project_id()
   region = cloudtask._get_region()
 
@@ -126,7 +126,7 @@ def build_task_payload_for_transactional_task(queue_name, task):
 
 def dispatch_task_payload(queue_name, task_payload):
   """Dispatches a pre-built task payload immediately using CloudTasksClient."""
-  client = tasks_v2beta3.CloudTasksClient()
+  client = tasks_v2.CloudTasksClient()
   project = cloudtask._get_project_id()
   region = cloudtask._get_region()
 

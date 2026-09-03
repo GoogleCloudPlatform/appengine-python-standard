@@ -26,6 +26,7 @@ from google.api_core import exceptions as google_exceptions
 from google.appengine.api import app_identity
 from google.appengine.api.taskqueue import taskqueue
 from google.appengine.api.taskqueue import taskqueue_service_bytes_pb2 as taskqueue_service_pb2
+from google.cloud import tasks_v2
 from google.cloud import tasks_v2beta3
 from google.protobuf import duration_pb2
 from google.protobuf import field_mask_pb2
@@ -71,7 +72,7 @@ def create_tasks_in_cloud_tasks(queue_name, tasks, multiple):
 
 def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple):
   """Deletes tasks from a queue using Cloud Tasks Client SDK (supporting BatchDeleteTasks)."""
-  client = tasks_v2beta3.CloudTasksClient()
+  client = tasks_v2.CloudTasksClient()
   project = _get_project_id()
   region = _get_region()
 
@@ -131,7 +132,7 @@ def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple):
 
 def purge_queue_in_cloud_tasks(queue_name):
   """Purges all tasks in a queue using Cloud Tasks API."""
-  client = tasks_v2beta3.CloudTasksClient()
+  client = tasks_v2.CloudTasksClient()
   project = _get_project_id()
   region = _get_region()
 
@@ -147,7 +148,8 @@ def purge_queue_in_cloud_tasks(queue_name):
 
 
 def fetch_queue_stats_in_cloud_tasks(queues, multiple):
-  """Fetches queue statistics for given queues using Cloud Tasks API."""
+  """Fetches queue statistics for given queues using Cloud Tasks API (v2beta3)."""
+  # QueueStats is retained on v2beta3 as it is out of scope for v2 GA
   client = tasks_v2beta3.CloudTasksClient()
   project = _get_project_id()
   region = _get_region()
@@ -306,16 +308,16 @@ def _build_ct_task_payload(queue_name, task, client, project, region):
     else:
       body = task.payload
 
-  http_method = tasks_v2beta3.HttpMethod.POST
+  http_method = tasks_v2.HttpMethod.POST
   if task.method:
     method_map = {
-        'POST': tasks_v2beta3.HttpMethod.POST,
-        'GET': tasks_v2beta3.HttpMethod.GET,
-        'PUT': tasks_v2beta3.HttpMethod.PUT,
-        'DELETE': tasks_v2beta3.HttpMethod.DELETE,
-        'HEAD': tasks_v2beta3.HttpMethod.HEAD,
+        'POST': tasks_v2.HttpMethod.POST,
+        'GET': tasks_v2.HttpMethod.GET,
+        'PUT': tasks_v2.HttpMethod.PUT,
+        'DELETE': tasks_v2.HttpMethod.DELETE,
+        'HEAD': tasks_v2.HttpMethod.HEAD,
     }
-    http_method = method_map.get(task.method, tasks_v2beta3.HttpMethod.POST)
+    http_method = method_map.get(task.method, tasks_v2.HttpMethod.POST)
 
   app_engine_http_request = {
       'http_method': http_method,
@@ -379,7 +381,7 @@ def _build_ct_task_payload(queue_name, task, client, project, region):
 
 def _create_single_task_in_cloud_tasks(queue_name, task, multiple):
   """Helper to create a single task using CloudTasksClient CreateTask API."""
-  client = tasks_v2beta3.CloudTasksClient()
+  client = tasks_v2.CloudTasksClient()
   project = _get_project_id()
   region = _get_region()
 
@@ -410,7 +412,7 @@ def _create_single_task_in_cloud_tasks(queue_name, task, multiple):
 
 def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple):
   """Helper to create tasks in batches using CloudTasksClient BatchCreateTasks API."""
-  client = tasks_v2beta3.CloudTasksClient()
+  client = tasks_v2.CloudTasksClient()
   project = _get_project_id()
   region = _get_region()
 
