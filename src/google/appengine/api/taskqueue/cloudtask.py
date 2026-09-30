@@ -103,6 +103,8 @@ def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple):
       op = client.batch_delete_tasks(
           request={'parent': parent, 'names': task_names}
       )
+      if getattr(op, 'response', None) is None and hasattr(op, 'result') and callable(op.result):
+        op.result()
       metadata = getattr(op, 'metadata', None)
       failed_requests = (
           getattr(
@@ -446,6 +448,9 @@ def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple):
       op = client.batch_create_tasks(
           request={'parent': parent, 'requests': requests_payload}
       )
+      response = getattr(op, 'response', None)
+      if response is None and hasattr(op, 'result') and callable(op.result):
+        response = op.result()
       metadata = getattr(op, 'metadata', None)
       failed_requests = (
           getattr(
@@ -456,9 +461,6 @@ def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple):
           if metadata
           else None
       )
-      response = getattr(op, 'response', None)
-      if response is None and hasattr(op, 'result') and callable(op.result):
-        response = op.result()
       response_tasks = getattr(response, 'tasks', []) if response else []
 
       res_iter = iter(response_tasks)

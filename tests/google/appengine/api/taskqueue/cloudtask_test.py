@@ -355,6 +355,62 @@ class CloudtaskTest(unittest.TestCase):
 
   @mock.patch.dict(os.environ, {'GOOGLE_CLOUD_PROJECT': 'my-proj', 'LOCATION_ID': 'us-central1'})
   @mock.patch('google.cloud.tasks_v2.CloudTasksClient')
+  def test_async_lro_waits_for_result_before_reading_metadata(self, mock_client_cls):
+    mock_client_cls.return_value = self.mock_client
+
+    # Simulate an async LRO where metadata is only populated after op.result() completes
+    class _AsyncCreateOp:
+      def __init__(self):
+        self.metadata = None
+
+      def result(self):
+        self.metadata = tasks_v2.BatchCreateTasksMetadata(
+            failed_requests={
+                1: status_pb2.Status(code=code_pb2.ALREADY_EXISTS, message='Duplicate')
+            }
+        )
+        return tasks_v2.BatchCreateTasksResponse(
+            tasks=[
+                tasks_v2.Task(
+                    name='projects/my-proj/locations/us-central1/queues/default/tasks/async-ok'
+                )
+            ]
+        )
+
+    self.mock_client.batch_create_tasks.return_value = _AsyncCreateOp()
+    t1 = taskqueue.Task(name='async-ok', url='/worker')
+    t2 = taskqueue.Task(name='async-dup', url='/worker')
+    with self.assertRaises(taskqueue.TaskAlreadyExistsError):
+      cloudtask.create_tasks_in_cloud_tasks('default', [t1, t2], multiple=True)
+    self.assertTrue(t1.was_enqueued)
+    self.assertFalse(t2.was_enqueued)
+
+    # Simulate an async LRO for batch_delete_tasks where metadata is populated after op.result()
+    class _AsyncDeleteOp:
+      def __init__(self):
+        self.metadata = None
+        self.result_called = False
+
+      def result(self):
+        self.result_called = True
+        self.metadata = tasks_v2.BatchDeleteTasksMetadata(
+            failed_requests={
+                0: status_pb2.Status(code=code_pb2.NOT_FOUND, message='Missing')
+            }
+        )
+        return empty_pb2.Empty()
+
+    delete_op = _AsyncDeleteOp()
+    self.mock_client.batch_delete_tasks.return_value = delete_op
+    td1 = taskqueue.Task(name='missing-del')
+    td2 = taskqueue.Task(name='ok-del')
+    cloudtask.delete_tasks_in_cloud_tasks('default', [td1, td2], multiple=True)
+    self.assertTrue(delete_op.result_called)
+    self.assertFalse(td1.was_deleted)
+    self.assertTrue(td2.was_deleted)
+
+  @mock.patch.dict(os.environ, {'GOOGLE_CLOUD_PROJECT': 'my-proj', 'LOCATION_ID': 'us-central1'})
+  @mock.patch('google.cloud.tasks_v2.CloudTasksClient')
   def test_purge_queue_in_cloud_tasks(self, mock_client_cls):
     mock_client_cls.return_value = self.mock_client
     cloudtask.purge_queue_in_cloud_tasks('my-queue')
