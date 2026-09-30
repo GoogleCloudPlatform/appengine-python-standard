@@ -103,12 +103,20 @@ def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple):
       op = client.batch_delete_tasks(
           request={'parent': parent, 'names': task_names}
       )
-      metadata = getattr(op, 'metadata', {})
-      failed_requests = getattr(metadata, 'failed_requests', getattr(metadata, 'failedRequests', {}))
+      metadata = getattr(op, 'metadata', None)
+      failed_requests = (
+          getattr(
+              metadata,
+              'failed_requests',
+              getattr(metadata, 'failedRequests', None),
+          )
+          if metadata
+          else None
+      )
 
       exception = None
       for idx, t in enumerate(batch):
-        error_status = failed_requests.get(idx) or failed_requests.get(str(idx))
+        error_status = _get_failed_request(failed_requests, idx)
         if error_status:
           code = getattr(error_status, 'code', None)
           tq_code = _map_rest_code_to_tq_code(code)
@@ -139,10 +147,6 @@ def purge_queue_in_cloud_tasks(queue_name):
   name = client.queue_path(project, region, queue_name)
   try:
     client.purge_queue(request={'name': name})
-    print(
-        f"Jetski: Successfully purged queue {queue_name} using Cloud Tasks",
-        flush=True,
-    )
   except Exception as e:
     raise e
 
@@ -442,16 +446,26 @@ def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple):
       op = client.batch_create_tasks(
           request={'parent': parent, 'requests': requests_payload}
       )
-      metadata = getattr(op, 'metadata', {})
-      failed_requests = getattr(metadata, 'failed_requests', getattr(metadata, 'failedRequests', {}))
+      metadata = getattr(op, 'metadata', None)
+      failed_requests = (
+          getattr(
+              metadata,
+              'failed_requests',
+              getattr(metadata, 'failedRequests', None),
+          )
+          if metadata
+          else None
+      )
       response = getattr(op, 'response', None)
+      if response is None and hasattr(op, 'result') and callable(op.result):
+        response = op.result()
       response_tasks = getattr(response, 'tasks', []) if response else []
 
       res_iter = iter(response_tasks)
       exception = None
 
       for idx, t in enumerate(batch):
-        error_status = failed_requests.get(idx) or failed_requests.get(str(idx))
+        error_status = _get_failed_request(failed_requests, idx)
         if error_status:
           code = getattr(error_status, 'code', None)
           tq_code = _map_rest_code_to_tq_code(code)
@@ -485,6 +499,20 @@ def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple):
     return created_tasks
   else:
     return created_tasks[0]
+
+
+def _get_failed_request(failed_requests, idx):
+  """Safely retrieves a failed request status by index from proto map or dict."""
+  if not failed_requests:
+    return None
+  if idx in failed_requests:
+    return failed_requests[idx]
+  try:
+    if str(idx) in failed_requests:
+      return failed_requests[str(idx)]
+  except TypeError:
+    pass
+  return None
 
 
 def _map_rest_code_to_tq_code(code):

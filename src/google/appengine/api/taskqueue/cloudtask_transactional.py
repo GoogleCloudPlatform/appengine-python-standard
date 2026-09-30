@@ -27,6 +27,7 @@ from google.appengine.api import datastore
 from google.appengine.api.taskqueue import cloudtask
 from google.appengine.api.taskqueue import taskqueue
 from google.cloud import tasks_v2
+from google.protobuf import duration_pb2
 from google.protobuf.timestamp_pb2 import Timestamp
 
 try:
@@ -62,6 +63,11 @@ def add_transactional_tasks(queue_name, tasks, multiple):
     if task.was_enqueued:
       raise taskqueue.BadTaskStateError('The task has already been enqueued.')
 
+  if not (ndb and ndb.in_transaction()) and not datastore.IsInTransaction():
+    raise taskqueue.BadTransactionStateError(
+        'Transactional tasks must be added inside a transaction.'
+    )
+
   pending_keys = []
   for task in tasks:
     task_uuid = uuid.uuid4().hex
@@ -91,8 +97,14 @@ def add_transactional_tasks(queue_name, tasks, multiple):
     }
     if st_dict:
       serializable_payload['schedule_time'] = st_dict
-    if 'retry_config' in ct_task_payload:
-      serializable_payload['retry_config'] = ct_task_payload['retry_config']
+    if 'retry_config' in ct_task_payload and ct_task_payload['retry_config']:
+      rc_dict = {}
+      for k, v in ct_task_payload['retry_config'].items():
+        if hasattr(v, 'seconds') and hasattr(v, 'nanos'):
+          rc_dict[k] = {'seconds': v.seconds, 'nanos': v.nanos}
+        else:
+          rc_dict[k] = v
+      serializable_payload['retry_config'] = rc_dict
 
     entity = datastore.Entity(_PENDING_TASK_KIND)
     entity['task_name'] = generated_name
@@ -142,6 +154,16 @@ def dispatch_task_payload(queue_name, task_payload):
   if 'schedule_time' in task_payload and isinstance(task_payload['schedule_time'], dict):
     st = task_payload['schedule_time']
     task_payload['schedule_time'] = Timestamp(seconds=st.get('seconds', 0), nanos=st.get('nanos', 0))
+
+  if 'retry_config' in task_payload and isinstance(task_payload['retry_config'], dict):
+    rc = dict(task_payload['retry_config'])
+    for dur_field in ('max_retry_duration', 'min_backoff', 'max_backoff'):
+      if dur_field in rc and isinstance(rc[dur_field], dict):
+        d = rc[dur_field]
+        rc[dur_field] = duration_pb2.Duration(
+            seconds=d.get('seconds', 0), nanos=d.get('nanos', 0)
+        )
+    task_payload['retry_config'] = rc
 
   client.create_task(request={'parent': parent, 'task': task_payload})
 
