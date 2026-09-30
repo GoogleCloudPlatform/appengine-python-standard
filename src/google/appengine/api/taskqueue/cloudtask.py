@@ -26,6 +26,7 @@ from google.api_core import exceptions as google_exceptions
 from google.appengine.api import app_identity
 from google.appengine.api.taskqueue import taskqueue
 from google.appengine.api.taskqueue import taskqueue_service_bytes_pb2 as taskqueue_service_pb2
+from google.cloud import tasks_v2
 from google.cloud import tasks_v2beta3
 from google.protobuf import duration_pb2
 from google.protobuf import field_mask_pb2
@@ -71,7 +72,7 @@ def create_tasks_in_cloud_tasks(queue_name, tasks, multiple):
 
 def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple):
   """Deletes tasks from a queue using Cloud Tasks Client SDK (supporting BatchDeleteTasks)."""
-  client = tasks_v2beta3.CloudTasksClient()
+  client = tasks_v2.CloudTasksClient()
   project = _get_project_id()
   region = _get_region()
 
@@ -102,12 +103,22 @@ def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple):
       op = client.batch_delete_tasks(
           request={'parent': parent, 'names': task_names}
       )
-      metadata = getattr(op, 'metadata', {})
-      failed_requests = getattr(metadata, 'failed_requests', getattr(metadata, 'failedRequests', {}))
+      if getattr(op, 'response', None) is None and hasattr(op, 'result') and callable(op.result):
+        op.result()
+      metadata = getattr(op, 'metadata', None)
+      failed_requests = (
+          getattr(
+              metadata,
+              'failed_requests',
+              getattr(metadata, 'failedRequests', None),
+          )
+          if metadata
+          else None
+      )
 
       exception = None
       for idx, t in enumerate(batch):
-        error_status = failed_requests.get(idx) or failed_requests.get(str(idx))
+        error_status = _get_failed_request(failed_requests, idx)
         if error_status:
           code = getattr(error_status, 'code', None)
           tq_code = _map_rest_code_to_tq_code(code)
@@ -131,23 +142,20 @@ def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple):
 
 def purge_queue_in_cloud_tasks(queue_name):
   """Purges all tasks in a queue using Cloud Tasks API."""
-  client = tasks_v2beta3.CloudTasksClient()
+  client = tasks_v2.CloudTasksClient()
   project = _get_project_id()
   region = _get_region()
 
   name = client.queue_path(project, region, queue_name)
   try:
     client.purge_queue(request={'name': name})
-    print(
-        f"Jetski: Successfully purged queue {queue_name} using Cloud Tasks",
-        flush=True,
-    )
   except Exception as e:
     raise e
 
 
 def fetch_queue_stats_in_cloud_tasks(queues, multiple):
-  """Fetches queue statistics for given queues using Cloud Tasks API."""
+  """Fetches queue statistics for given queues using Cloud Tasks API (v2beta3)."""
+  # QueueStats is retained on v2beta3 as it is out of scope for v2 GA
   client = tasks_v2beta3.CloudTasksClient()
   project = _get_project_id()
   region = _get_region()
@@ -306,16 +314,16 @@ def _build_ct_task_payload(queue_name, task, client, project, region):
     else:
       body = task.payload
 
-  http_method = tasks_v2beta3.HttpMethod.POST
+  http_method = tasks_v2.HttpMethod.POST
   if task.method:
     method_map = {
-        'POST': tasks_v2beta3.HttpMethod.POST,
-        'GET': tasks_v2beta3.HttpMethod.GET,
-        'PUT': tasks_v2beta3.HttpMethod.PUT,
-        'DELETE': tasks_v2beta3.HttpMethod.DELETE,
-        'HEAD': tasks_v2beta3.HttpMethod.HEAD,
+        'POST': tasks_v2.HttpMethod.POST,
+        'GET': tasks_v2.HttpMethod.GET,
+        'PUT': tasks_v2.HttpMethod.PUT,
+        'DELETE': tasks_v2.HttpMethod.DELETE,
+        'HEAD': tasks_v2.HttpMethod.HEAD,
     }
-    http_method = method_map.get(task.method, tasks_v2beta3.HttpMethod.POST)
+    http_method = method_map.get(task.method, tasks_v2.HttpMethod.POST)
 
   app_engine_http_request = {
       'http_method': http_method,
@@ -379,7 +387,7 @@ def _build_ct_task_payload(queue_name, task, client, project, region):
 
 def _create_single_task_in_cloud_tasks(queue_name, task, multiple):
   """Helper to create a single task using CloudTasksClient CreateTask API."""
-  client = tasks_v2beta3.CloudTasksClient()
+  client = tasks_v2.CloudTasksClient()
   project = _get_project_id()
   region = _get_region()
 
@@ -410,7 +418,7 @@ def _create_single_task_in_cloud_tasks(queue_name, task, multiple):
 
 def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple):
   """Helper to create tasks in batches using CloudTasksClient BatchCreateTasks API."""
-  client = tasks_v2beta3.CloudTasksClient()
+  client = tasks_v2.CloudTasksClient()
   project = _get_project_id()
   region = _get_region()
 
@@ -440,16 +448,26 @@ def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple):
       op = client.batch_create_tasks(
           request={'parent': parent, 'requests': requests_payload}
       )
-      metadata = getattr(op, 'metadata', {})
-      failed_requests = getattr(metadata, 'failed_requests', getattr(metadata, 'failedRequests', {}))
       response = getattr(op, 'response', None)
+      if response is None and hasattr(op, 'result') and callable(op.result):
+        response = op.result()
+      metadata = getattr(op, 'metadata', None)
+      failed_requests = (
+          getattr(
+              metadata,
+              'failed_requests',
+              getattr(metadata, 'failedRequests', None),
+          )
+          if metadata
+          else None
+      )
       response_tasks = getattr(response, 'tasks', []) if response else []
 
       res_iter = iter(response_tasks)
       exception = None
 
       for idx, t in enumerate(batch):
-        error_status = failed_requests.get(idx) or failed_requests.get(str(idx))
+        error_status = _get_failed_request(failed_requests, idx)
         if error_status:
           code = getattr(error_status, 'code', None)
           tq_code = _map_rest_code_to_tq_code(code)
@@ -483,6 +501,20 @@ def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple):
     return created_tasks
   else:
     return created_tasks[0]
+
+
+def _get_failed_request(failed_requests, idx):
+  """Safely retrieves a failed request status by index from proto map or dict."""
+  if not failed_requests:
+    return None
+  if idx in failed_requests:
+    return failed_requests[idx]
+  try:
+    if str(idx) in failed_requests:
+      return failed_requests[str(idx)]
+  except TypeError:
+    pass
+  return None
 
 
 def _map_rest_code_to_tq_code(code):
