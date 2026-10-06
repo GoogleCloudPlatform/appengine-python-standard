@@ -644,6 +644,30 @@ class CloudtaskTest(unittest.TestCase):
     stats = q.fetch_statistics()
     self.assertEqual(stats.tasks, 5)
 
+  @mock.patch('google.cloud.tasks_v2.CloudTasksClient')
+  def test_batch_delete_all_failed_lro_aborted_handled_gracefully(
+      self, mock_client_cls
+  ):
+    mock_client_cls.return_value = self.mock_client
+    op = mock.Mock()
+    op.response = None
+    op.result.side_effect = google_exceptions.Aborted(
+        'None of the requests succeeded, refer to BatchDeleteTasksMetadata.failed_requests'
+    )
+    op.metadata = tasks_v2.BatchDeleteTasksMetadata(
+        failed_requests={
+            0: status_pb2.Status(
+                code=code_pb2.NOT_FOUND, message='Requested entity was not found'
+            )
+        }
+    )
+    self.mock_client.batch_delete_tasks.return_value = op
+
+    t = taskqueue.Task(name='already-ran-task', url='/worker')
+    res = cloudtask.delete_tasks_in_cloud_tasks('default', [t], multiple=False)
+    self.assertIs(res, t)
+    self.assertFalse(t.was_deleted)
+
 
 if __name__ == '__main__':
   unittest.main()

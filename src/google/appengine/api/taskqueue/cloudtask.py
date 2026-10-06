@@ -103,8 +103,12 @@ def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple):
       op = client.batch_delete_tasks(
           request={'parent': parent, 'names': task_names}
       )
+      op_error = None
       if getattr(op, 'response', None) is None and hasattr(op, 'result') and callable(op.result):
-        op.result()
+        try:
+          op.result()
+        except google_exceptions.GoogleAPICallError as e:
+          op_error = e
       metadata = getattr(op, 'metadata', None)
       failed_requests = (
           getattr(
@@ -115,6 +119,8 @@ def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple):
           if metadata
           else None
       )
+      if op_error is not None and not failed_requests:
+        raise op_error
 
       exception = None
       for idx, t in enumerate(batch):
@@ -448,9 +454,13 @@ def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple):
       op = client.batch_create_tasks(
           request={'parent': parent, 'requests': requests_payload}
       )
+      op_error = None
       response = getattr(op, 'response', None)
       if response is None and hasattr(op, 'result') and callable(op.result):
-        response = op.result()
+        try:
+          response = op.result()
+        except google_exceptions.GoogleAPICallError as e:
+          op_error = e
       metadata = getattr(op, 'metadata', None)
       failed_requests = (
           getattr(
@@ -461,6 +471,8 @@ def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple):
           if metadata
           else None
       )
+      if op_error is not None and not failed_requests:
+        raise op_error
       response_tasks = getattr(response, 'tasks', []) if response else []
 
       res_iter = iter(response_tasks)
