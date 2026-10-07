@@ -73,6 +73,8 @@ class CloudtaskTest(unittest.TestCase):
 
   def setUp(self):
     super(CloudtaskTest, self).setUp()
+    cloudtask._reset_clients()
+    self.addCleanup(cloudtask._reset_clients)
     self.mock_client = mock.Mock()
     self.mock_client.queue_path.side_effect = (
         lambda p, r, q: f'projects/{p}/locations/{r}/queues/{q}'
@@ -667,6 +669,88 @@ class CloudtaskTest(unittest.TestCase):
     res = cloudtask.delete_tasks_in_cloud_tasks('default', [t], multiple=False)
     self.assertIs(res, t)
     self.assertFalse(t.was_deleted)
+
+  @mock.patch.dict(os.environ, {'GOOGLE_CLOUD_PROJECT': 'my-proj', 'LOCATION_ID': 'us-central1'})
+  @mock.patch('google.cloud.tasks_v2.CloudTasksClient')
+  def test_batch_create_lro_error_fails_tasks_missing_from_failed_requests(
+      self, mock_client_cls
+  ):
+    mock_client_cls.return_value = self.mock_client
+    op = mock.Mock()
+    op.response = None
+    op.result.side_effect = google_exceptions.Aborted('batch aborted')
+    op.metadata = tasks_v2.BatchCreateTasksMetadata(
+        failed_requests={
+            0: status_pb2.Status(code=code_pb2.ALREADY_EXISTS, message='dup')
+        }
+    )
+    self.mock_client.batch_create_tasks.return_value = op
+
+    t_dup = taskqueue.Task(name='dup-task', url='/worker')
+    t_unknown = taskqueue.Task(name='unknown-task', url='/worker')
+    # The task with no per-request status must surface the operation error,
+    # not a TaskAlreadyExistsError that implies the other task was added.
+    with self.assertRaises(google_exceptions.Aborted):
+      cloudtask.create_tasks_in_cloud_tasks(
+          'default', [t_dup, t_unknown], multiple=True
+      )
+    self.assertFalse(t_dup.was_enqueued)
+    self.assertFalse(t_unknown.was_enqueued)
+
+  @mock.patch.dict(os.environ, {'GOOGLE_CLOUD_PROJECT': 'my-proj', 'LOCATION_ID': 'us-central1'})
+  @mock.patch('google.cloud.tasks_v2.CloudTasksClient')
+  def test_batch_delete_lro_error_fails_tasks_missing_from_failed_requests(
+      self, mock_client_cls
+  ):
+    mock_client_cls.return_value = self.mock_client
+    op = mock.Mock()
+    op.response = None
+    op.result.side_effect = google_exceptions.Aborted('batch aborted')
+    op.metadata = tasks_v2.BatchDeleteTasksMetadata(
+        failed_requests={
+            0: status_pb2.Status(code=code_pb2.NOT_FOUND, message='Not found')
+        }
+    )
+    self.mock_client.batch_delete_tasks.return_value = op
+
+    t_missing = taskqueue.Task(name='missing-task')
+    t_unknown = taskqueue.Task(name='unknown-task')
+    with self.assertRaises(google_exceptions.Aborted):
+      cloudtask.delete_tasks_in_cloud_tasks(
+          'default', [t_missing, t_unknown], multiple=True
+      )
+    self.assertFalse(t_missing.was_deleted)
+    self.assertFalse(t_unknown.was_deleted)
+
+  @mock.patch.dict(os.environ, {'GOOGLE_CLOUD_PROJECT': 'my-proj', 'LOCATION_ID': 'us-central1'})
+  @mock.patch('google.cloud.tasks_v2.CloudTasksClient')
+  @mock.patch('google.cloud.tasks_v2beta3.CloudTasksClient')
+  def test_clients_are_created_once_and_reused(
+      self, mock_v2beta3_cls, mock_v2_cls
+  ):
+    mock_v2_cls.return_value = self.mock_client
+    mock_v2beta3_client = mock.Mock()
+    mock_v2beta3_client.queue_path.side_effect = (
+        lambda p, r, q: f'projects/{p}/locations/{r}/queues/{q}'
+    )
+    mock_v2beta3_client.get_queue.return_value = mock.Mock(stats=None)
+    mock_v2beta3_cls.return_value = mock_v2beta3_client
+    self.mock_client.create_task.return_value = tasks_v2.Task(
+        name='projects/my-proj/locations/us-central1/queues/default/tasks/t'
+    )
+
+    cloudtask.create_tasks_in_cloud_tasks(
+        'default', [taskqueue.Task(url='/worker')], multiple=False
+    )
+    cloudtask.create_tasks_in_cloud_tasks(
+        'default', [taskqueue.Task(url='/worker')], multiple=False
+    )
+    cloudtask.purge_queue_in_cloud_tasks('default')
+    cloudtask.fetch_queue_stats_in_cloud_tasks(['default'], multiple=False)
+    cloudtask.fetch_queue_stats_in_cloud_tasks(['default'], multiple=False)
+
+    self.assertEqual(mock_v2_cls.call_count, 1)
+    self.assertEqual(mock_v2beta3_cls.call_count, 1)
 
 
 if __name__ == '__main__':

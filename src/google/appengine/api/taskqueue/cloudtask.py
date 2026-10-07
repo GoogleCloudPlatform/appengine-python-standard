@@ -20,6 +20,7 @@ import datetime
 import http
 import json
 import os
+import threading
 import urllib.error
 import urllib.request
 from google.api_core import exceptions as google_exceptions
@@ -51,6 +52,13 @@ _METADATA_SERVER_TIMEOUT_SECONDS = 2
 
 _THREAD_POOL = futures.ThreadPoolExecutor(_MAX_CONCURRENT_API_CALLS)
 
+# Cloud Tasks clients are expensive to create (credential lookup and gRPC
+# channel setup), so one client per API version is created lazily and reused.
+# GAPIC clients are thread-safe. The cache is keyed by process ID so that a
+# forked worker never reuses a gRPC channel created in its parent process.
+_CLIENT_LOCK = threading.Lock()
+_CLIENTS = {}
+
 
 # ==============================================================================
 # Public APIs
@@ -72,7 +80,7 @@ def create_tasks_in_cloud_tasks(queue_name, tasks, multiple):
 
 def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple):
   """Deletes tasks from a queue using Cloud Tasks Client SDK (supporting BatchDeleteTasks)."""
-  client = tasks_v2.CloudTasksClient()
+  client = _get_client()
   project = _get_project_id()
   region = _get_region()
 
@@ -132,6 +140,12 @@ def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple):
             t._Task__deleted = False
           elif exception is None:
             exception = taskqueue._TranslateError(tq_code)
+        elif op_error is not None:
+          # The operation failed and this request has no per-request status,
+          # so it cannot be assumed to have been deleted.
+          t._Task__deleted = False
+          if exception is None:
+            exception = op_error
         else:
           t._Task__deleted = True
 
@@ -148,7 +162,7 @@ def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple):
 
 def purge_queue_in_cloud_tasks(queue_name):
   """Purges all tasks in a queue using Cloud Tasks API."""
-  client = tasks_v2.CloudTasksClient()
+  client = _get_client()
   project = _get_project_id()
   region = _get_region()
 
@@ -162,7 +176,7 @@ def purge_queue_in_cloud_tasks(queue_name):
 def fetch_queue_stats_in_cloud_tasks(queues, multiple):
   """Fetches queue statistics for given queues using Cloud Tasks API (v2beta3)."""
   # QueueStats is retained on v2beta3 as it is out of scope for v2 GA
-  client = tasks_v2beta3.CloudTasksClient()
+  client = _get_v2beta3_client()
   project = _get_project_id()
   region = _get_region()
 
@@ -237,6 +251,37 @@ class _CloudTaskRPC(object):
   @property
   def future(self):
     return self._future
+
+
+def _get_cached_client(api_version, factory):
+  """Returns the cached client for api_version, creating it on first use."""
+  key = (api_version, os.getpid())
+  client = _CLIENTS.get(key)
+  if client is None:
+    with _CLIENT_LOCK:
+      client = _CLIENTS.get(key)
+      if client is None:
+        client = factory()
+        _CLIENTS[key] = client
+  return client
+
+
+def _get_client():
+  """Returns the shared Cloud Tasks v2 client."""
+  return _get_cached_client('v2', lambda: tasks_v2.CloudTasksClient())
+
+
+def _get_v2beta3_client():
+  """Returns the shared Cloud Tasks v2beta3 client, used only for QueueStats."""
+  return _get_cached_client(
+      'v2beta3', lambda: tasks_v2beta3.CloudTasksClient()
+  )
+
+
+def _reset_clients():
+  """Drops cached clients. Intended for tests."""
+  with _CLIENT_LOCK:
+    _CLIENTS.clear()
 
 
 def _get_project_id():
@@ -393,7 +438,7 @@ def _build_ct_task_payload(queue_name, task, client, project, region):
 
 def _create_single_task_in_cloud_tasks(queue_name, task, multiple):
   """Helper to create a single task using CloudTasksClient CreateTask API."""
-  client = tasks_v2.CloudTasksClient()
+  client = _get_client()
   project = _get_project_id()
   region = _get_region()
 
@@ -410,6 +455,9 @@ def _create_single_task_in_cloud_tasks(queue_name, task, multiple):
       return [task]
     else:
       return task
+  except google_exceptions.Aborted:
+    # Aborted subclasses Conflict (HTTP 409) but does not mean the task exists.
+    raise
   except (google_exceptions.AlreadyExists, google_exceptions.Conflict) as e:
     raise taskqueue.TaskAlreadyExistsError(str(e))
   except google_exceptions.NotFound as e:
@@ -424,7 +472,7 @@ def _create_single_task_in_cloud_tasks(queue_name, task, multiple):
 
 def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple):
   """Helper to create tasks in batches using CloudTasksClient BatchCreateTasks API."""
-  client = tasks_v2.CloudTasksClient()
+  client = _get_client()
   project = _get_project_id()
   region = _get_region()
 
@@ -485,6 +533,11 @@ def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple):
           tq_code = _map_rest_code_to_tq_code(code)
           if exception is None or isinstance(exception, taskqueue.TaskAlreadyExistsError) or isinstance(exception, taskqueue.TombstonedTaskError):
             exception = taskqueue._TranslateError(tq_code)
+        elif op_error is not None:
+          # The operation failed and this request has no per-request status,
+          # so it cannot be assumed to have been created.
+          if exception is None or isinstance(exception, taskqueue.TaskAlreadyExistsError) or isinstance(exception, taskqueue.TombstonedTaskError):
+            exception = op_error
         else:
           try:
             res_task = next(res_iter)
@@ -498,6 +551,9 @@ def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple):
 
       if exception is not None:
         raise exception
+    except google_exceptions.Aborted:
+      # Aborted subclasses Conflict (HTTP 409) but does not mean the task exists.
+      raise
     except (google_exceptions.AlreadyExists, google_exceptions.Conflict) as e:
       raise taskqueue.TaskAlreadyExistsError(str(e))
     except google_exceptions.NotFound as e:
