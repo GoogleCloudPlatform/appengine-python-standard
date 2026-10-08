@@ -115,7 +115,7 @@ def add_transactional_tasks(queue_name, tasks, multiple):
         queue_name, task
     )
 
-    entity = datastore.Entity(_PENDING_TASK_KIND)
+    entity = datastore.Entity(_PENDING_TASK_KIND, namespace='')
     entity['queue_name'] = queue_name
     entity['cloud_task_name'] = generated_name
     # Text is unindexed; indexed strings are limited to 1500 bytes and task
@@ -217,7 +217,9 @@ def sweep():
                  _TX_TASK_STATUS_FAILED):
     try:
       with _use_default_datastore_adapter():
-        query = datastore.Query(_PENDING_TASK_KIND, {'status =': status})
+        query = datastore.Query(
+            _PENDING_TASK_KIND, {'status =': status}, namespace=''
+        )
         # Fetch inside the adapter context; Run() returns a lazy iterator.
         entities.extend(query.Run(limit=_SWEEPER_BATCH_SIZE))
     except Exception as e:

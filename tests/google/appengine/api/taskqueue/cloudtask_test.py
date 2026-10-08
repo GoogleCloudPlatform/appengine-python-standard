@@ -34,6 +34,7 @@ from google.api_core import operation
 from google.appengine.api import datastore
 from google.appengine.api import datastore_errors
 from google.appengine.api import datastore_types
+from google.appengine.api import namespace_manager
 from google.appengine.api.taskqueue import cloudtask
 from google.appengine.api.taskqueue import cloudtask_transactional
 from google.appengine.api.taskqueue import taskqueue
@@ -67,12 +68,15 @@ def _make_batch_create_operation(task_names=None, failed_requests=None):
   )
 
 
-def _make_batch_delete_operation(failed_requests=None):
+def _make_batch_delete_operation(failed_requests=None, op_error=None):
   meta_pb = tasks_v2.BatchDeleteTasksMetadata.pb()(
       failed_requests=failed_requests or {}
   )
   op_pb = operations_pb2.Operation(name='operations/batch-delete-1', done=True)
-  op_pb.response.Pack(empty_pb2.Empty())
+  if op_error is not None:
+    op_pb.error.CopyFrom(op_error)
+  else:
+    op_pb.response.Pack(empty_pb2.Empty())
   op_pb.metadata.Pack(meta_pb)
   return operation.from_gapic(
       op_pb,
@@ -342,6 +346,14 @@ class CloudtaskTest(unittest.TestCase):
     with self.assertRaises(taskqueue.TaskAlreadyExistsError):
       cloudtask.create_tasks_in_cloud_tasks('default', [taskqueue.Task(url='/worker')], multiple=False)
 
+    # AlreadyExists with ExecutorServiceError::TOMBSTONED_TASK -> TombstonedTaskError
+    self.mock_client.create_task.side_effect = google_exceptions.AlreadyExists(
+        'Requested entity already exists [detail: "[ORIGINAL ERROR] '
+        'ExecutorError::1015: apphosting::ExecutorServiceError::TOMBSTONED_TASK"]'
+    )
+    with self.assertRaises(taskqueue.TombstonedTaskError):
+      cloudtask.create_tasks_in_cloud_tasks('default', [taskqueue.Task(url='/worker')], multiple=False)
+
     # NotFound -> UnknownQueueError
     self.mock_client.create_task.side_effect = google_exceptions.NotFound('missing queue')
     with self.assertRaises(taskqueue.UnknownQueueError):
@@ -520,6 +532,26 @@ class CloudtaskTest(unittest.TestCase):
       cloudtask.delete_tasks_in_cloud_tasks(
           'default', [taskqueue.Task(name='denied-task')], multiple=False
       )
+
+    # Operation-level error alongside per-task NOT_FOUND in failed_requests still
+    # processes failed_requests and marks NOT_FOUND tasks as was_deleted=False.
+    self.mock_client.batch_delete_tasks.return_value = (
+        _make_batch_delete_operation(
+            failed_requests={
+                0: status_pb2.Status(
+                    code=code_pb2.NOT_FOUND, message='Not found'
+                )
+            },
+            op_error=status_pb2.Status(
+                code=code_pb2.NOT_FOUND, message='1 request failed'
+            ),
+        )
+    )
+    t_missing_with_op_err = taskqueue.Task(name='missing-with-op-err')
+    cloudtask.delete_tasks_in_cloud_tasks(
+        'default', [t_missing_with_op_err], multiple=False
+    )
+    self.assertFalse(t_missing_with_op_err.was_deleted)
 
   @mock.patch.dict(os.environ, {'GOOGLE_CLOUD_PROJECT': 'my-proj', 'LOCATION_ID': 'us-central1'})
   @mock.patch('google.cloud.tasks_v2.CloudTasksClient')
@@ -793,6 +825,10 @@ class CloudtaskTest(unittest.TestCase):
         (google_exceptions.FailedPrecondition(
             'Queue does not exist. apphosting::ExecutorServiceError::'
             'UNKNOWN_QUEUE'), taskqueue.UnknownQueueError),
+        (google_exceptions.AlreadyExists(
+            'Requested entity already exists [detail: "[ORIGINAL ERROR] '
+            'ExecutorError::1015: apphosting::ExecutorServiceError::'
+            'TOMBSTONED_TASK"]'), taskqueue.TombstonedTaskError),
     ]
     calls = {
         'create_task': lambda: cloudtask.create_tasks_in_cloud_tasks(
@@ -1285,6 +1321,43 @@ class CloudtaskTransactionalDatastoreTest(unittest.TestCase):
     self.assertEqual(self.mock_client.create_task.call_count, 3)
     statuses = [e['status'] for e in self._pending_entities()]
     self.assertEqual(statuses, [failed] * 3)
+
+  def test_transactional_tasks_under_non_default_namespace_use_empty_namespace(
+      self,
+  ):
+    old = datetime.datetime.utcnow() - datetime.timedelta(minutes=5)
+    namespace_manager.set_namespace('tenant-a')
+    self.addCleanup(lambda: namespace_manager.set_namespace(''))
+
+    # Simulate a transaction whose post-commit hook failed so the sweeper must
+    # find the staged entity from the default ('') namespace.
+    with mock.patch.object(
+        cloudtask_transactional, '_dispatch_pending_keys_now'
+    ):
+      datastore.RunInTransaction(
+          lambda: cloudtask_transactional.add_transactional_tasks(
+              'default', [taskqueue.Task(url='/w')], multiple=False
+          )
+      )
+
+    # Even while 'tenant-a' is active, the staged entity is stored in the ''
+    # namespace and visible when querying namespace=''.
+    staged = list(
+        datastore.Query(
+            cloudtask_transactional._PENDING_TASK_KIND, namespace=''
+        ).Run()
+    )
+    self.assertEqual(len(staged), 1)
+    self.assertEqual(staged[0].namespace(), '')
+    staged[0]['created'] = old
+    datastore.Put(staged[0])
+
+    # Sweeper invoked under default namespace ('') or another namespace still
+    # finds and dispatches the entity.
+    namespace_manager.set_namespace('')
+    cloudtask_transactional.sweep()
+    self.mock_client.create_task.assert_called_once()
+    self.assertEqual(self._pending_entities(), [])
 
 
 if __name__ == '__main__':

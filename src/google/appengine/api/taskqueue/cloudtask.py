@@ -125,6 +125,9 @@ def _to_taskqueue_error(error):
     return taskqueue.TaskAlreadyExistsError(detail)
   if isinstance(error, google_exceptions.NotFound):
     return taskqueue.UnknownQueueError(detail)
+  if (isinstance(error, google_exceptions.BadRequest)
+      and 'queue does not exist' in detail.lower()):
+    return taskqueue.UnknownQueueError(detail)
   if isinstance(error, (google_exceptions.PermissionDenied,
                         google_exceptions.Unauthenticated)):
     return taskqueue.PermissionDeniedError(detail)
@@ -230,7 +233,6 @@ def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple, deadline=None):
       request={'parent': parent, 'names': task_names},
       **_timeout_kwargs(deadline_at, _DEFAULT_RPC_TIMEOUT_SECONDS)
   )
-  _extract_lro_response(op)
   metadata = getattr(op, 'metadata', None)
   failed_requests = (
       getattr(
@@ -241,22 +243,22 @@ def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple, deadline=None):
       if metadata
       else None
   )
+  _extract_lro_response(op, has_failed_requests=bool(failed_requests))
 
   exception = None
   for idx, t in enumerate(tasks):
     error_status = _get_failed_request(failed_requests, idx)
     if error_status:
       code = getattr(error_status, 'code', None)
-      tq_code = _map_rest_code_to_tq_code(code)
+      msg = getattr(error_status, 'message', '')
+      tq_code = _map_rest_code_to_tq_code(code, msg)
       if tq_code in [
           taskqueue_service_pb2.TaskQueueServiceError.UNKNOWN_TASK,
           taskqueue_service_pb2.TaskQueueServiceError.TOMBSTONED_TASK,
       ]:
         t._Task__deleted = False
       elif exception is None:
-        exception = taskqueue._TranslateError(
-            tq_code, getattr(error_status, 'message', '')
-        )
+        exception = taskqueue._TranslateError(tq_code, msg)
     else:
       t._Task__deleted = True
 
@@ -710,34 +712,20 @@ def _create_single_task_in_cloud_tasks(queue_name, task, multiple,
   parent = client.queue_path(project, region, queue_name)
   ct_task = _build_ct_task_payload(queue_name, task, client, project, region)
 
-  try:
-    response_task = client.create_task(
-        request={'parent': parent, 'task': ct_task},
-        **_timeout_kwargs(deadline_at))
-    task_id = response_task.name.split('/')[-1]
-    task._Task__name = task_id
-    task._Task__queue_name = queue_name
-    task._Task__enqueued = True
-    if multiple:
-      return [task]
-    else:
-      return task
-  except google_exceptions.Aborted:
-    # Aborted subclasses Conflict (HTTP 409) but does not mean the task exists.
-    raise
-  except (google_exceptions.AlreadyExists, google_exceptions.Conflict) as e:
-    raise taskqueue.TaskAlreadyExistsError(str(e))
-  except google_exceptions.NotFound as e:
-    raise taskqueue.UnknownQueueError(str(e))
-  except google_exceptions.BadRequest as e:
-    if 'Queue does not exist' in str(e):
-      raise taskqueue.UnknownQueueError(str(e))
-    raise e
-  except Exception as e:
-    raise e
+  response_task = client.create_task(
+      request={'parent': parent, 'task': ct_task},
+      **_timeout_kwargs(deadline_at))
+  task_id = response_task.name.split('/')[-1]
+  task._Task__name = task_id
+  task._Task__queue_name = queue_name
+  task._Task__enqueued = True
+  if multiple:
+    return [task]
+  else:
+    return task
 
 
-def _extract_lro_response(op):
+def _extract_lro_response(op, has_failed_requests=False):
   """Extracts the unpacked response message from a synchronous LRO."""
   raw_op = getattr(op, 'operation', None)
   if raw_op is not None and not getattr(raw_op, 'done', True):
@@ -752,6 +740,10 @@ def _extract_lro_response(op):
       return op.result(timeout=0)
     except TypeError:
       return op.result()
+    except Exception:  # pylint: disable=broad-except
+      if has_failed_requests:
+        return None
+      raise
   return getattr(op, 'response', None)
 
 
@@ -794,70 +786,57 @@ def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple,
       }
       for t in tasks
   ]
-  try:
-    op = client.batch_create_tasks(
-        request={'parent': parent, 'requests': requests_payload},
-        **_timeout_kwargs(deadline_at, _DEFAULT_RPC_TIMEOUT_SECONDS)
-    )
-    metadata = getattr(op, 'metadata', None)
-    failed_requests = (
-        getattr(
-            metadata,
-            'failed_requests',
-            getattr(metadata, 'failedRequests', None),
-        )
-        if metadata
-        else None
-    )
-    response = _extract_lro_response(op)
-    response_tasks = getattr(response, 'tasks', []) if response else []
-
-    res_iter = iter(response_tasks)
-    created_tasks = []
-    exception = None
-    missing_task_idx = None
-
-    for idx, t in enumerate(tasks):
-      error_status = _get_failed_request(failed_requests, idx)
-      if error_status:
-        code = getattr(error_status, 'code', None)
-        tq_code = _map_rest_code_to_tq_code(code)
-        err = taskqueue._TranslateError(
-            tq_code, getattr(error_status, 'message', '')
-        )
-        exception = _set_preferred_exception(exception, err)
-      else:
-        try:
-          res_task = next(res_iter)
-          task_id = (
-              res_task.name.split('/')[-1]
-              if hasattr(res_task, 'name')
-              else res_task['name'].split('/')[-1]
-          )
-          t._Task__name = task_id
-          t._Task__queue_name = queue_name
-          t._Task__enqueued = True
-          created_tasks.append(t)
-        except StopIteration:
-          if missing_task_idx is None:
-            missing_task_idx = idx
-
-    if exception is None and missing_task_idx is not None:
-      exception = taskqueue.InternalError(
-          'BatchCreateTasks response is missing created task at index %d'
-          % missing_task_idx
+  op = client.batch_create_tasks(
+      request={'parent': parent, 'requests': requests_payload},
+      **_timeout_kwargs(deadline_at, _DEFAULT_RPC_TIMEOUT_SECONDS)
+  )
+  metadata = getattr(op, 'metadata', None)
+  failed_requests = (
+      getattr(
+          metadata,
+          'failed_requests',
+          getattr(metadata, 'failedRequests', None),
       )
-  except google_exceptions.Aborted:
-    # Aborted subclasses Conflict (HTTP 409) but does not mean the task exists.
-    raise
-  except (google_exceptions.AlreadyExists, google_exceptions.Conflict) as e:
-    raise taskqueue.TaskAlreadyExistsError(str(e))
-  except google_exceptions.NotFound as e:
-    raise taskqueue.UnknownQueueError(str(e))
-  except google_exceptions.BadRequest as e:
-    if 'Queue does not exist' in str(e):
-      raise taskqueue.UnknownQueueError(str(e))
-    raise e
+      if metadata
+      else None
+  )
+  response = _extract_lro_response(op, has_failed_requests=bool(failed_requests))
+  response_tasks = getattr(response, 'tasks', []) if response else []
+
+  res_iter = iter(response_tasks)
+  created_tasks = []
+  exception = None
+  missing_task_idx = None
+
+  for idx, t in enumerate(tasks):
+    error_status = _get_failed_request(failed_requests, idx)
+    if error_status:
+      code = getattr(error_status, 'code', None)
+      msg = getattr(error_status, 'message', '')
+      tq_code = _map_rest_code_to_tq_code(code, msg)
+      err = taskqueue._TranslateError(tq_code, msg)
+      exception = _set_preferred_exception(exception, err)
+    else:
+      try:
+        res_task = next(res_iter)
+        task_id = (
+            res_task.name.split('/')[-1]
+            if hasattr(res_task, 'name')
+            else res_task['name'].split('/')[-1]
+        )
+        t._Task__name = task_id
+        t._Task__queue_name = queue_name
+        t._Task__enqueued = True
+        created_tasks.append(t)
+      except StopIteration:
+        if missing_task_idx is None:
+          missing_task_idx = idx
+
+  if exception is None and missing_task_idx is not None:
+    exception = taskqueue.InternalError(
+        'BatchCreateTasks response is missing created task at index %d'
+        % missing_task_idx
+    )
 
   if exception is not None:
     raise exception
@@ -882,8 +861,13 @@ def _get_failed_request(failed_requests, idx):
   return None
 
 
-def _map_rest_code_to_tq_code(code):
+def _map_rest_code_to_tq_code(code, message=''):
   """Maps gRPC / HTTP error status codes to legacy TaskQueue error enum codes."""
+  if message:
+    match = _EXECUTOR_ERROR_RE.search(message)
+    error_codes = taskqueue_service_pb2.TaskQueueServiceError.ErrorCode
+    if match and match.group(1) in error_codes.keys():
+      return error_codes.Value(match.group(1))
   if code in [code_pb2.NOT_FOUND, http.HTTPStatus.NOT_FOUND]:
     return taskqueue_service_pb2.TaskQueueServiceError.UNKNOWN_TASK
   if code in [code_pb2.INVALID_ARGUMENT, http.HTTPStatus.BAD_REQUEST]:
