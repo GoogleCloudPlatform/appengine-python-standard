@@ -44,6 +44,8 @@ from google.appengine.api import app_identity
 from google.appengine.api import modules
 from google.appengine.api import namespace_manager
 from google.appengine.api import urlfetch
+from google.appengine.api.taskqueue import cloudtask
+from google.appengine.api.taskqueue import cloudtask_transactional
 from google.appengine.api.taskqueue import taskqueue_service_bytes_pb2 as taskqueue_service_pb2
 from google.appengine.runtime import apiproxy_errors
 from google.appengine.runtime import context
@@ -1557,13 +1559,21 @@ class QueueStatistics(object):
 
       return []
 
-    rpc = create_rpc(deadline)
+    if cloudtask.is_cloudtask_push_queue_enabled():
+      rpc = cloudtask._DeadlineOnlyRPC(deadline)
+    else:
+      rpc = create_rpc(deadline)
     cls.fetch_async(queue_or_queues, rpc)
     return rpc.get_result()
 
   @classmethod
   def _FetchMultipleQueues(cls, queues, multiple, rpc=None):
     """Internal implementation of fetch stats where queues must be a list."""
+    if cloudtask.is_cloudtask_push_queue_enabled():
+      return cloudtask._make_rpc(
+          lambda: cloudtask.fetch_queue_stats_in_cloud_tasks(
+              queues, multiple, deadline=getattr(rpc, 'deadline', None)),
+          rpc)
 
     def ResultHook(rpc):
       """Processes the TaskQueueFetchQueueStatsResponse."""
@@ -1654,6 +1664,10 @@ class Queue(object):
     Raises:
       Error-subclass on application errors.
     """
+    if cloudtask.is_cloudtask_push_queue_enabled():
+      cloudtask.purge_queue_in_cloud_tasks(self.__name)
+      return
+
     request = taskqueue_service_pb2.TaskQueuePurgeQueueRequest()
     response = taskqueue_service_pb2.TaskQueuePurgeQueueResponse()
 
@@ -1789,6 +1803,13 @@ class Queue(object):
 
   def __DeleteTasks(self, tasks, multiple, rpc=None):
     """Internal implementation of delete_tasks_async(), tasks must be a list."""
+    if (cloudtask.is_cloudtask_push_queue_enabled()
+        and not any(getattr(t, 'method', None) == 'PULL' for t in tasks)):
+      return cloudtask._make_rpc(
+          lambda: cloudtask.delete_tasks_in_cloud_tasks(
+              self.__name, tasks, multiple,
+              deadline=getattr(rpc, 'deadline', None)),
+          rpc)
 
     def ResultHook(rpc):
       """Processes the TaskQueueDeleteResponse."""
@@ -2083,6 +2104,11 @@ class Queue(object):
           (and therefore will never run). If `False`, the added tasks are
           available to run immediately; any enclosing transaction's success or
           failure is ignored.
+          When `APPENGINE_USE_CLOUDTASK_PUSH_QUEUE` is enabled, each
+          transactional task is staged as its own Datastore entity group
+          (consuming one of the 25 entity groups allowed per cross-group
+          transaction, up to 5 tasks per transaction), so the enclosing
+          transaction must be cross-group (`xg=True`).
       rpc: An optional UserRPC object.
 
     Returns:
@@ -2133,6 +2159,26 @@ class Queue(object):
       raise InvalidTaskError(
           'You cannot add both push and pull tasks in a single call.')
 
+    if len(tasks) > MAX_TASKS_PER_ADD:
+      raise TooManyTasksError(
+          'No more than %d tasks can be added in a single call' %
+          MAX_TASKS_PER_ADD)
+
+    # Intercept for Cloud Tasks backend
+    if (cloudtask.is_cloudtask_push_queue_enabled()
+        and has_push_task
+        and len(tasks) >= 1):
+      if transactional:
+        cloudtask_transactional.add_transactional_tasks(self.__name, tasks, multiple)
+        return cloudtask._make_rpc(
+            lambda: tasks if multiple else tasks[0], rpc)
+      else:
+        return cloudtask._make_rpc(
+            lambda: cloudtask.create_tasks_in_cloud_tasks(
+                self.__name, tasks, multiple,
+                deadline=getattr(rpc, 'deadline', None)),
+            rpc)
+
     if has_push_task:
       fill_function = self.__FillAddPushTasksRequest
     else:
@@ -2175,6 +2221,11 @@ class Queue(object):
           (and therefore will never run). If `False`, the added tasks are
           available to run immediately; any enclosing transaction's success or
           failure is ignored.
+          When `APPENGINE_USE_CLOUDTASK_PUSH_QUEUE` is enabled, each
+          transactional task is staged as its own Datastore entity group
+          (consuming one of the 25 entity groups allowed per cross-group
+          transaction, up to 5 tasks per transaction), so the enclosing
+          transaction must be cross-group (`xg=True`).
 
     Returns:
       The task or list of tasks that was supplied to this method. Successfully
@@ -2471,7 +2522,10 @@ class Queue(object):
       Error-subclass on application errors.
     """
     _ValidateDeadline(deadline)
-    rpc = create_rpc(deadline)
+    if cloudtask.is_cloudtask_push_queue_enabled():
+      rpc = cloudtask._DeadlineOnlyRPC(deadline)
+    else:
+      rpc = create_rpc(deadline)
     self.fetch_statistics_async(rpc)
     return rpc.get_result()
 

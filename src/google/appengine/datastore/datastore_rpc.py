@@ -2626,6 +2626,13 @@ class TransactionalConnection(BaseConnection):
     transaction = self.transaction
     if transaction is None:
       self._state = TransactionalConnection.CLOSED
+      callbacks = getattr(self, '_on_commit_callbacks', None)
+      if callbacks:
+        for cb in callbacks:
+          try:
+            cb()
+          except Exception as e:
+            logging.error('Error in on_commit callback: %s', e)
       return None
 
     if self._api_version == _CLOUD_DATASTORE_V1:
@@ -2668,6 +2675,13 @@ class TransactionalConnection(BaseConnection):
       else:
         raise _ToDatastoreError(err)
     else:
+      callbacks = getattr(self, '_on_commit_callbacks', None)
+      if callbacks:
+        for cb in callbacks:
+          try:
+            cb()
+          except Exception as e:
+            logging.error('Error in on_commit callback: %s', e)
       return True
 
 
