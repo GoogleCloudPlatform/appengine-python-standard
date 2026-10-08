@@ -378,28 +378,20 @@ class CloudtaskTest(unittest.TestCase):
     with self.assertRaises(taskqueue.BadTaskStateError):
       cloudtask.create_tasks_in_cloud_tasks('default', [t1], multiple=False)
 
-    # Multi-chunk batch execution (>100 tasks) preserves order and names.
-    def fake_batch_create(request, **_):
-      reqs = request['requests']
-      return _make_batch_create_operation(
-          task_names=[
-              f"projects/my-proj/locations/us-central1/queues/default/tasks/{r['task']['app_engine_http_request']['relative_uri'].lstrip('/')}"
-              for r in reqs
-          ]
+    # Exceeding MAX_TASKS_PER_ADD (100) raises TooManyTasksError.
+    many_tasks = [taskqueue.Task(url=f'/t-{i}') for i in range(101)]
+    with self.assertRaises(taskqueue.TooManyTasksError):
+      cloudtask.create_tasks_in_cloud_tasks(
+          'default', many_tasks, multiple=True
       )
-
-    self.mock_client.batch_create_tasks.reset_mock()
-    self.mock_client.batch_create_tasks.side_effect = fake_batch_create
-    many_tasks = [taskqueue.Task(url=f'/t-{i}') for i in range(250)]
-    many_res = cloudtask.create_tasks_in_cloud_tasks(
-        'default', many_tasks, multiple=True
-    )
-    self.assertEqual(self.mock_client.batch_create_tasks.call_count, 3)
-    self.assertEqual([t.name for t in many_res], [f't-{i}' for i in range(250)])
+    with mock.patch.dict(
+        os.environ, {cloudtask.ENV_USE_CLOUDTASK_PUSH_QUEUE: 'true'}
+    ):
+      with self.assertRaises(taskqueue.TooManyTasksError):
+        taskqueue.Queue('default').add(many_tasks)
 
     # Missing task in BatchCreateTasks response raises InternalError instead of
     # silently leaving task.name as None.
-    self.mock_client.batch_create_tasks.side_effect = None
     self.mock_client.batch_create_tasks.return_value = (
         _make_batch_create_operation(task_names=[])
     )
@@ -477,6 +469,14 @@ class CloudtaskTest(unittest.TestCase):
     with self.assertRaises(taskqueue.DuplicateTaskNameError):
       cloudtask.delete_tasks_in_cloud_tasks(
           'default', [taskqueue.Task(name='d'), taskqueue.Task(name='d')], multiple=True
+      )
+
+    # Exceeding _BATCH_DELETE_TASKS_MAX_SIZE (1000) raises TooManyTasksError.
+    with self.assertRaises(taskqueue.TooManyTasksError):
+      cloudtask.delete_tasks_in_cloud_tasks(
+          'default',
+          [taskqueue.Task(name=f'del-{i}') for i in range(1001)],
+          multiple=True,
       )
 
     # NOT_FOUND in failed_requests marks was_deleted=False without raising

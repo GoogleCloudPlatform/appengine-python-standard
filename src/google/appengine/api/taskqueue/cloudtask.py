@@ -16,7 +16,6 @@
 
 import base64
 from concurrent import futures
-import contextvars
 import datetime
 import functools
 import http
@@ -175,6 +174,11 @@ def is_cloudtask_push_queue_enabled():
 @_translate_errors
 def create_tasks_in_cloud_tasks(queue_name, tasks, multiple, deadline=None):
   """Creates one or more tasks using Cloud Tasks API (supporting BatchCreateTasks)."""
+  if len(tasks) > _BATCH_CREATE_TASKS_MAX_SIZE:
+    raise taskqueue.TooManyTasksError(
+        'No more than %d tasks can be added in a single call'
+        % _BATCH_CREATE_TASKS_MAX_SIZE
+    )
   for task in tasks:
     if task.was_enqueued:
       raise taskqueue.BadTaskStateError('The task has already been enqueued.')
@@ -190,6 +194,13 @@ def create_tasks_in_cloud_tasks(queue_name, tasks, multiple, deadline=None):
 @_translate_errors
 def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple, deadline=None):
   """Deletes tasks from a queue using Cloud Tasks Client SDK (supporting BatchDeleteTasks)."""
+  if not tasks:
+    return [] if multiple else None
+  if len(tasks) > _BATCH_DELETE_TASKS_MAX_SIZE:
+    raise taskqueue.TooManyTasksError(
+        'No more than %d tasks can be deleted in a single call'
+        % _BATCH_DELETE_TASKS_MAX_SIZE
+    )
   deadline_at = _deadline_at(deadline)
   client = _get_client()
   project = _get_project_id()
@@ -212,65 +223,42 @@ def delete_tasks_in_cloud_tasks(queue_name, tasks, multiple, deadline=None):
       )
     task_names_set.add(task.name)
 
-  def _delete_batch_chunk(batch):
-    task_names = [
-        client.task_path(project, region, queue_name, t.name) for t in batch
-    ]
-    op = client.batch_delete_tasks(
-        request={'parent': parent, 'names': task_names},
-        **_timeout_kwargs(deadline_at, _DEFAULT_RPC_TIMEOUT_SECONDS)
-    )
-    _extract_lro_response(op)
-    metadata = getattr(op, 'metadata', None)
-    failed_requests = (
-        getattr(
-            metadata,
-            'failed_requests',
-            getattr(metadata, 'failedRequests', None),
-        )
-        if metadata
-        else None
-    )
-
-    chunk_exception = None
-    for idx, t in enumerate(batch):
-      error_status = _get_failed_request(failed_requests, idx)
-      if error_status:
-        code = getattr(error_status, 'code', None)
-        tq_code = _map_rest_code_to_tq_code(code)
-        if tq_code in [
-            taskqueue_service_pb2.TaskQueueServiceError.UNKNOWN_TASK,
-            taskqueue_service_pb2.TaskQueueServiceError.TOMBSTONED_TASK,
-        ]:
-          t._Task__deleted = False
-        elif chunk_exception is None:
-          chunk_exception = taskqueue._TranslateError(
-              tq_code, getattr(error_status, 'message', '')
-          )
-      else:
-        t._Task__deleted = True
-
-    return chunk_exception
-
-  chunks = [
-      tasks[i : i + _BATCH_DELETE_TASKS_MAX_SIZE]
-      for i in range(0, len(tasks), _BATCH_DELETE_TASKS_MAX_SIZE)
+  task_names = [
+      client.task_path(project, region, queue_name, t.name) for t in tasks
   ]
+  op = client.batch_delete_tasks(
+      request={'parent': parent, 'names': task_names},
+      **_timeout_kwargs(deadline_at, _DEFAULT_RPC_TIMEOUT_SECONDS)
+  )
+  _extract_lro_response(op)
+  metadata = getattr(op, 'metadata', None)
+  failed_requests = (
+      getattr(
+          metadata,
+          'failed_requests',
+          getattr(metadata, 'failedRequests', None),
+      )
+      if metadata
+      else None
+  )
+
   exception = None
-  if len(chunks) == 1:
-    exception = _delete_batch_chunk(chunks[0])
-  elif chunks:
-    chunk_futures = [
-        _THREAD_POOL.submit(
-            contextvars.copy_context().run, _delete_batch_chunk, batch
+  for idx, t in enumerate(tasks):
+    error_status = _get_failed_request(failed_requests, idx)
+    if error_status:
+      code = getattr(error_status, 'code', None)
+      tq_code = _map_rest_code_to_tq_code(code)
+      if tq_code in [
+          taskqueue_service_pb2.TaskQueueServiceError.UNKNOWN_TASK,
+          taskqueue_service_pb2.TaskQueueServiceError.TOMBSTONED_TASK,
+      ]:
+        t._Task__deleted = False
+      elif exception is None:
+        exception = taskqueue._TranslateError(
+            tq_code, getattr(error_status, 'message', '')
         )
-        for batch in chunks
-    ]
-    futures.wait(chunk_futures)
-    for fut in chunk_futures:
-      chunk_exc = fut.result()
-      if exception is None and chunk_exc is not None:
-        exception = chunk_exc
+    else:
+      t._Task__deleted = True
 
   if exception is not None:
     raise exception
@@ -772,7 +760,7 @@ def _set_preferred_exception(current, candidate):
 
 def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple,
                                        deadline_at=None):
-  """Helper to create tasks in batches using CloudTasksClient BatchCreateTasks API."""
+  """Helper to create tasks in a batch using CloudTasksClient BatchCreateTasks API."""
   client = _get_client()
   project = _get_project_id()
   region = _get_region()
@@ -789,104 +777,79 @@ def _create_batch_tasks_in_cloud_tasks(queue_name, tasks, multiple,
         )
       task_names.add(task.name)
 
-  def _create_batch_chunk(batch):
-    requests_payload = [
-        {
-            'parent': parent,
-            'task': _build_ct_task_payload(
-                queue_name, t, client, project, region
-            ),
-        }
-        for t in batch
-    ]
-    try:
-      op = client.batch_create_tasks(
-          request={'parent': parent, 'requests': requests_payload},
-          **_timeout_kwargs(deadline_at, _DEFAULT_RPC_TIMEOUT_SECONDS)
-      )
-      metadata = getattr(op, 'metadata', None)
-      failed_requests = (
-          getattr(
-              metadata,
-              'failed_requests',
-              getattr(metadata, 'failedRequests', None),
-          )
-          if metadata
-          else None
-      )
-      response = _extract_lro_response(op)
-      response_tasks = getattr(response, 'tasks', []) if response else []
-
-      res_iter = iter(response_tasks)
-      chunk_created = []
-      chunk_exception = None
-      missing_task_idx = None
-
-      for idx, t in enumerate(batch):
-        error_status = _get_failed_request(failed_requests, idx)
-        if error_status:
-          code = getattr(error_status, 'code', None)
-          tq_code = _map_rest_code_to_tq_code(code)
-          err = taskqueue._TranslateError(
-              tq_code, getattr(error_status, 'message', '')
-          )
-          chunk_exception = _set_preferred_exception(chunk_exception, err)
-        else:
-          try:
-            res_task = next(res_iter)
-            task_id = (
-                res_task.name.split('/')[-1]
-                if hasattr(res_task, 'name')
-                else res_task['name'].split('/')[-1]
-            )
-            t._Task__name = task_id
-            t._Task__queue_name = queue_name
-            t._Task__enqueued = True
-            chunk_created.append(t)
-          except StopIteration:
-            if missing_task_idx is None:
-              missing_task_idx = idx
-
-      if chunk_exception is None and missing_task_idx is not None:
-        chunk_exception = taskqueue.InternalError(
-            'BatchCreateTasks response is missing created task at index %d'
-            % missing_task_idx
-        )
-
-      return chunk_created, chunk_exception
-    except google_exceptions.Aborted:
-      # Aborted subclasses Conflict (HTTP 409) but does not mean the task exists.
-      raise
-    except (google_exceptions.AlreadyExists, google_exceptions.Conflict) as e:
-      raise taskqueue.TaskAlreadyExistsError(str(e))
-    except google_exceptions.NotFound as e:
-      raise taskqueue.UnknownQueueError(str(e))
-    except google_exceptions.BadRequest as e:
-      if 'Queue does not exist' in str(e):
-        raise taskqueue.UnknownQueueError(str(e))
-      raise e
-
-  chunks = [
-      tasks[i : i + _BATCH_CREATE_TASKS_MAX_SIZE]
-      for i in range(0, len(tasks), _BATCH_CREATE_TASKS_MAX_SIZE)
+  requests_payload = [
+      {
+          'parent': parent,
+          'task': _build_ct_task_payload(
+              queue_name, t, client, project, region
+          ),
+      }
+      for t in tasks
   ]
-  created_tasks = []
-  exception = None
-  if len(chunks) == 1:
-    chunk_created, exception = _create_batch_chunk(chunks[0])
-    created_tasks.extend(chunk_created)
-  elif chunks:
-    chunk_futures = [
-        _THREAD_POOL.submit(
-            contextvars.copy_context().run, _create_batch_chunk, batch
+  try:
+    op = client.batch_create_tasks(
+        request={'parent': parent, 'requests': requests_payload},
+        **_timeout_kwargs(deadline_at, _DEFAULT_RPC_TIMEOUT_SECONDS)
+    )
+    metadata = getattr(op, 'metadata', None)
+    failed_requests = (
+        getattr(
+            metadata,
+            'failed_requests',
+            getattr(metadata, 'failedRequests', None),
         )
-        for batch in chunks
-    ]
-    futures.wait(chunk_futures)
-    for fut in chunk_futures:
-      chunk_created, chunk_exc = fut.result()
-      created_tasks.extend(chunk_created)
-      exception = _set_preferred_exception(exception, chunk_exc)
+        if metadata
+        else None
+    )
+    response = _extract_lro_response(op)
+    response_tasks = getattr(response, 'tasks', []) if response else []
+
+    res_iter = iter(response_tasks)
+    created_tasks = []
+    exception = None
+    missing_task_idx = None
+
+    for idx, t in enumerate(tasks):
+      error_status = _get_failed_request(failed_requests, idx)
+      if error_status:
+        code = getattr(error_status, 'code', None)
+        tq_code = _map_rest_code_to_tq_code(code)
+        err = taskqueue._TranslateError(
+            tq_code, getattr(error_status, 'message', '')
+        )
+        exception = _set_preferred_exception(exception, err)
+      else:
+        try:
+          res_task = next(res_iter)
+          task_id = (
+              res_task.name.split('/')[-1]
+              if hasattr(res_task, 'name')
+              else res_task['name'].split('/')[-1]
+          )
+          t._Task__name = task_id
+          t._Task__queue_name = queue_name
+          t._Task__enqueued = True
+          created_tasks.append(t)
+        except StopIteration:
+          if missing_task_idx is None:
+            missing_task_idx = idx
+
+    if exception is None and missing_task_idx is not None:
+      exception = taskqueue.InternalError(
+          'BatchCreateTasks response is missing created task at index %d'
+          % missing_task_idx
+      )
+  except google_exceptions.Aborted:
+    # Aborted subclasses Conflict (HTTP 409) but does not mean the task exists.
+    raise
+  except (google_exceptions.AlreadyExists, google_exceptions.Conflict) as e:
+    raise taskqueue.TaskAlreadyExistsError(str(e))
+  except google_exceptions.NotFound as e:
+    raise taskqueue.UnknownQueueError(str(e))
+  except google_exceptions.BadRequest as e:
+    if 'Queue does not exist' in str(e):
+      raise taskqueue.UnknownQueueError(str(e))
+    raise e
 
   if exception is not None:
     raise exception

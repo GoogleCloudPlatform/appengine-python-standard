@@ -2159,6 +2159,11 @@ class Queue(object):
       raise InvalidTaskError(
           'You cannot add both push and pull tasks in a single call.')
 
+    if len(tasks) > MAX_TASKS_PER_ADD:
+      raise TooManyTasksError(
+          'No more than %d tasks can be added in a single call' %
+          MAX_TASKS_PER_ADD)
+
     # Intercept for Cloud Tasks backend
     if (cloudtask.is_cloudtask_push_queue_enabled()
         and has_push_task
