@@ -402,6 +402,25 @@ class CloudtaskTest(unittest.TestCase):
           multiple=True,
       )
 
+    # An incomplete Operation (done=False) raises InternalError immediately
+    # without polling Operations.GetOperation.
+    refresh_mock = mock.Mock()
+    incomplete_op = operation.Operation(
+        operations_pb2.Operation(name='operations/incomplete', done=False),
+        refresh=refresh_mock,
+        cancel=mock.Mock(),
+        result_type=tasks_v2.BatchCreateTasksResponse,
+        metadata_type=tasks_v2.BatchCreateTasksMetadata,
+    )
+    self.mock_client.batch_create_tasks.return_value = incomplete_op
+    with self.assertRaises(taskqueue.InternalError):
+      cloudtask.create_tasks_in_cloud_tasks(
+          'default',
+          [taskqueue.Task(url='/1'), taskqueue.Task(url='/2')],
+          multiple=True,
+      )
+    refresh_mock.assert_not_called()
+
   @mock.patch.dict(os.environ, {'GOOGLE_CLOUD_PROJECT': 'my-proj', 'LOCATION_ID': 'us-central1'})
   @mock.patch('google.cloud.tasks_v2.CloudTasksClient')
   def test_create_batch_tasks_partial_failure_and_duplicate_names(self, mock_client_cls):

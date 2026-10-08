@@ -739,11 +739,19 @@ def _create_single_task_in_cloud_tasks(queue_name, task, multiple,
 
 def _extract_lro_response(op):
   """Extracts the unpacked response message from a synchronous LRO."""
+  raw_op = getattr(op, 'operation', None)
+  if raw_op is not None and not getattr(raw_op, 'done', True):
+    raise taskqueue.InternalError(
+        'Cloud Tasks batch operation returned done=False'
+    )
   if hasattr(op, 'result') and callable(op.result):
     if (not isinstance(op, futures.Future)
         and getattr(op, 'response', None) is not None):
       return op.response
-    return op.result()
+    try:
+      return op.result(timeout=0)
+    except TypeError:
+      return op.result()
   return getattr(op, 'response', None)
 
 
