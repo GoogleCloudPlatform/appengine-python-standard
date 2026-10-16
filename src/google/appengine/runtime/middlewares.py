@@ -379,6 +379,26 @@ def BackgroundAndShutdownMiddleware(app, wsgi_env, start_response):
 
 
 @middleware
+def CloudTaskSweepMiddleware(app, wsgi_env, start_response):
+  """Intercept calls to the endpoint for Cloud Tasks Transactional Sweeper.
+
+  Handle requests made to /_ah/cloudtask/sweep
+
+  Args:
+    app: the WSGI app to wrap
+    wsgi_env: see PEP 3333
+    start_response: see PEP 3333
+  Returns:
+    The wrapped WSGI app response in UTF-8 format
+  """
+  path = wsgi_env['PATH_INFO']
+  if path == '/_ah/cloudtask/sweep':
+    from google.appengine.api.taskqueue import cloudtask_transactional
+    return cloudtask_transactional.sweep_wsgi_app(wsgi_env, start_response)
+  return app(wsgi_env, start_response)
+
+
+@middleware
 def AddDeferredMiddleware(app, wsgi_env, start_response):
   """Intercept calls to the default endpoint for Deferred.
 
