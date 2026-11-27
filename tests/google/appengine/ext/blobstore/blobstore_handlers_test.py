@@ -66,32 +66,54 @@ class SendBlobContentDispositionTest(absltest.TestCase):
         self._send_blob(self._create_blob_info('\u20ac rates'), True),
     )
 
-  def test_double_quote_is_escaped(self):
+  def test_double_quote_is_replaced(self):
     self.assertEqual(
-        b'attachment; filename="a\\"; filename=\\"evil.exe"',
+        b'attachment; filename="a_; filename=_evil.exe"',
         self._send_blob('my blob', b'a"; filename="evil.exe'),
     )
 
-  def test_backslash_is_escaped(self):
+  def test_backslash_is_replaced(self):
     self.assertEqual(
-        b'attachment; filename="a\\\\b.txt"',
+        b'attachment; filename="a_b.txt"',
         self._send_blob('my blob', b'a\\b.txt'),
+    )
+
+  def test_backslash_and_double_quote_are_replaced(self):
+    self.assertEqual(
+        b'attachment; filename="a__b"',
+        self._send_blob('my blob', b'a\\"b'),
+    )
+
+  def test_text_filename_keeps_backslash_in_extended_parameter(self):
+    self.assertEqual(
+        b"attachment; filename=\"a_b\"; filename*=utf-8''a%5Cb",
+        self._send_blob('my blob', 'a\\b'),
+    )
+
+  def test_slash_is_encoded_in_extended_parameter(self):
+    self.assertEqual(
+        b'attachment; filename="dir/file.txt"; '
+        b"filename*=utf-8''dir%2Ffile.txt",
+        self._send_blob('my blob', 'dir/file.txt'),
     )
 
   def test_control_characters_removed_from_text_filename(self):
     self.assertEqual(
-        b'attachment; filename="a\\"Set-Cookie: x=1"; '
+        b'attachment; filename="a_Set-Cookie: x=1"; '
         b"filename*=utf-8''a%22Set-Cookie%3A%20x%3D1",
-        self._send_blob('my blob', 'a"\r\nSet-Cookie: x=1'),
+        self._send_blob('my blob', 'a"\r\n\x00\t\x7f\x85Set-Cookie: x=1'),
     )
 
   def test_control_characters_removed_from_uploaded_filename(self):
     self.assertEqual(
-        b'attachment; filename="x\\"Location: evil"',
+        b'attachment; filename="x_Location: evil"',
         self._send_blob(
             self._create_blob_info(b'x"\r\nLocation: evil'), True
         ),
     )
+
+  def test_no_filename_when_only_control_characters(self):
+    self.assertEqual(b'attachment', self._send_blob('my blob', '\r\n'))
 
 
 if __name__ == '__main__':
