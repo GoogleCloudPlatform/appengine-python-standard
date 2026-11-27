@@ -129,6 +129,45 @@ _UNSUPPORTED_RANGE_FORMAT_REGEX = re.compile(
     '^%s(?:,%s)+$' % (_RANGE_FORMAT, _RANGE_NUMERIC_FORMAT))
 _BYTES_UNIT = 'bytes'
 
+_FILENAME_CONTROL_CHARS_REGEX = re.compile(rb'[\x00-\x1f\x7f]')
+_FILENAME_TEXT_CONTROL_CHARS_REGEX = re.compile(r'[\x00-\x1f\x7f-\x9f]')
+_FILENAME_QUOTED_UNSAFE_CHARS_REGEX = re.compile(rb'["\\]')
+
+
+def _format_content_disposition(filename):
+  """Builds a Content-Disposition header value for an attachment.
+
+  Control characters are removed from the filename. For a `bytes` filename
+  only ASCII control characters are removed, because its encoding is not
+  known. In the quoted `filename` parameter, double quotes and backslashes are
+  replaced with underscores, because not all clients unescape them. A text
+  filename is also sent percent-encoded in the `filename*` parameter.
+
+  Args:
+    filename: The filename to send, as `bytes` or `str`, or None if there is
+      no filename.
+
+  Returns:
+    The header value as `bytes`. It has no filename parameter if the filename
+    is None, or is empty once control characters are removed.
+  """
+  if filename is None:
+    return b'attachment'
+  is_text = isinstance(filename, six.text_type)
+  if is_text:
+    filename = _FILENAME_TEXT_CONTROL_CHARS_REGEX.sub('', filename)
+    filename = filename.encode('utf-8')
+  else:
+    filename = _FILENAME_CONTROL_CHARS_REGEX.sub(b'', filename)
+  if not filename:
+    return b'attachment'
+  quoted_filename = _FILENAME_QUOTED_UNSAFE_CHARS_REGEX.sub(b'_', filename)
+  if is_text:
+    return _CONTENT_DISPOSITION_FORMAT_UTF8 % (
+        quoted_filename,
+        urllib.parse.quote(filename, safe='').encode('utf-8'))
+  return _CONTENT_DISPOSITION_FORMAT % quoted_filename
+
 
 class BlobInfoParseError(Error):
   """The CGI parameter does not contain a valid `BlobInfo` record."""
@@ -1446,14 +1485,7 @@ class BlobstoreDownloadHandler():
       headers['Content-Type'] = content_type
 
     def send_attachment(filename):
-      if isinstance(filename, six.text_type):
-        filename_utf8 = filename.encode('utf-8')
-        headers['Content-Disposition'] = (
-            _CONTENT_DISPOSITION_FORMAT_UTF8 %
-            (filename_utf8, urllib.parse.quote(filename_utf8).encode('utf-8')))
-      else:
-        headers['Content-Disposition'] = (
-            _CONTENT_DISPOSITION_FORMAT % filename)
+      headers['Content-Disposition'] = _format_content_disposition(filename)
 
     if save_as:
       if isinstance(save_as, (bytes, six.text_type)):
