@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2007 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -70,6 +70,19 @@ class SendBlobContentDispositionTest(absltest.TestCase):
     self.assertEqual(
         b'attachment; filename="a_; filename=_evil.exe"',
         self._send_blob('my blob', b'a"; filename="evil.exe'),
+    )
+
+  def test_double_quote_is_replaced_in_text_filename(self):
+    self.assertEqual(
+        b'attachment; filename="benign.txt_; filename=_setup.exe"; '
+        b"filename*=utf-8''benign.txt%22%3B%20filename%3D%22setup.exe",
+        self._send_blob('my blob', 'benign.txt"; filename="setup.exe'),
+    )
+
+  def test_trailing_backslash_is_replaced(self):
+    self.assertEqual(
+        b'attachment; filename="evil_"',
+        self._send_blob('my blob', b'evil\\'),
     )
 
   def test_backslash_is_replaced(self):

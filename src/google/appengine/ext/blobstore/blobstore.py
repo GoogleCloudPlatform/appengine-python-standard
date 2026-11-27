@@ -129,9 +129,9 @@ _UNSUPPORTED_RANGE_FORMAT_REGEX = re.compile(
     '^%s(?:,%s)+$' % (_RANGE_FORMAT, _RANGE_NUMERIC_FORMAT))
 _BYTES_UNIT = 'bytes'
 
-_FILENAME_CONTROL_CHARS_REGEX = re.compile(b'[\\x00-\\x1f\\x7f]')
-_FILENAME_TEXT_CONTROL_CHARS_REGEX = re.compile('[\\x00-\\x1f\\x7f-\\x9f]')
-_FILENAME_QUOTED_UNSAFE_CHARS_REGEX = re.compile(b'["\\\\]')
+_FILENAME_CONTROL_CHARS_REGEX = re.compile(rb'[\x00-\x1f\x7f]')
+_FILENAME_TEXT_CONTROL_CHARS_REGEX = re.compile(r'[\x00-\x1f\x7f-\x9f]')
+_FILENAME_QUOTED_UNSAFE_CHARS_REGEX = re.compile(rb'["\\]')
 
 
 def _format_content_disposition(filename):
