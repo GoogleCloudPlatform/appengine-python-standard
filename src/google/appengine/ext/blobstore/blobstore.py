@@ -137,18 +137,22 @@ _FILENAME_QUOTED_UNSAFE_CHARS_REGEX = re.compile(b'["\\\\]')
 def _format_content_disposition(filename):
   """Builds a Content-Disposition header value for an attachment.
 
-  Control characters are removed from the filename. In the quoted `filename`
-  parameter, double quotes and backslashes are replaced with underscores,
-  because not all clients unescape them. A text filename is also sent
-  percent-encoded in the `filename*` parameter.
+  Control characters are removed from the filename. For a `bytes` filename
+  only ASCII control characters are removed, because its encoding is not
+  known. In the quoted `filename` parameter, double quotes and backslashes are
+  replaced with underscores, because not all clients unescape them. A text
+  filename is also sent percent-encoded in the `filename*` parameter.
 
   Args:
-    filename: The filename to send, as `bytes` or `str`.
+    filename: The filename to send, as `bytes` or `str`, or None if there is
+      no filename.
 
   Returns:
     The header value as `bytes`. It has no filename parameter if the filename
-    is empty once control characters are removed.
+    is None, or is empty once control characters are removed.
   """
+  if filename is None:
+    return b'attachment'
   is_text = isinstance(filename, six.text_type)
   if is_text:
     filename = _FILENAME_TEXT_CONTROL_CHARS_REGEX.sub('', filename)

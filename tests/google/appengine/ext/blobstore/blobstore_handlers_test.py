@@ -115,6 +115,16 @@ class SendBlobContentDispositionTest(absltest.TestCase):
   def test_no_filename_when_only_control_characters(self):
     self.assertEqual(b'attachment', self._send_blob('my blob', '\r\n'))
 
+  def test_no_filename_when_bytes_are_only_control_characters(self):
+    self.assertEqual(
+        b'attachment', self._send_blob('my blob', b'\r\n\x00\x7f')
+    )
+
+  def test_no_filename_when_blob_info_has_none(self):
+    self.assertEqual(
+        b'attachment', self._send_blob(self._create_blob_info(None), True)
+    )
+
 
 if __name__ == '__main__':
   absltest.main()
