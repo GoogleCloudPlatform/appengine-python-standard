@@ -1913,7 +1913,10 @@ class PickleProperty(BlobProperty):
       return pickle.loads(value)
     except UnicodeDecodeError:
       if int(os.environ.get('NDB_PY2_UNPICKLE_COMPAT', '0')):
-        return pickle.loads(value, encoding='bytes')
+        try:
+          return pickle.loads(value, encoding='bytes')
+        except:
+          return pickle.loads(value, encoding='latin1')
       raise
 
 
